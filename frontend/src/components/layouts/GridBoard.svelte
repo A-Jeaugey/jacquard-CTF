@@ -23,6 +23,12 @@
         <span class="muted small">{challenges.filter((c) => c.solved).length}/{challenges.length}</span>
       </h2>
       {#each challenges as challenge (challenge.id)}
+        {#if challenge.locked}
+          <div class="challenge-card locked">
+            <span class="challenge-name">🔒 {challenge.name}</span>
+            <span class="muted small">{challenge.locked_message ?? t("board.locked")}</span>
+          </div>
+        {:else}
         <button class="challenge-card" class:solved={challenge.solved} onclick={() => onOpen(challenge.id)}>
           <span class="challenge-name">{challenge.name}</span>
           <span class="challenge-meta">
@@ -33,6 +39,7 @@
             {challenge.solved ? `✓ ${t("board.solved")}` : t("board.solves", { n: challenge.solves })}
           </span>
         </button>
+        {/if}
       {/each}
     </section>
   {/each}

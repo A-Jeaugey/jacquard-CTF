@@ -544,3 +544,119 @@ pre.connection {
     transition: none;
   }
 }
+
+/* ---------------------------------------------------------------- progression */
+.challenge-card.locked {
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius);
+  cursor: default;
+  border-style: dashed;
+  border-left-style: solid;
+  opacity: 0.75;
+  background: transparent;
+}
+.challenge-card.locked:hover {
+  transform: none;
+  border-color: var(--color-border);
+}
+.badge.new {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  border-color: var(--color-accent);
+  font-weight: 700;
+  margin-left: 0.25rem;
+}
+.hints {
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.hint .prose {
+  flex-basis: 100%;
+}
+.hint .prose :where(p) {
+  margin: 0;
+}
+.rewards {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.notification {
+  border-color: var(--color-accent);
+  margin: 0.75rem 0 0;
+}
+.notification :where(p:last-child) {
+  margin-bottom: 0;
+}
+.chapter header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.chapter h2 {
+  margin-top: 0;
+}
+.chapter.fresh {
+  border-color: var(--color-accent);
+}
+.inventory {
+  padding-left: 1.2rem;
+}
+.inventory li {
+  display: flex;
+  flex-direction: column;
+}
+
+.toasts {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  pointer-events: none;
+  z-index: 50;
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 420px;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
+  animation: toast-in 0.2s ease-out;
+}
+.toast.success {
+  border-color: var(--color-ok);
+}
+.toast.highlight {
+  border-color: var(--color-accent);
+}
+@keyframes toast-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

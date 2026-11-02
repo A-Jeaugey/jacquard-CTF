@@ -40,11 +40,19 @@ export interface Me {
   team: { id: number; name: string } | null;
 }
 
+export interface Item {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
 export interface TeamDetail {
   id: number;
   name: string;
   invite_code: string | null;
   max_size: number;
+  penalty: number;
+  items: Item[];
   members: { id: number; username: string }[];
   score: number;
   rank: number | null;
@@ -66,6 +74,16 @@ export interface ChallengeSummary {
   value: number;
   solves: number;
   solved: boolean;
+  locked: boolean;
+  locked_message: string | null;
+}
+
+export interface HintView {
+  id: string;
+  cost: number;
+  available: boolean;
+  unlocked: boolean;
+  text_html: string | null;
 }
 
 export interface ChallengeDetail extends ChallengeSummary {
@@ -73,6 +91,34 @@ export interface ChallengeDetail extends ChallengeSummary {
   description_html: string;
   connection: string | null;
   files: { id: string; name: string; size: number }[];
+  hints: HintView[];
+}
+
+export interface UnlockSummary {
+  challenges: { id: string; name: string }[];
+  story: { id: string; title: string }[];
+}
+
+export type SubmitResult =
+  | { status: "incorrect" | "already_solved" }
+  | {
+      status: "correct";
+      first_blood: number | null;
+      notifications: string[];
+      items: Item[];
+      unlocked: UnlockSummary;
+    };
+
+export interface StoryEntry {
+  id: string;
+  title: string;
+  body_html: string;
+  public: boolean;
+}
+
+export interface Story {
+  entries: StoryEntry[];
+  locked: number;
 }
 
 export interface ChallengeList {
@@ -80,7 +126,6 @@ export interface ChallengeList {
   challenges: ChallengeSummary[];
 }
 
-export type SubmitStatus = "correct" | "incorrect" | "already_solved";
 
 export interface ScoreboardEntry {
   rank: number;

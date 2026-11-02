@@ -224,3 +224,13 @@ def test_live_stream_end_to_end(server: str) -> None:
 
     alice.close()
     bob.close()
+
+
+def test_announcements_are_published(admin) -> None:  # type: ignore[no-untyped-def]
+    with psycopg.connect(_psycopg_dsn(), autocommit=True) as conn:
+        conn.execute(f"LISTEN {CHANNEL}")
+        admin.post("/api/admin/announcements", {"title": "Pause pizza", "body": "🍕"})
+        events = [json.loads(n.payload) for n in conn.notifies(timeout=0.5, stop_after=5)]
+    assert events[0]["type"] == "announcement"
+    assert events[0]["data"]["title"] == "Pause pizza"
+    assert events[0]["audience"]["public"] is True

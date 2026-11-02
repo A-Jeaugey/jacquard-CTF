@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+
   import ChallengeModal from "../components/ChallengeModal.svelte";
   import { getLayout } from "../components/layouts";
   import { api, errorMessage } from "../lib/api";
   import { poll } from "../lib/format";
+  import { live } from "../lib/live.svelte";
   import { navigate } from "../lib/router.svelte";
   import { session } from "../lib/session.svelte";
   import { t } from "../lib/strings";
@@ -27,7 +30,15 @@
       navigate("/login", true);
       return;
     }
-    return poll(load, 30_000);
+    return poll(load, 60_000);
+  });
+
+  // Rechargement immédiat quand une résolution ou un déblocage arrive en temps réel.
+  $effect(() => {
+    void live.ticks.solve;
+    void live.ticks.unlock;
+    void live.ticks.team;
+    if (untrack(() => list)) void load();
   });
 
   const Layout = $derived(getLayout(session.event?.board.layout));

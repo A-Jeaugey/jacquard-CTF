@@ -3,16 +3,21 @@
   import { formatSize } from "../lib/format";
   import { session } from "../lib/session.svelte";
   import { t } from "../lib/strings";
-  import type { ChallengeDetail, SubmitStatus } from "../lib/types";
+  import type { ChallengeDetail, HintView, SubmitResult } from "../lib/types";
 
   let { id, onClose, onSolved }: { id: string; onClose: () => void; onSolved: () => void } =
     $props();
+
+  type Feedback = { kind: "ok" | "error" | "info"; text: string };
 
   let challenge = $state<ChallengeDetail | null>(null);
   let loadError = $state<string | null>(null);
   let flag = $state("");
   let submitting = $state(false);
-  let feedback = $state<{ kind: "ok" | "error" | "info"; text: string } | null>(null);
+  let feedback = $state<Feedback | null>(null);
+  let rewards = $state<string[]>([]);
+  let notifications = $state<string[]>([]);
+  let hintError = $state<string | null>(null);
   let shake = $state(false);
   let dialog: HTMLDialogElement;
 
@@ -21,6 +26,7 @@
     flag.trim().length > 0 && flagPrefix !== "" && !flag.trim().toLowerCase().startsWith(flagPrefix.toLowerCase()),
   );
   const ended = $derived(session.event?.phase === "ended");
+  const isPlayer = $derived(session.me?.user.role !== "admin");
 
   async function load(): Promise<void> {
     try {
@@ -30,31 +36,58 @@
     }
   }
 
+  function describeRewards(result: Extract<SubmitResult, { status: "correct" }>): string[] {
+    const lines: string[] = [];
+    if (result.first_blood === 1) lines.push(`🩸 ${t("challenge.first_blood")}`);
+    else if (result.first_blood) lines.push(t("challenge.first_blood_rank", { n: result.first_blood }));
+    for (const item of result.items) lines.push(`🎁 ${t("challenge.item_obtained", { name: item.name })}`);
+    for (const c of result.unlocked.challenges) lines.push(`🔓 ${t("challenge.unlocked_challenge", { name: c.name })}`);
+    for (const s of result.unlocked.story) lines.push(`📜 ${t("challenge.unlocked_story", { title: s.title })}`);
+    return lines;
+  }
+
   async function submit(event: SubmitEvent): Promise<void> {
     event.preventDefault();
     if (!flag.trim() || submitting) return;
     submitting = true;
     feedback = null;
     try {
-      const { status } = await api.post<{ status: SubmitStatus }>(
-        `/api/challenges/${encodeURIComponent(id)}/submit`,
-        { flag: flag.trim() },
-      );
-      if (status === "correct" || status === "already_solved") {
-        feedback = { kind: status === "correct" ? "ok" : "info", text: t(`challenge.${status}`) };
-        flag = "";
-        if (challenge) challenge.solved = true;
-        onSolved();
-      } else {
+      const result = await api.post<SubmitResult>(`/api/challenges/${encodeURIComponent(id)}/submit`, {
+        flag: flag.trim(),
+      });
+      if (result.status === "incorrect") {
         feedback = { kind: "error", text: t("challenge.incorrect") };
         shake = true;
         setTimeout(() => (shake = false), 400);
+        return;
       }
+      feedback = { kind: result.status === "correct" ? "ok" : "info", text: t(`challenge.${result.status}`) };
+      if (result.status === "correct") {
+        rewards = describeRewards(result);
+        notifications = result.notifications;
+      }
+      flag = "";
+      if (challenge) challenge.solved = true;
+      onSolved();
     } catch (error) {
       const retry = error instanceof ApiError ? error.extra.retry_after : undefined;
       feedback = { kind: "error", text: errorMessage(error) + (retry ? ` (${retry} s)` : "") };
     } finally {
       submitting = false;
+    }
+  }
+
+  async function reveal(hint: HintView): Promise<void> {
+    if (hint.cost > 0 && !confirm(t("challenge.hint.confirm", { n: hint.cost }))) return;
+    hintError = null;
+    try {
+      const revealed = await api.post<{ text_html: string }>(
+        `/api/challenges/${encodeURIComponent(id)}/hints/${encodeURIComponent(hint.id)}/unlock`,
+      );
+      hint.unlocked = true;
+      hint.text_html = revealed.text_html;
+    } catch (error) {
+      hintError = errorMessage(error);
     }
   }
 
@@ -110,8 +143,45 @@
         </ul>
       {/if}
 
+      {#if challenge.hints.length}
+        <h3>{t("challenge.hints")}</h3>
+        <ol class="hints">
+          {#each challenge.hints as hint, index (hint.id)}
+            <li class="hint">
+              {#if hint.text_html !== null}
+                <div class="prose">{@html hint.text_html}</div>
+              {:else}
+                <span>{t("challenge.hint", { n: index + 1 })}</span>
+                <span class="muted small">
+                  {hint.cost > 0 ? t("challenge.hint.cost", { n: hint.cost }) : t("challenge.hint.free")}
+                </span>
+                {#if !hint.available}
+                  <span class="muted small">· {t("challenge.hint.unavailable")}</span>
+                {:else if isPlayer && !ended}
+                  <button class="small secondary" onclick={() => reveal(hint)}>{t("challenge.hint.reveal")}</button>
+                {/if}
+              {/if}
+            </li>
+          {/each}
+        </ol>
+        {#if hintError}<p class="error small">{hintError}</p>{/if}
+      {/if}
+
+      {#if feedback}
+        <p class={`feedback ${feedback.kind}`} role="status">{feedback.text}</p>
+      {/if}
+      {#if rewards.length}
+        <ul class="rewards">
+          {#each rewards as line (line)}<li>{line}</li>{/each}
+        </ul>
+      {/if}
+      {#each notifications as html, index (index)}
+        <!-- Message de l'auteur du défi, assaini côté serveur. -->
+        <div class="card prose notification">{@html html}</div>
+      {/each}
+
       {#if challenge.solved}
-        <p class="feedback ok">✓ {t("challenge.solved_banner")}</p>
+        {#if !feedback}<p class="feedback ok">✓ {t("challenge.solved_banner")}</p>{/if}
       {:else if ended}
         <p class="feedback info">{t("challenge.ended")}</p>
       {:else}
@@ -131,10 +201,6 @@
         {#if formatWarning && session.event?.flag_format}
           <p class="muted small">{t("challenge.format_hint", { format: session.event.flag_format })}</p>
         {/if}
-      {/if}
-
-      {#if feedback}
-        <p class={`feedback ${feedback.kind}`} role="status">{feedback.text}</p>
       {/if}
     {/if}
   </div>

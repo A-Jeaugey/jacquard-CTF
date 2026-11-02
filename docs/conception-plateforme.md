@@ -1,7 +1,8 @@
 # Conception de la plateforme CTF
 
 > Nom : **Jacquard**. Licence : MIT.
-> Statut : étapes M0 et M1 implémentées (voir le README).
+> Statut : étapes M0, M1 et M2 implémentées (voir le README).
+> Ce document décrit la cible. Le format exact de ce qui est déjà implémenté est dans [format-pack.md](format-pack.md).
 
 ## 1. Objectif
 
@@ -126,7 +127,7 @@ flags:
   - { type: static, value: "FLAG{exemple}" }
   # autres types : regex, per_team (§5.3), external (validation déléguée à un service)
 
-parts: []                        # défi en plusieurs flags avec points partiels (optionnel)
+parts: []                        # (prévu) défi en plusieurs flags avec points partiels
 
 hints:
   - id: indice-1
@@ -143,13 +144,15 @@ files:
 connection: "http://{challenge_host}:8001"   # affiché aux joueurs
 
 unlock: { solved: intro }        # règle de déblocage (§4), toujours vrai si absent
-when_locked: teaser              # hidden | teaser (titre visible, contenu masqué)
+when_locked: teaser              # hidden (défaut) | teaser (titre visible, contenu masqué)
+locked_message: "Résous l'intro pour débloquer ce défi."   # affiché en mode teaser
 
 on_solve:
   - { grant_item: fragment-a }
-  - { reveal: chapitre-2 }
   - { notify: "Message affiché à l'équipe" }
 ```
+
+Un chapitre d'histoire se débloque par sa propre règle (par exemple `{ solved: exemple-robots }`), ce qui évite une action `reveal` redondante.
 
 ### 3.4 Chapitres d'histoire (`story/*.md`)
 
@@ -163,6 +166,8 @@ unlock: { solved_count: { gte: 3 } }
 
 Contenu en Markdown...
 ```
+
+Un chapitre `public: true` (prologue) est visible par tous, sans compte et avant le début.
 
 Le nom de la vue (« Journal », « Messages », « Transmissions »...) est un libellé du thème.
 
@@ -199,7 +204,8 @@ Un défi résolu peut accorder des objets (`grant_item`) : clés, fragments, bad
 
 ### 4.4 Garanties
 
-- Un défi verrouillé en mode `hidden` n'apparaît dans **aucune** réponse de l'API.
+- Un défi verrouillé en mode `hidden` n'apparaît dans **aucune** réponse de l'API, et y accéder directement renvoie exactement la même erreur qu'un défi inexistant.
+- Les déblocages sont **définitifs** : une fois débloqué pour une équipe, un défi le reste, même si la règle redevient fausse (score qui baisse après l'achat d'un indice, condition `before` dépassée...). Une règle `not: { time: { after: ... } }` signifie donc « déblocable jusqu'à cette heure ».
 - En mode `teaser`, seuls l'identifiant, le titre et la catégorie sont envoyés ; jamais la description, les fichiers ni les indices.
 - Les fichiers d'un défi verrouillé renvoient une erreur 404, et non 403, pour ne pas confirmer leur existence.
 - Le validateur de pack détecte les dépendances circulaires et les défis impossibles à débloquer.

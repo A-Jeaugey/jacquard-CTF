@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+
   import { api, errorMessage } from "../lib/api";
   import { formatTime, poll } from "../lib/format";
+  import { live } from "../lib/live.svelte";
   import { session } from "../lib/session.svelte";
   import { t } from "../lib/strings";
   import type { Scoreboard } from "../lib/types";
@@ -8,16 +11,21 @@
   let board = $state<Scoreboard | null>(null);
   let error = $state<string | null>(null);
 
-  $effect(() =>
-    poll(async () => {
-      try {
-        board = await api.get<Scoreboard>("/api/scoreboard");
-        error = null;
-      } catch (e) {
-        error = errorMessage(e);
-      }
-    }, 30_000),
-  );
+  async function load(): Promise<void> {
+    try {
+      board = await api.get<Scoreboard>("/api/scoreboard");
+      error = null;
+    } catch (e) {
+      error = errorMessage(e);
+    }
+  }
+
+  $effect(() => poll(load, 60_000));
+  $effect(() => {
+    void live.ticks.solve;
+    void live.ticks.team;
+    if (untrack(() => board)) void load();
+  });
 
   const myTeam = $derived(session.me?.team?.id ?? null);
 </script>

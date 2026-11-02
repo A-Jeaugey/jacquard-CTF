@@ -5,6 +5,7 @@ from sqlalchemy import select
 from jacquard.api.deps import Admin, DbSession, Event, Now, api_error
 from jacquard.markdown import render_markdown
 from jacquard.models import Announcement, Challenge, Submission, Team, User
+from jacquard.realtime import publish
 from jacquard.services import compute_snapshot
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -103,6 +104,7 @@ def create_announcement(
     )
     db.add(announcement)
     db.flush()
+    publish(db, "announcement", {"id": announcement.id, "title": announcement.title}, public=True)
     return {"id": announcement.id}
 
 

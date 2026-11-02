@@ -1,6 +1,7 @@
 <script lang="ts">
   import { api, errorMessage } from "../lib/api";
   import { formatTime } from "../lib/format";
+  import { live } from "../lib/live.svelte";
   import { navigate } from "../lib/router.svelte";
   import { refreshMe, session } from "../lib/session.svelte";
   import { t } from "../lib/strings";
@@ -48,6 +49,7 @@
   }
 
   $effect(() => {
+    void live.ticks.team;
     if (!session.me) navigate("/login", true);
     else void load();
   });
@@ -73,6 +75,24 @@
       </p>
     {:else if !teamsMode}
       <p class="muted">{t("team.solo")}</p>
+    {/if}
+
+    {#if team.penalty > 0}
+      <p class="muted small">{t("team.penalty", { n: team.penalty })}</p>
+    {/if}
+
+    <h2>{t("team.items")}</h2>
+    {#if team.items.length}
+      <ul class="inventory">
+        {#each team.items as item (item.id)}
+          <li>
+            <strong>{item.name}</strong>
+            {#if item.description}<span class="muted small">{item.description}</span>{/if}
+          </li>
+        {/each}
+      </ul>
+    {:else}
+      <p class="muted">{t("team.no_items")}</p>
     {/if}
 
     <h2>{t("team.members")} ({team.members.length}/{team.max_size})</h2>

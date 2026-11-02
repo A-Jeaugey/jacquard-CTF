@@ -1,17 +1,24 @@
 <script lang="ts">
   import { api } from "../lib/api";
   import { formatDateTime, poll } from "../lib/format";
+  import { live } from "../lib/live.svelte";
+  import { story } from "../lib/story.svelte";
   import { session } from "../lib/session.svelte";
   import { t } from "../lib/strings";
   import type { Announcement } from "../lib/types";
 
   let announcements = $state<Announcement[]>([]);
 
-  $effect(() =>
-    poll(async () => {
-      announcements = await api.get<Announcement[]>("/api/announcements").catch(() => announcements);
-    }, 60_000),
-  );
+  async function load(): Promise<void> {
+    announcements = await api.get<Announcement[]>("/api/announcements").catch(() => announcements);
+  }
+
+  $effect(() => poll(load, 120_000));
+  $effect(() => {
+    if (live.ticks.announcement > 0) void load();
+  });
+
+  const prologue = $derived(story.data?.entries.filter((e) => e.public) ?? []);
 
   const event = $derived(session.event);
 </script>
@@ -37,6 +44,14 @@
     </div>
   </section>
 {/if}
+
+{#each prologue as chapter (chapter.id)}
+  <section class="card chapter">
+    <h2>{chapter.title}</h2>
+    <!-- HTML assaini côté serveur. -->
+    <div class="prose">{@html chapter.body_html}</div>
+  </section>
+{/each}
 
 <section>
   <h2>{t("home.announcements")}</h2>

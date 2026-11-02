@@ -1,5 +1,8 @@
 <script lang="ts">
   import Nav from "./components/Nav.svelte";
+  import Toasts from "./components/Toasts.svelte";
+  import { connectLive } from "./lib/live.svelte";
+  import { refreshStory } from "./lib/story.svelte";
   import { interceptLinks, route } from "./lib/router.svelte";
   import { bootstrap, session } from "./lib/session.svelte";
   import { t } from "./lib/strings";
@@ -10,6 +13,7 @@
   import NotFound from "./pages/NotFound.svelte";
   import Register from "./pages/Register.svelte";
   import Scoreboard from "./pages/Scoreboard.svelte";
+  import Story from "./pages/Story.svelte";
   import Team from "./pages/Team.svelte";
 
   const pages = {
@@ -19,12 +23,22 @@
     "/team": Team,
     "/challenges": Board,
     "/scoreboard": Scoreboard,
+    "/story": Story,
     "/admin": Admin,
   } as const;
 
   const Page = $derived(pages[route.path as keyof typeof pages] ?? NotFound);
 
   void bootstrap();
+
+  // Le flux temps réel et le journal dépendent de l'utilisateur et de son équipe.
+  const identity = $derived(`${session.me?.user.id ?? "-"}:${session.me?.team?.id ?? "-"}`);
+  $effect(() => {
+    if (!session.ready || !session.configured) return;
+    void identity;
+    connectLive();
+    void refreshStory();
+  });
 </script>
 
 <svelte:document onclick={interceptLinks} />
@@ -40,4 +54,5 @@
   <main class="container">
     <Page />
   </main>
+  <Toasts />
 {/if}

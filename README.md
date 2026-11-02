@@ -5,7 +5,7 @@ Plateforme CTF réutilisable de l'association de cybersécurité d'EPITA Lyon (e
 La plateforme est un moteur générique : chaque événement est décrit par un **pack** (configuration, défis, scénario, thème) stocké dans un repo privé séparé. Aucun contenu d'événement n'est versionné ici, à part le pack de démonstration.
 
 - Conception : [docs/conception-plateforme.md](docs/conception-plateforme.md)
-- Format des packs : voir la section 3 de la conception et [examples/demo-pack](examples/demo-pack)
+- Format des packs : [docs/format-pack.md](docs/format-pack.md) et [examples/demo-pack](examples/demo-pack)
 
 ## Organisation
 
@@ -28,7 +28,7 @@ scripts/     Utilitaires de développement
 |---|---|
 | M0 Fondations | ✅ |
 | M1 Cœur (comptes, équipes, défis, flags, score, classement, admin) | ✅ |
-| M2 Mécaniques (règles de déblocage, inventaire, indices, histoire, temps réel) | À faire |
+| M2 Mécaniques (règles de déblocage, inventaire, indices, histoire, temps réel) | ✅ |
 | M3 Personnalisation (thèmes, layouts `image-map`, grand écran) | À faire |
 | M4 Robustesse (flags par équipe, anti-triche, export CTFd, test de charge) | À faire |
 
@@ -78,6 +78,10 @@ docker compose run --rm api jacquard admin create <pseudo>
 ```
 
 Le pack est monté en lecture seule depuis `JACQUARD_PACK_DIR`. Après une modification du pack, relancer `jacquard pack sync` : l'import est idempotent et ne supprime jamais de résolution.
+
+## Licence
+
+[MIT](LICENSE)
 
 ## Commandes utiles
 
