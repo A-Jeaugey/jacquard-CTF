@@ -216,3 +216,26 @@ export type FeedItem =
   | { kind: "announcement"; at: string; title: string };
 
 export type ZoneState = "locked" | "available" | "in-progress" | "completed";
+
+export interface ChallengeStats {
+  id: string;
+  name: string;
+  category: string;
+  solves: number;
+  attempts: number;
+  wrong: number;
+  hints: number;
+  first_solve_minutes: number | null;
+  median_solve_minutes: number | null;
+  top_wrong: { value: string; count: number }[];
+}
+
+export type Signal =
+  | { kind: "shared_ip"; ip: string; teams: string[] }
+  | { kind: "burst"; team: string; at_minutes: number }
+  | { kind: "same_wrong_answer"; challenge: string; value: string; teams: string[] };
+
+export interface AdminStats {
+  challenges: ChallengeStats[];
+  signals: Signal[];
+}

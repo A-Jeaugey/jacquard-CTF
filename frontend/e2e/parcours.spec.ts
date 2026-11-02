@@ -58,6 +58,11 @@ test("l'admin voit les soumissions", async ({ page }) => {
   await page.getByRole("button", { name: "Se connecter" }).click();
   await page.getByRole("link", { name: "Admin" }).click();
   await expect(page.locator("table tbody tr").first()).toContainText("demo{jules_serait_fier}");
+
+  await page.getByRole("tab", { name: "Statistiques" }).click();
+  const cesar = page.locator(".stats-table tbody tr", { hasText: "Ave César" });
+  await expect(cesar).toContainText("DEMO{faux}");
+  await expect(page.getByRole("heading", { name: "Signaux à vérifier" })).toBeVisible();
 });
 
 test("les routes protégées redirigent vers la connexion", async ({ page }) => {

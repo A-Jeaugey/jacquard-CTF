@@ -1,5 +1,6 @@
 """Interface en ligne de commande : `jacquard --help`."""
 
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
@@ -13,6 +14,7 @@ from jacquard.config import get_settings
 from jacquard.db import get_sessionmaker
 from jacquard.models import User
 from jacquard.packs.loader import Pack, PackError, load_pack
+from jacquard.packs.rehearsal import shift_schedule
 from jacquard.packs.sync import sync_pack
 from jacquard.security import hash_password
 
@@ -76,9 +78,33 @@ def pack_sync(
     dry_run: Annotated[
         bool, typer.Option("--dry-run", help="Affiche les changements sans les appliquer")
     ] = False,
+    start_now: Annotated[
+        bool,
+        typer.Option("--start-now", help="Répétition : l'événement commence maintenant"),
+    ] = False,
+    start: Annotated[
+        datetime | None,
+        typer.Option(
+            "--start",
+            help="Répétition : date de début (heure du fuseau de l'événement)",
+            formats=["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M"],
+        ),
+    ] = None,
 ) -> None:
     """Importe ou met à jour un pack dans la base (idempotent)."""
     pack = _load_or_exit(path)
+    if start_now and start:
+        typer.secho("--start-now et --start sont incompatibles.", fg="red", err=True)
+        raise typer.Exit(1)
+    if start_now or start:
+        begin = utcnow() if start_now else start.replace(tzinfo=pack.event.tz)  # type: ignore[union-attr]
+        pack = shift_schedule(pack, begin)
+        schedule = pack.event.schedule
+        typer.secho(
+            f"Répétition : {schedule.start.astimezone(pack.event.tz):%d/%m %H:%M} → "
+            f"{schedule.end.astimezone(pack.event.tz):%d/%m %H:%M} (fichiers du pack inchangés)",
+            fg="yellow",
+        )
     settings = get_settings()
     with get_sessionmaker()() as session:
         report = sync_pack(

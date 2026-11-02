@@ -4,9 +4,9 @@
   import { navigate } from "../lib/router.svelte";
   import { session } from "../lib/session.svelte";
   import { t } from "../lib/strings";
-  import type { AdminSubmission, AdminTeam, Announcement } from "../lib/types";
+  import type { AdminStats, AdminSubmission, AdminTeam, Announcement } from "../lib/types";
 
-  type Tab = "submissions" | "teams" | "announcements";
+  type Tab = "submissions" | "teams" | "announcements" | "stats";
   let tab = $state<Tab>("submissions");
   let error = $state<string | null>(null);
 
@@ -14,6 +14,7 @@
   let filter = $state<"all" | "correct" | "incorrect">("all");
   let teams = $state<AdminTeam[]>([]);
   let announcements = $state<Announcement[]>([]);
+  let stats = $state<AdminStats | null>(null);
   let title = $state("");
   let body = $state("");
 
@@ -51,6 +52,11 @@
       announcements = await api.get<Announcement[]>("/api/announcements");
     });
 
+  const loadStats = () =>
+    guard(async () => {
+      stats = await api.get<AdminStats>("/api/admin/stats");
+    });
+
   const toggleHidden = (team: AdminTeam) =>
     guard(async () => {
       await api.patch(`/api/admin/teams/${team.id}`, { hidden: !team.hidden });
@@ -81,6 +87,7 @@
     void filter;
     if (tab === "submissions") return poll(loadSubmissions, 10_000);
     if (tab === "teams") return poll(loadTeams, 30_000);
+    if (tab === "stats") return poll(loadStats, 30_000);
     void loadAnnouncements();
   });
 </script>
@@ -88,7 +95,7 @@
 <h1>{t("admin.title")}</h1>
 
 <div class="tabs" role="tablist">
-  {#each ["submissions", "teams", "announcements"] as const as id (id)}
+  {#each ["submissions", "teams", "announcements", "stats"] as const as id (id)}
     <button role="tab" class:active={tab === id} aria-selected={tab === id} onclick={() => (tab = id)}>
       {t(`admin.tab.${id}`)}
     </button>
@@ -148,6 +155,52 @@
       </tbody>
     </table>
   </div>
+{:else if tab === "stats"}
+  {#if stats}
+    <div class="table-wrap">
+      <table class="stats-table">
+        <thead>
+          <tr>
+            <th>{t("admin.stats.challenge")}</th>
+            <th class="num">{t("admin.stats.solves")}</th>
+            <th class="num">{t("admin.stats.wrong")}</th>
+            <th class="num">{t("admin.stats.hints")}</th>
+            <th class="num">{t("admin.stats.first")}</th>
+            <th class="num">{t("admin.stats.median")}</th>
+            <th>{t("admin.stats.top_wrong")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each stats.challenges as c (c.id)}
+            <tr class:muted={c.attempts === 0}>
+              <td>{c.name}<br /><span class="muted small">{c.category}</span></td>
+              <td class="num">{c.solves}</td>
+              <td class="num">{c.wrong}</td>
+              <td class="num">{c.hints}</td>
+              <td class="num">{c.first_solve_minutes ?? "—"}</td>
+              <td class="num">{c.median_solve_minutes ?? "—"}</td>
+              <td class="mono small break">
+                {#each c.top_wrong as w (w.value)}<div>{w.value} <span class="muted">×{w.count}</span></div>{/each}
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+    <h2>{t("admin.signals")}</h2>
+    <p class="muted small">{t("admin.signals.note")}</p>
+    {#each stats.signals as signal, i (i)}
+      <p class="card small">
+        {#if signal.kind === "shared_ip"}{t("admin.signal.shared_ip", { ip: signal.ip, teams: signal.teams.join(", ") })}
+        {:else if signal.kind === "burst"}{t("admin.signal.burst", { team: signal.team, at: signal.at_minutes })}
+        {:else}{t("admin.signal.same_wrong", { challenge: signal.challenge, value: signal.value, teams: signal.teams.join(", ") })}{/if}
+      </p>
+    {:else}
+      <p class="muted">{t("admin.signals.none")}</p>
+    {/each}
+  {:else}
+    <p class="muted">{t("loading")}</p>
+  {/if}
 {:else}
   <form class="card form" onsubmit={publish}>
     <label>

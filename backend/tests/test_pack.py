@@ -206,3 +206,53 @@ def test_challenge_host_placeholder(make_pack, db, sync) -> None:  # type: ignor
     write_challenge(pack, {**BASE, "connection": "nc {challenge_host} 4000"})
     sync(pack)
     assert db.get(Challenge, "nouveau").connection == "nc defis.example.org 4000"
+
+
+def test_rehearsal_shifts_schedule() -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from jacquard.packs.rehearsal import shift_schedule
+
+    pack = load_pack(DEMO_PACK)
+    original = pack.event.schedule
+    start = datetime(2026, 11, 3, 13, 0, tzinfo=UTC)
+    shifted = shift_schedule(pack, start)
+    assert shifted.event.schedule.start == start
+    assert shifted.event.schedule.end - start == original.end - original.start
+    assert shifted.digest != pack.digest
+    assert pack.event.schedule == original  # l'original n'est pas modifié
+    assert len(shifted.digest) == 64
+    assert shifted.event.schedule.end > start + timedelta(hours=1)
+
+
+def test_cli_start_now(make_pack, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from typer.testing import CliRunner
+
+    from jacquard.cli import app
+    from jacquard.db import get_sessionmaker
+    from jacquard.services import load_event
+
+    pack = make_pack(
+        schedule={
+            "start": "2030-01-01T10:00:00",
+            "end": "2030-01-01T16:00:00",
+            "freeze": "2030-01-01T15:30:00",
+        }
+    )
+    result = CliRunner().invoke(app, ["pack", "sync", str(pack), "--start-now"])
+    assert result.exit_code == 0, result.output
+    assert "Répétition" in result.output
+    with get_sessionmaker()() as db:
+        event = load_event(db)
+    assert event is not None
+    from jacquard.clock import utcnow
+
+    assert abs((event.schedule.start - utcnow()).total_seconds()) < 60
+    assert event.schedule.end - event.schedule.start == timedelta_hours(6)
+    assert event.schedule.end - event.schedule.freeze == timedelta_hours(0.5)
+
+
+def timedelta_hours(hours: float):  # type: ignore[no-untyped-def]
+    from datetime import timedelta
+
+    return timedelta(hours=hours)
