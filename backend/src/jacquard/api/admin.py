@@ -138,7 +138,6 @@ def stats(_: Admin, db: DbSession, event: Event) -> dict[str, object]:
 
     Les signaux ne sont que des pistes : sans flags par équipe, aucune preuve de partage."""
 
-
     hidden = set(db.scalars(select(Team.id).where(Team.hidden)))
     names = dict(db.execute(select(Team.id, Team.name)).all())
     submissions = [

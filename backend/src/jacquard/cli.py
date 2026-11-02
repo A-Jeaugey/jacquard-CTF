@@ -13,6 +13,7 @@ from jacquard.clock import utcnow
 from jacquard.config import get_settings
 from jacquard.db import get_sessionmaker
 from jacquard.models import User
+from jacquard.packs.export_ctfd import export_ctfd
 from jacquard.packs.loader import Pack, PackError, load_pack
 from jacquard.packs.rehearsal import shift_schedule
 from jacquard.packs.sync import sync_pack
@@ -130,6 +131,19 @@ def pack_sync(
     typer.echo(f"{prefix}Inchangés : {len(report.unchanged)}")
     if not dry_run:
         typer.secho("✓ Synchronisation terminée.", fg="green")
+
+
+@pack_app.command("export-ctfd")
+def pack_export_ctfd(
+    path: PackDir,
+    out: Annotated[Path, typer.Argument(file_okay=False, help="Dossier de sortie")],
+) -> None:
+    """Exporte le pack au format ctfcli (plan de secours CTFd), avec ses limites."""
+    pack = _load_or_exit(path)
+    issues = export_ctfd(pack, out)
+    typer.secho(f"✓ {len(pack.challenges)} défi(s) exportés dans {out}", fg="green")
+    for issue in issues:
+        typer.secho(f"  ! {issue}", fg="yellow")
 
 
 @admin_app.command("create")

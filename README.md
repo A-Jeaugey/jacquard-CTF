@@ -88,6 +88,8 @@ Le pack est monté en lecture seule depuis `JACQUARD_PACK_DIR`. Après une modif
 ```bash
 jacquard pack validate <dossier>   # vérifie un pack sans rien modifier
 jacquard pack sync <dossier>       # importe ou met à jour (--dry-run pour simuler)
+jacquard pack sync <dossier> --start-now   # répétition : l'événement commence maintenant
+jacquard pack export-ctfd <dossier> <sortie>   # plan de secours CTFd (format ctfcli)
 jacquard admin create <pseudo>     # crée ou promeut un compte admin
 jacquard db upgrade                # applique les migrations
 ```

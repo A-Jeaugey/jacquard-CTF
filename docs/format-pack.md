@@ -238,6 +238,19 @@ Avertissements :
 - chapitre impossible à débloquer ;
 - `locked_message` sur un défi `hidden` (il ne sera jamais affiché).
 
+Commandes associées :
+
+```bash
+jacquard pack sync <dossier> --start-now          # répétition : l'événement commence maintenant
+jacquard pack sync <dossier> --start 2027-03-06T14:00
+jacquard pack export-ctfd <dossier> <sortie>      # plan de secours CTFd (format ctfcli)
+```
+
+Le mode répétition décale l'horaire (début, fin, gel) sans toucher aux fichiers ; les règles
+`time.elapsed_minutes` suivent, mais pas les dates absolues (`time.after`, `time.before`).
+L'export CTFd liste dans son `README.md` tout ce qui ne se transpose pas (objets, histoire,
+règles autres que « résoudre tel défi », bonus de premier sang, thème).
+
 La synchronisation (`jacquard pack sync`) est idempotente et peut être relancée pendant l'événement : un défi retiré est désactivé, jamais supprimé, et les résolutions, achats d'indices et déblocages sont conservés.
 
 ## 8. Conseils d'écriture
