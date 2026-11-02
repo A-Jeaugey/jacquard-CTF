@@ -1,4 +1,4 @@
-# cyber-epita · Jacquard
+# Jacquard
 
 Plateforme CTF réutilisable de l'association de cybersécurité d'EPITA Lyon (en cours de création).
 
@@ -11,7 +11,7 @@ La plateforme est un moteur générique : chaque événement est décrit par un 
 
 | Repo | Visibilité | Rôle |
 |---|---|---|
-| `cyber-epita` | Public | Moteur de la plateforme, outils, documentation |
+| `jacquard-CTF` (ce repo) | Public | Moteur de la plateforme, outils, documentation |
 | Un repo par événement | Privé jusqu'à la fin de l'événement | Défis, flags, solutions, scénario, thème |
 
 ```
