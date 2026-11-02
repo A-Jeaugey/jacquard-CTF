@@ -1,0 +1,10 @@
+id: bienvenue
+name: "Bienvenue"
+category: misc
+difficulty: facile
+authors: ["orga"]
+tags: [debutant]
+scoring: { type: static, value: 10 }
+position: 0
+flags:
+  - { type: static, value: "DEMO{bienvenue_a_bord}" }

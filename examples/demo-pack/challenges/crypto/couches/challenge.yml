@@ -1,0 +1,8 @@
+id: couches
+name: "Mille-feuille"
+category: crypto
+difficulty: moyen
+authors: ["orga"]
+flags:
+  - { type: static, value: "DEMO{trois_couches_suffisent}" }
+position: 10

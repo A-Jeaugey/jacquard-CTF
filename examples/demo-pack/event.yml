@@ -1,0 +1,34 @@
+id: demo
+name: "CTF de démonstration"
+tagline: "Un pack minimal pour tester la plateforme"
+timezone: Europe/Paris
+
+schedule:
+  start: 2026-01-01T00:00:00
+  end: 2030-01-01T00:00:00
+
+participation:
+  mode: teams
+  team_size: { min: 1, max: 4 }
+  registration: open
+
+flag_format: "DEMO{...}"
+difficulties: [facile, moyen, difficile]
+
+categories:
+  - id: misc
+    name: "Divers"
+    color: "#8b5cf6"
+  - id: crypto
+    name: "Cryptographie"
+    color: "#f59e0b"
+  - id: osint
+    name: "OSINT"
+    color: "#10b981"
+
+scoring:
+  default: { type: dynamic, initial: 500, minimum: 100, decay: 10 }
+  first_blood: [30, 20, 10]
+
+submissions:
+  rate_limit: { max: 10, per_seconds: 60 }

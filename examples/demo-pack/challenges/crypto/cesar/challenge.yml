@@ -1,0 +1,9 @@
+id: cesar
+name: "Ave César"
+category: crypto
+difficulty: facile
+authors: ["orga"]
+files: [files/message.txt]
+flags:
+  - { type: static, value: "DEMO{jules_serait_fier}", case_sensitive: false }
+position: 10

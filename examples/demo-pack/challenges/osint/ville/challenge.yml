@@ -1,0 +1,10 @@
+id: ville
+name: "Quelle ville ?"
+category: osint
+difficulty: facile
+authors: ["orga"]
+scoring: { type: static, value: 50 }
+flags:
+  # Plusieurs graphies acceptées.
+  - { type: regex, pattern: 'DEMO\{(lyon|lugdunum)\}', case_sensitive: false }
+position: 10
