@@ -41,7 +41,12 @@
     if (result.first_blood === 1) lines.push(`🩸 ${t("challenge.first_blood")}`);
     else if (result.first_blood) lines.push(t("challenge.first_blood_rank", { n: result.first_blood }));
     for (const item of result.items) lines.push(`🎁 ${t("challenge.item_obtained", { name: item.name })}`);
-    for (const c of result.unlocked.challenges) lines.push(`🔓 ${t("challenge.unlocked_challenge", { name: c.name })}`);
+    const unlocked = result.unlocked.challenges.map((c) => c.name);
+    if (unlocked.length > 2) {
+      lines.push(`🔓 ${t("challenge.unlocked_challenges", { n: unlocked.length, names: unlocked.join(", ") })}`);
+    } else {
+      for (const name of unlocked) lines.push(`🔓 ${t("challenge.unlocked_challenge", { name })}`);
+    }
     for (const s of result.unlocked.story) lines.push(`📜 ${t("challenge.unlocked_story", { title: s.title })}`);
     return lines;
   }

@@ -87,6 +87,7 @@ const defaults = {
   "challenge.first_blood_rank": "Ton équipe est la {n}e à résoudre ce défi : bonus obtenu.",
   "challenge.item_obtained": "Objet obtenu : {name}",
   "challenge.unlocked_challenge": "Nouveau défi débloqué : {name}",
+  "challenge.unlocked_challenges": "{n} nouveaux défis débloqués : {names}",
   "challenge.unlocked_story": "Nouveau chapitre dans le journal : {title}",
 
   "story.title": "Journal",
@@ -98,6 +99,7 @@ const defaults = {
   "live.teammate_solve": "✅ {user} a résolu « {challenge} »",
   "live.teammate_hint": "💡 {user} a révélé un indice sur « {challenge} »",
   "live.unlocked_challenge": "🔓 Nouveau défi : {name}",
+  "live.unlocked_challenges": "🔓 {n} nouveaux défis : {names}",
   "live.unlocked_story": "📜 Nouveau chapitre : {title}",
   "live.announcement": "📢 {title}",
 

@@ -52,8 +52,12 @@ const handlers: Record<string, Handler> = {
   unlock(data) {
     live.ticks.unlock++;
     void refreshStory();
-    for (const challenge of (data.challenges as { name: string }[]) ?? []) {
-      pushToast(t("live.unlocked_challenge", { name: challenge.name }), "highlight");
+    const names = ((data.challenges as { name: string }[]) ?? []).map((c) => c.name);
+    // Au-delà de deux déblocages simultanés, un seul toast plutôt qu'une avalanche.
+    if (names.length > 2) {
+      pushToast(t("live.unlocked_challenges", { n: names.length, names: names.join(", ") }), "highlight");
+    } else {
+      for (const name of names) pushToast(t("live.unlocked_challenge", { name }), "highlight");
     }
     for (const chapter of (data.story as { title: string }[]) ?? []) {
       pushToast(t("live.unlocked_story", { title: chapter.title }), "highlight");
