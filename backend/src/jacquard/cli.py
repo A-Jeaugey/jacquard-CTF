@@ -15,7 +15,7 @@ from jacquard.db import get_sessionmaker
 from jacquard.models import User
 from jacquard.packs.export_ctfd import export_ctfd
 from jacquard.packs.loader import Pack, PackError, load_pack
-from jacquard.packs.rehearsal import shift_schedule
+from jacquard.packs.rehearsal import override_challenge_host, shift_schedule
 from jacquard.packs.sync import sync_pack
 from jacquard.security import hash_password
 
@@ -91,9 +91,23 @@ def pack_sync(
             formats=["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M"],
         ),
     ] = None,
+    challenge_host: Annotated[
+        str | None,
+        typer.Option(
+            "--challenge-host",
+            help="Remplace challenge_host d'event.yml (ex. machine de répétition)",
+        ),
+    ] = None,
 ) -> None:
     """Importe ou met à jour un pack dans la base (idempotent)."""
     pack = _load_or_exit(path)
+    if challenge_host is not None:
+        try:
+            pack = override_challenge_host(pack, challenge_host)
+        except ValueError:
+            typer.secho(f"Nom d'hôte invalide : {challenge_host!r}", fg="red", err=True)
+            raise typer.Exit(1) from None
+        typer.secho(f"Services de défis : {challenge_host} (event.yml inchangé)", fg="yellow")
     if start_now and start:
         typer.secho("--start-now et --start sont incompatibles.", fg="red", err=True)
         raise typer.Exit(1)

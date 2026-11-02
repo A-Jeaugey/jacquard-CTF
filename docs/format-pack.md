@@ -243,11 +243,19 @@ Commandes associées :
 ```bash
 jacquard pack sync <dossier> --start-now          # répétition : l'événement commence maintenant
 jacquard pack sync <dossier> --start 2027-03-06T14:00
+jacquard pack sync <dossier> --challenge-host 192.168.1.20   # autre machine de défis
 jacquard pack export-ctfd <dossier> <sortie>      # plan de secours CTFd (format ctfcli)
 ```
 
 Le mode répétition décale l'horaire (début, fin, gel) sans toucher aux fichiers ; les règles
 `time.elapsed_minutes` suivent, mais pas les dates absolues (`time.after`, `time.before`).
+Une date de début **dans le passé** sert aux sessions courtes : avec `--start` fixé trois
+heures avant l'arrivée des testeurs, tout ce qui se débloque au bout de trois heures est déjà
+ouvert, et il reste trois heures de jeu sur un événement de six.
+
+`--challenge-host` remplace `challenge_host` d'`event.yml` le temps de la synchronisation
+(machine de répétition, machine de secours) ; relancer la synchronisation sans l'option
+revient à l'adresse du fichier.
 L'export CTFd liste dans son `README.md` tout ce qui ne se transpose pas (objets, histoire,
 règles autres que « résoudre tel défi », bonus de premier sang, thème).
 

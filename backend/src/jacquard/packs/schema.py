@@ -26,6 +26,10 @@ Identifier = Annotated[str, Field(pattern=ID_PATTERN)]
 HexColor = Annotated[str, Field(pattern=r"^#[0-9a-fA-F]{6}$")]
 
 
+# Nom d'hôte, adresse IPv4 ou IPv6 (avec port éventuel) des services de défis.
+HOST_PATTERN = r"^[A-Za-z0-9.\-:\[\]]{1,253}$"
+
+
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -276,9 +280,7 @@ class EventConfig(StrictModel):
     board: Board = Board()
     screens: list[Screen] = Field(default_factory=list)
     # Adresse des services de défis, substituée à « {challenge_host} » dans `connection`.
-    challenge_host: str | None = Field(
-        default=None, max_length=253, pattern=r"^[A-Za-z0-9.\-:\[\]]+$"
-    )
+    challenge_host: str | None = Field(default=None, max_length=253, pattern=HOST_PATTERN)
     items: list[ItemDefinition] = Field(default_factory=list)
     hints: HintPolicy = HintPolicy()
 

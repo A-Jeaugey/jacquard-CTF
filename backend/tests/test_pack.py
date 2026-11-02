@@ -252,6 +252,33 @@ def test_cli_start_now(make_pack, tmp_path) -> None:  # type: ignore[no-untyped-
     assert event.schedule.end - event.schedule.freeze == timedelta_hours(0.5)
 
 
+def test_cli_challenge_host_override(make_pack) -> None:  # type: ignore[no-untyped-def]
+    from typer.testing import CliRunner
+
+    from jacquard.cli import app
+    from jacquard.db import get_sessionmaker
+    from jacquard.models import Challenge
+
+    pack = make_pack(challenge_host="defis.example.org")
+    write_challenge(pack, {**BASE, "connection": "nc {challenge_host} 4000"})
+    runner = CliRunner()
+
+    result = runner.invoke(app, ["pack", "sync", str(pack), "--challenge-host", "192.168.1.20"])
+    assert result.exit_code == 0, result.output
+    with get_sessionmaker()() as db:
+        assert db.get(Challenge, "nouveau").connection == "nc 192.168.1.20 4000"  # type: ignore[union-attr]
+
+    # Relancer sans l'option revient à l'adresse d'event.yml.
+    result = runner.invoke(app, ["pack", "sync", str(pack)])
+    assert result.exit_code == 0, result.output
+    with get_sessionmaker()() as db:
+        assert db.get(Challenge, "nouveau").connection == "nc defis.example.org 4000"  # type: ignore[union-attr]
+
+    result = runner.invoke(app, ["pack", "sync", str(pack), "--challenge-host", "evil; rm -rf /"])
+    assert result.exit_code == 1
+    assert "invalide" in result.output
+
+
 def timedelta_hours(hours: float):  # type: ignore[no-untyped-def]
     from datetime import timedelta
 
