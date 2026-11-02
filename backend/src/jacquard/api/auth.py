@@ -17,6 +17,7 @@ from jacquard.api.deps import (
     OptionalUser,
     api_error,
 )
+from jacquard.api.routing import CommittingRoute
 from jacquard.api.views import me_view
 from jacquard.config import Settings
 from jacquard.models import AuthSession, LoginFailure, Team, User
@@ -29,7 +30,7 @@ from jacquard.security import (
     verify_password,
 )
 
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter(prefix="/api/auth", tags=["auth"], route_class=CommittingRoute)
 
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_.-]{3,32}$")
 
@@ -103,11 +104,15 @@ def register(
     if email and ("@" not in email or any(ch.isspace() for ch in email)):
         api_error(422, "invalid_email", "Adresse e-mail invalide.")
 
+    # Le hachage est volontairement lent : on rend d'abord la connexion à la base au pool,
+    # pour qu'une vague d'inscriptions ne bloque pas les autres requêtes.
+    db.commit()
+    password_hash = hash_password(body.password)
     user = User(
         username=username,
         username_key=username_key(username),
         email=email or None,
-        password_hash=hash_password(body.password),
+        password_hash=password_hash,
     )
     if event.participation.mode == "solo":
         user.team = Team(
@@ -148,7 +153,9 @@ def login(
         api_error(429, "too_many_attempts", "Trop de tentatives, réessaie dans quelques minutes.")
 
     user = db.scalar(select(User).where(User.username_key == key))
-    if not verify_password(user.password_hash if user else None, body.password) or user is None:
+    stored_hash = user.password_hash if user else None
+    db.commit()  # connexion rendue au pool pendant la vérification (lente) du mot de passe
+    if not verify_password(stored_hash, body.password) or user is None:
         db.add(LoginFailure(username_key=key[:32], ip=ip, created_at=now))
         db.commit()
         api_error(401, "invalid_credentials", "Pseudo ou mot de passe incorrect.")

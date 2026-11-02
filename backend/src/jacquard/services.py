@@ -189,11 +189,16 @@ def team_progress(
         if check("story", entry.id, entry.unlock):
             progress.story.add(entry.id)
 
-    rows = [
-        {"team_id": team_id, "kind": kind, "target_id": target, "created_at": now}
-        for kind, targets in progress.new.items()
-        for target in targets
-    ]
+    # Ordre fixe : deux requêtes d'une même équipe qui insèrent les mêmes déblocages dans un
+    # ordre différent peuvent s'interbloquer (constaté au test de charge).
+    rows = sorted(
+        (
+            {"team_id": team_id, "kind": kind, "target_id": target, "created_at": now}
+            for kind, targets in progress.new.items()
+            for target in targets
+        ),
+        key=lambda row: (row["kind"], row["target_id"]),
+    )
     if rows:
         session.execute(insert(Unlock).values(rows).on_conflict_do_nothing())
     return progress

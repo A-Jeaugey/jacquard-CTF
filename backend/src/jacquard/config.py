@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://postgres@localhost:5432/jacquard"
     secret_key: SecretStr = Field(min_length=32)
     data_dir: Path = Path("./data")
+    # Pool de connexions par processus serveur. Avec 2 workers : jusqu'à 2 × (20 + 10)
+    # connexions, sous la limite par défaut de PostgreSQL (100).
+    db_pool_size: int = 20
+    db_max_overflow: int = 10
+    db_pool_timeout: int = 10
 
     cookie_secure: bool = True
     session_ttl_hours: int = 72

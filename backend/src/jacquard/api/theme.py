@@ -7,10 +7,11 @@ from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 
 from jacquard.api.deps import AppSettings, DbSession, Event, Now, api_error
+from jacquard.api.routing import CommittingRoute
 from jacquard.models import Announcement, Challenge, EventRow, Solve, Team, ThemeAsset
 from jacquard.services import is_frozen, public_challenge_name
 
-router = APIRouter(prefix="/api", tags=["theme"])
+router = APIRouter(prefix="/api", tags=["theme"], route_class=CommittingRoute)
 
 ASSET_PREFIX = "/api/theme/assets/"
 

@@ -8,13 +8,14 @@ from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
 from jacquard.api.deps import SESSION_COOKIE
+from jacquard.api.routing import CommittingRoute
 from jacquard.clock import utcnow
 from jacquard.db import get_sessionmaker
 from jacquard.models import AuthSession, User
 from jacquard.realtime import broker
 from jacquard.security import token_digest
 
-router = APIRouter(prefix="/api", tags=["live"])
+router = APIRouter(prefix="/api", tags=["live"], route_class=CommittingRoute)
 
 KEEPALIVE_SECONDS = 15
 

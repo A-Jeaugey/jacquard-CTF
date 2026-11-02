@@ -30,7 +30,8 @@ scripts/     Utilitaires de développement
 | M1 Cœur (comptes, équipes, défis, flags, score, classement, admin) | ✅ |
 | M2 Mécaniques (règles de déblocage, inventaire, indices, histoire, temps réel) | ✅ |
 | M3 Personnalisation (thèmes, layouts `image-map` et `list`, grand écran) | ✅ |
-| M4 Robustesse (flags par équipe, anti-triche, export CTFd, test de charge) | À faire |
+| M4 Robustesse : statistiques et signaux anti-triche, export CTFd, test de charge ([résultats](docs/test-de-charge.md)), mode répétition | ✅ |
+| Flags par équipe | Non implémenté (inutile pour Traboules) |
 
 ## Développement
 

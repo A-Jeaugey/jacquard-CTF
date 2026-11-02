@@ -2,10 +2,11 @@ from fastapi import APIRouter
 from sqlalchemy import select
 
 from jacquard.api.deps import DbSession, Event, Now, OptionalUser
+from jacquard.api.routing import CommittingRoute
 from jacquard.models import StoryEntry
 from jacquard.services import Phase, phase, team_progress
 
-router = APIRouter(prefix="/api", tags=["story"])
+router = APIRouter(prefix="/api", tags=["story"], route_class=CommittingRoute)
 
 
 @router.get("/story")

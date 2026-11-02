@@ -33,6 +33,10 @@ AppSettings = Annotated[Settings, Depends(get_settings)]
 
 def get_event(db: DbSession) -> EventConfig:
     event = load_event(db)
+    # Les dépendances rendent leur connexion tout de suite : sinon elle reste bloquée le
+    # temps que la requête obtienne un fil d'exécution, ce qui épuise le pool en cas de
+    # vague de requêtes (constaté au test de charge).
+    db.commit()
     if event is None:
         api_error(503, "event_not_configured", "Aucun événement n'a encore été importé.")
     return event
@@ -49,9 +53,9 @@ def get_optional_user(
     if not jq_session:
         return None
     auth = db.get(AuthSession, token_digest(jq_session))
-    if auth is None or auth.expires_at <= now:
-        return None
-    return db.get(User, auth.user_id)
+    user = db.get(User, auth.user_id) if auth is not None and auth.expires_at > now else None
+    db.commit()  # voir get_event
+    return user
 
 
 OptionalUser = Annotated[User | None, Depends(get_optional_user)]

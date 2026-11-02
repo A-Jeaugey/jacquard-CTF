@@ -16,6 +16,7 @@ from jacquard.api.deps import (
     Now,
     api_error,
 )
+from jacquard.api.routing import CommittingRoute
 from jacquard.models import (
     Challenge,
     ChallengeFile,
@@ -42,7 +43,7 @@ from jacquard.services import (
     team_progress,
 )
 
-router = APIRouter(prefix="/api", tags=["challenges"])
+router = APIRouter(prefix="/api", tags=["challenges"], route_class=CommittingRoute)
 
 
 class SubmitBody(BaseModel):

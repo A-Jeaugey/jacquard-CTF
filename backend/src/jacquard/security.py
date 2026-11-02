@@ -3,23 +3,33 @@
 import hashlib
 import hmac
 import secrets
+import threading
 
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 
-_hasher = PasswordHasher()
+# Paramètres recommandés par l'OWASP pour Argon2id (19 Mio, 2 passes, 1 fil) : robustes et
+# assez légers pour encaisser une vague d'inscriptions. Les anciens condensats restent
+# vérifiables (leurs paramètres sont inscrits dedans).
+_hasher = PasswordHasher(time_cost=2, memory_cost=19 * 1024, parallelism=1)
+# Au plus 4 hachages simultanés par processus : le pic de mémoire et de processeur reste
+# borné même si 150 personnes s'inscrivent dans la même seconde.
+_hashing = threading.BoundedSemaphore(4)
 
 # Haché factice pour que la vérification d'un utilisateur inconnu prenne le même temps.
 _DUMMY_HASH = _hasher.hash(secrets.token_urlsafe(16))
 
 
 def hash_password(password: str) -> str:
-    return _hasher.hash(password)
+    with _hashing:
+        return _hasher.hash(password)
 
 
 def verify_password(password_hash: str | None, password: str) -> bool:
     try:
-        return _hasher.verify(password_hash or _DUMMY_HASH, password) and password_hash is not None
+        with _hashing:
+            valid = _hasher.verify(password_hash or _DUMMY_HASH, password)
+        return valid and password_hash is not None
     except (VerificationError, InvalidHashError):
         return False
 

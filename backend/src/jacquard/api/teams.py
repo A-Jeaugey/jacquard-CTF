@@ -6,11 +6,12 @@ from sqlalchemy import exists, func, select
 from sqlalchemy.exc import IntegrityError
 
 from jacquard.api.deps import CurrentUser, DbSession, Event, api_error
+from jacquard.api.routing import CommittingRoute
 from jacquard.models import Challenge, Solve, Team, User
 from jacquard.security import new_invite_code
 from jacquard.services import compute_snapshot
 
-router = APIRouter(prefix="/api/teams", tags=["teams"])
+router = APIRouter(prefix="/api/teams", tags=["teams"], route_class=CommittingRoute)
 
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 

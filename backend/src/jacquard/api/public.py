@@ -4,10 +4,11 @@ from fastapi import APIRouter
 from sqlalchemy import select
 
 from jacquard.api.deps import DbSession, Event, Now, OptionalUser
+from jacquard.api.routing import CommittingRoute
 from jacquard.models import Announcement
 from jacquard.services import compute_snapshot, is_frozen, phase, public_cutoff
 
-router = APIRouter(prefix="/api", tags=["public"])
+router = APIRouter(prefix="/api", tags=["public"], route_class=CommittingRoute)
 
 
 @router.get("/health")

@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from jacquard.api.deps import Admin, DbSession, Event, Now, api_error
+from jacquard.api.routing import CommittingRoute
 from jacquard.markdown import render_markdown
 from jacquard.models import (
     Announcement,
@@ -21,7 +22,7 @@ from jacquard.models import (
 from jacquard.realtime import publish
 from jacquard.services import compute_snapshot
 
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+router = APIRouter(prefix="/api/admin", tags=["admin"], route_class=CommittingRoute)
 
 
 @router.get("/teams")
