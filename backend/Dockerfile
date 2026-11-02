@@ -17,4 +17,4 @@ EXPOSE 8000
 
 # L'API n'est jamais exposée directement : seul Caddy, sur le réseau interne, lui
 # parle. On peut donc faire confiance à son en-tête X-Forwarded-For.
-CMD ["sh", "-c", "jacquard db upgrade && exec uvicorn jacquard.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*' --workers ${JACQUARD_WORKERS:-2}"]
+CMD ["sh", "-c", "jacquard db upgrade && exec uvicorn jacquard.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*' --timeout-graceful-shutdown 5 --workers ${JACQUARD_WORKERS:-2}"]

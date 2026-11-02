@@ -8,3 +8,11 @@ flags:
   # Plusieurs graphies acceptées.
   - { type: regex, pattern: 'DEMO\{(lyon|lugdunum)\}', case_sensitive: false }
 position: 10
+on_solve:
+  - grant_item: cle-osint
+hints:
+  - id: ville-1
+    text: "Lugdunum, ça te dit quelque chose ?"
+    cost: 0
+    # Disponible 30 minutes après le début de l'événement.
+    available: { time: { elapsed_minutes: 30 } }

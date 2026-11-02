@@ -6,3 +6,5 @@ authors: ["orga"]
 flags:
   - { type: static, value: "DEMO{trois_couches_suffisent}" }
 position: 10
+on_solve:
+  - grant_item: cle-crypto

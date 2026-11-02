@@ -5,6 +5,7 @@ Règles :
   toutes les équipes reçoivent la valeur actuelle, y compris celles qui ont résolu tôt) ;
 - bonus de premier sang selon le rang de résolution, non rétroactif ;
 - les équipes masquées (orga, tests) ne comptent ni dans la décroissance ni dans les bonus ;
+- le coût des indices achetés est déduit du score ;
 - départage : à score égal, l'équipe dont la dernière résolution est la plus ancienne gagne.
 """
 
@@ -40,6 +41,7 @@ class TeamScore:
     last_solve_at: datetime | None
     rank: int | None = None
     hidden: bool = False
+    penalty: int = 0  # coût total des indices achetés
     solved: dict[str, int] = field(default_factory=dict)  # défi -> points obtenus
 
 
@@ -80,6 +82,7 @@ def compute_scores(
     solves: Iterable[SolveRecord],
     teams: Sequence[TeamRecord],
     first_blood: Sequence[int] = (),
+    penalties: Mapping[int, int] | None = None,
 ) -> ScoringResult:
     hidden = {t.id for t in teams if t.hidden}
     known = {t.id for t in teams}
@@ -113,6 +116,10 @@ def compute_scores(
         entry.score += points
         entry.solves += 1
         entry.last_solve_at = solve.created_at
+    for team_id, cost in (penalties or {}).items():
+        if team_id in scores:
+            scores[team_id].penalty += cost
+            scores[team_id].score -= cost
 
     def sort_key(entry: TeamScore) -> tuple[int, int, float, int]:
         has_solve = 0 if entry.last_solve_at is not None else 1

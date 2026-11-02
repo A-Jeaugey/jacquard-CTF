@@ -71,3 +71,19 @@ def test_unknown_challenges_and_teams_are_ignored() -> None:
     )
     assert result.team(1).score == 0  # type: ignore[union-attr]
     assert result.solve_counts["c"] == 0
+
+
+def test_hint_penalties_are_deducted() -> None:
+    teams = [TeamRecord(1, "A"), TeamRecord(2, "B")]
+    static = {"type": "static", "value": 100}
+    result = compute_scores(
+        {"c": static}, [solve(1, 1, "c", 0), solve(2, 2, "c", 1)], teams, penalties={1: 30, 99: 5}
+    )
+    assert result.team(1).score == 70  # type: ignore[union-attr]
+    assert result.team(1).penalty == 30  # type: ignore[union-attr]
+    assert [t.name for t in result.teams] == ["B", "A"]
+
+
+def test_penalty_can_make_score_negative() -> None:
+    result = compute_scores({}, [], [TeamRecord(1, "A")], penalties={1: 10})
+    assert result.team(1).score == -10  # type: ignore[union-attr]

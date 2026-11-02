@@ -12,7 +12,8 @@ def test_challenge_list(player) -> None:  # type: ignore[no-untyped-def]
     assert data["phase"] == "running"
     ids = [c["id"] for c in data["challenges"]]
     assert ids[0] == "bienvenue"  # position 0
-    assert set(ids) == {"bienvenue", "cesar", "couches", "ville"}
+    # « avance » est annoncé mais verrouillé ; « coffre » est caché.
+    assert set(ids) == {"bienvenue", "cesar", "couches", "ville", "avance"}
     cesar = next(c for c in data["challenges"] if c["id"] == "cesar")
     assert cesar == {
         "id": "cesar",
@@ -23,6 +24,8 @@ def test_challenge_list(player) -> None:  # type: ignore[no-untyped-def]
         "value": 500,
         "solves": 0,
         "solved": False,
+        "locked": False,
+        "locked_message": None,
     }
 
 
@@ -61,7 +64,7 @@ def test_markdown_is_sanitized() -> None:
 
 def test_correct_incorrect_and_already_solved(player) -> None:  # type: ignore[no-untyped-def]
     assert player.submit("cesar", "DEMO{faux}").json() == {"status": "incorrect"}
-    assert player.submit("cesar", "  demo{JULES_SERAIT_FIER} ").json() == {"status": "correct"}
+    assert player.submit("cesar", "  demo{JULES_SERAIT_FIER} ").json()["status"] == "correct"
     assert player.submit("cesar", "DEMO{jules_serait_fier}").json() == {"status": "already_solved"}
     listing = player.get("/api/challenges").json()["challenges"]
     assert next(c for c in listing if c["id"] == "cesar")["solved"] is True
@@ -135,7 +138,7 @@ def test_submissions_closed_after_end(player, clock) -> None:  # type: ignore[no
     clock.set(DEMO_END)
     player.post("/api/auth/login", {"username": "alice", "password": "motdepasse-solide"})
     assert player.get("/api/challenges").json()["phase"] == "ended"
-    assert len(player.get("/api/challenges").json()["challenges"]) == 4
+    assert len(player.get("/api/challenges").json()["challenges"]) == 5
     response = player.submit("bienvenue", "DEMO{bienvenue_a_bord}")
     assert response.status_code == 403
     assert response.json()["detail"]["code"] == "event_ended"
@@ -170,6 +173,8 @@ def test_removed_challenge_is_deactivated_but_solves_kept(player, sync, make_pac
     player.submit("cesar", "DEMO{jules_serait_fier}")
     pack = make_pack()
     shutil.rmtree(pack / "challenges" / "crypto" / "cesar")
+    # Sans César, « avance » (deux défis de crypto requis) deviendrait impossible.
+    shutil.rmtree(pack / "challenges" / "crypto" / "avance")
     sync(pack)
     assert "cesar" not in [c["id"] for c in player.get("/api/challenges").json()["challenges"]]
     assert player.get("/api/challenges/cesar").status_code == 404

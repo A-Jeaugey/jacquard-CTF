@@ -32,3 +32,14 @@ scoring:
 
 submissions:
   rate_limit: { max: 10, per_seconds: 60 }
+
+items:
+  - id: cle-crypto
+    name: "Clé de cryptographie"
+    description: "Une moitié de la combinaison du coffre."
+  - id: cle-osint
+    name: "Clé d'OSINT"
+    description: "L'autre moitié de la combinaison du coffre."
+
+hints:
+  require_points: false

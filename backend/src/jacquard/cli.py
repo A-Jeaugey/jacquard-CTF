@@ -95,6 +95,9 @@ def pack_sync(
         ("Créés", report.created),
         ("Modifiés", report.updated),
         ("Désactivés", report.deactivated),
+        ("Chapitres créés", report.story_created),
+        ("Chapitres modifiés", report.story_updated),
+        ("Chapitres désactivés", report.story_deactivated),
     ):
         if items:
             typer.echo(f"{prefix}{label} ({len(items)}) : {', '.join(items)}")

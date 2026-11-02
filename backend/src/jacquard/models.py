@@ -14,6 +14,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    PrimaryKeyConstraint,
     String,
     Text,
     UniqueConstraint,
@@ -105,6 +106,11 @@ class Challenge(Base):
     position: Mapped[int] = mapped_column(Integer, default=0)
     # Un défi retiré du pack est désactivé, jamais supprimé, pour conserver les résolutions.
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    unlock: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    when_locked: Mapped[str] = mapped_column(String(16), default="hidden")
+    locked_message: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    # Actions à la résolution : [{"grant_item": id} | {"notify_html": html}]
+    on_solve: Mapped[list[dict[str, str]]] = mapped_column(JSON, default=list)
 
     flags: Mapped[list["Flag"]] = relationship(
         back_populates="challenge", cascade="all, delete-orphan"
@@ -112,6 +118,11 @@ class Challenge(Base):
     files: Mapped[list["ChallengeFile"]] = relationship(
         back_populates="challenge", cascade="all, delete-orphan"
     )
+    hints: Mapped[list["Hint"]] = relationship(back_populates="challenge", order_by="Hint.position")
+
+    @property
+    def granted_items(self) -> list[str]:
+        return [a["grant_item"] for a in self.on_solve if "grant_item" in a]
 
 
 class Flag(Base):
@@ -181,4 +192,61 @@ class Announcement(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(128))
     body_html: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class Hint(Base):
+    __tablename__ = "hints"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    challenge_id: Mapped[str] = mapped_column(
+        ForeignKey("challenges.id", ondelete="CASCADE"), index=True
+    )
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    text_html: Mapped[str] = mapped_column(Text)
+    cost: Mapped[int] = mapped_column(Integer, default=0)
+    available: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    challenge: Mapped[Challenge] = relationship(back_populates="hints")
+
+
+class HintUnlock(Base):
+    """Achat d'un indice. Le coût est figé au moment de l'achat."""
+
+    __tablename__ = "hint_unlocks"
+    __table_args__ = (UniqueConstraint("team_id", "hint_id", name="uq_hint_unlock_team_hint"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    team_id: Mapped[int] = mapped_column(ForeignKey("teams.id", ondelete="CASCADE"), index=True)
+    hint_id: Mapped[str] = mapped_column(String(64))
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    cost: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class StoryEntry(Base):
+    __tablename__ = "story_entries"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    title: Mapped[str] = mapped_column(String(128))
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    body_html: Mapped[str] = mapped_column(Text)
+    unlock: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    public: Mapped[bool] = mapped_column(Boolean, default=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Unlock(Base):
+    """Déblocage acquis par une équipe. Un déblocage est définitif : un défi ne se
+    reverrouille pas si, par exemple, le score de l'équipe baisse ensuite."""
+
+    __tablename__ = "unlocks"
+    __table_args__ = (PrimaryKeyConstraint("team_id", "kind", "target_id"),)
+
+    team_id: Mapped[int] = mapped_column(ForeignKey("teams.id", ondelete="CASCADE"))
+    kind: Mapped[str] = mapped_column(String(16))  # challenge | hint | story
+    target_id: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # Code exigé à l'inscription quand le pack déclare `registration: invite_code`.
     registration_code: SecretStr | None = None
 
+    # Diffusion temps réel (écoute PostgreSQL au démarrage).
+    realtime: bool = True
+
     # Limites de tentatives de connexion (fenêtre glissante).
     login_max_failures: int = 10
     login_window_seconds: int = 900

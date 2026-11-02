@@ -94,7 +94,7 @@ def test_admin_submission_log(player, admin) -> None:  # type: ignore[no-untyped
 def test_admin_sees_challenges_without_team(admin, sync, clock) -> None:  # type: ignore[no-untyped-def]
     sync()
     clock.set(datetime(2025, 1, 1, tzinfo=UTC))
-    assert len(admin.get("/api/challenges").json()["challenges"]) == 4
+    assert len(admin.get("/api/challenges").json()["challenges"]) == 6
 
 
 def test_announcements(admin, new_client) -> None:  # type: ignore[no-untyped-def]

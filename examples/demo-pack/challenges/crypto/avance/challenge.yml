@@ -1,0 +1,12 @@
+id: avance
+name: "Niveau supérieur"
+category: crypto
+difficulty: difficile
+authors: ["orga"]
+position: 20
+# Annoncé (titre visible) mais verrouillé tant que deux défis de crypto ne sont pas résolus.
+unlock: { solved_count: { category: crypto, gte: 2 } }
+when_locked: teaser
+locked_message: "Résous deux défis de cryptographie pour débloquer ce défi."
+flags:
+  - { type: static, value: "DEMO{niveau_superieur}" }

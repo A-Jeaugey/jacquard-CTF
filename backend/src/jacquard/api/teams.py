@@ -117,10 +117,22 @@ def team_detail(db: DbSession, event: Event, team: Team) -> dict[str, object]:
         .where(Solve.team_id == team.id, Challenge.active)
         .order_by(Solve.created_at)
     )
+    solved = db.scalars(
+        select(Challenge)
+        .join(Solve, Solve.challenge_id == Challenge.id)
+        .where(Solve.team_id == team.id, Challenge.active)
+    )
+    owned = {item for challenge in solved for item in challenge.granted_items}
     return {
         "id": team.id,
         "name": team.name,
         "invite_code": team.invite_code if event.participation.mode == "teams" else None,
+        "penalty": score.penalty if score else 0,
+        "items": [
+            {"id": i.id, "name": i.name, "description": i.description}
+            for i in event.items
+            if i.id in owned
+        ],
         "max_size": event.participation.team_size.max,
         "members": [{"id": m.id, "username": m.username} for m in members],
         "score": score.score if score else 0,

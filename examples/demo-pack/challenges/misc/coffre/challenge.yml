@@ -1,0 +1,16 @@
+id: coffre
+name: "Le coffre"
+category: misc
+difficulty: moyen
+authors: ["orga"]
+position: 99
+scoring: { type: static, value: 300 }
+# Défi final caché : il n'apparaît qu'avec les deux clés.
+unlock:
+  all:
+    - { item: cle-crypto }
+    - { item: cle-osint }
+on_solve:
+  - notify: "Le coffre s'ouvre. Félicitations, tu as terminé le parcours de démonstration !"
+flags:
+  - { type: static, value: "DEMO{coffre_ouvert}" }

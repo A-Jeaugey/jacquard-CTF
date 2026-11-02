@@ -1,13 +1,15 @@
 import secrets
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
 from jacquard import __version__
-from jacquard.api import admin, auth, challenges, public, teams
+from jacquard.api import admin, auth, challenges, live, public, story, teams
 from jacquard.api.deps import CSRF_COOKIE, CSRF_HEADER
 from jacquard.config import get_settings
+from jacquard.realtime import broker
 from jacquard.security import constant_time_equals
 
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
@@ -21,9 +23,19 @@ SECURITY_HEADERS = {
 }
 
 
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
+    if settings.realtime:
+        broker.start(settings.database_url)
+    yield
+    await broker.stop()
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Jacquard",
+        lifespan=lifespan,
         version=__version__,
         docs_url="/api/docs",
         openapi_url="/api/openapi.json",
@@ -65,7 +77,7 @@ def create_app() -> FastAPI:
             response.headers.setdefault(name, value)
         return response
 
-    for module in (public, auth, teams, challenges, admin):
+    for module in (public, auth, teams, challenges, story, live, admin):
         app.include_router(module.router)
     return app
 

@@ -1,6 +1,6 @@
 # Conception de la plateforme CTF
 
-> Nom de code : **Jacquard** (à valider).
+> Nom : **Jacquard**. Licence : MIT.
 > Statut : étapes M0 et M1 implémentées (voir le README).
 
 ## 1. Objectif
@@ -394,7 +394,5 @@ Les participants sont, par définition, des personnes qui cherchent des failles.
 
 ## 11. Questions ouvertes
 
-- Nom définitif de la plateforme.
-- Licence du code (MIT proposée).
 - Hébergement le jour J : machine de l'école ou serveur loué.
 - Langue de l'interface par défaut (français, avec libellés surchargeables).

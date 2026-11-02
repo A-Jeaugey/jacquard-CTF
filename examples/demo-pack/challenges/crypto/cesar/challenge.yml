@@ -7,3 +7,10 @@ files: [files/message.txt]
 flags:
   - { type: static, value: "DEMO{jules_serait_fier}", case_sensitive: false }
 position: 10
+hints:
+  - id: cesar-1
+    text: "Pense à un empereur romain célèbre."
+    cost: 0
+  - id: cesar-2
+    text: "Le décalage vaut 13 : cherche « ROT13 »."
+    cost: 50

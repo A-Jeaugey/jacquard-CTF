@@ -8,3 +8,5 @@ scoring: { type: static, value: 10 }
 position: 0
 flags:
   - { type: static, value: "DEMO{bienvenue_a_bord}" }
+on_solve:
+  - notify: "Bien joué ! Un nouveau message t'attend dans le **journal**."

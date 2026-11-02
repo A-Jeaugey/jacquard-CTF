@@ -36,7 +36,15 @@ BASE = {
 def test_demo_pack_is_valid() -> None:
     pack = load_pack(DEMO_PACK)
     assert pack.event.id == "demo"
-    assert {c.config.id for c in pack.challenges} == {"bienvenue", "cesar", "couches", "ville"}
+    assert {c.config.id for c in pack.challenges} == {
+        "bienvenue",
+        "cesar",
+        "couches",
+        "ville",
+        "avance",
+        "coffre",
+    }
+    assert [s.config.id for s in pack.story] == ["prologue", "premier-pas", "final"]
     assert pack.warnings == []
     assert pack.event.schedule.start.tzinfo is not None
 
@@ -53,7 +61,7 @@ def test_unknown_category(make_pack) -> None:  # type: ignore[no-untyped-def]
 
 def test_unknown_field_is_rejected(make_pack) -> None:  # type: ignore[no-untyped-def]
     pack = make_pack()
-    write_challenge(pack, {**BASE, "unlock": {"solved": "bienvenue"}})
+    write_challenge(pack, {**BASE, "bonus_secret": 42})
     assert any("champ inconnu" in e for e in errors_of(pack))
 
 
@@ -118,3 +126,70 @@ def test_invalid_yaml(make_pack) -> None:  # type: ignore[no-untyped-def]
     pack = make_pack()
     (pack / "event.yml").write_text("id: [non fermé", encoding="utf-8")
     assert any("YAML invalide" in e for e in errors_of(pack))
+
+
+def test_rule_references_must_exist(make_pack) -> None:  # type: ignore[no-untyped-def]
+    pack = make_pack()
+    write_challenge(
+        pack,
+        {
+            **BASE,
+            "unlock": {"all": [{"solved": "fantome"}, {"item": "inconnu"}, {"hint_used": "nope"}]},
+        },
+    )
+    errors = errors_of(pack)
+    assert any("défi inconnu : fantome" in e for e in errors)
+    assert any("objet inconnu : inconnu" in e for e in errors)
+    assert any("indice inconnu : nope" in e for e in errors)
+
+
+def test_circular_dependency_is_detected(make_pack) -> None:  # type: ignore[no-untyped-def]
+    pack = make_pack()
+    write_challenge(pack, {**BASE, "id": "poule", "unlock": {"solved": "oeuf"}}, folder="poule")
+    write_challenge(pack, {**BASE, "id": "oeuf", "unlock": {"solved": "poule"}}, folder="oeuf")
+    errors = [e for e in errors_of(pack) if "impossible à débloquer" in e]
+    assert len(errors) == 2
+
+
+def test_granted_item_must_be_declared(make_pack) -> None:  # type: ignore[no-untyped-def]
+    pack = make_pack()
+    write_challenge(pack, {**BASE, "on_solve": [{"grant_item": "pas-declare"}]})
+    assert any("objet non déclaré" in e for e in errors_of(pack))
+
+
+def test_hint_ids_are_global(make_pack) -> None:  # type: ignore[no-untyped-def]
+    pack = make_pack()
+    write_challenge(pack, {**BASE, "hints": [{"id": "cesar-1", "text": "doublon"}]})
+    assert any("id d'indice déjà utilisé" in e for e in errors_of(pack))
+
+
+def test_unused_item_and_hidden_locked_message_warn(make_pack) -> None:  # type: ignore[no-untyped-def]
+    demo_items = yaml.safe_load((DEMO_PACK / "event.yml").read_text(encoding="utf-8"))["items"]
+    pack = make_pack(items=[*demo_items, {"id": "orphelin", "name": "Orphelin"}])
+    write_challenge(pack, {**BASE, "unlock": {"solved": "bienvenue"}, "locked_message": "x"})
+    warnings = [str(w) for w in load_pack(pack).warnings]
+    assert any("orphelin" in w for w in warnings)
+    assert any("locked_message" in w for w in warnings)
+
+
+def test_story_front_matter(make_pack) -> None:  # type: ignore[no-untyped-def]
+    pack = make_pack()
+    (pack / "story" / "03-sans-entete.md").write_text("Pas d'en-tête", encoding="utf-8")
+    (pack / "story" / "04-non-ferme.md").write_text("---\nid: x\ntitle: X\n", encoding="utf-8")
+    (pack / "story" / "05-public.md").write_text(
+        "---\nid: p\ntitle: P\npublic: true\nunlock: { solved: cesar }\n---\nTexte",
+        encoding="utf-8",
+    )
+    errors = errors_of(pack)
+    assert any("en-tête YAML manquant" in e for e in errors)
+    assert any("non fermé" in e for e in errors)
+    assert any("chapitre public" in e for e in errors)
+
+
+def test_impossible_story_is_a_warning(make_pack) -> None:  # type: ignore[no-untyped-def]
+    pack = make_pack()
+    (pack / "story" / "09-jamais.md").write_text(
+        "---\nid: jamais\ntitle: Jamais\nunlock: { score: { gte: 999999 } }\n---\nTexte",
+        encoding="utf-8",
+    )
+    assert any("jamais" in str(w) for w in load_pack(pack).warnings)
