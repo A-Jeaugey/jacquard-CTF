@@ -1,7 +1,7 @@
 # Conception de la plateforme CTF
 
 > Nom : **Jacquard**. Licence : MIT.
-> Statut : étapes M0, M1 et M2 implémentées (voir le README).
+> Statut : étapes M0 à M3 implémentées (voir le README).
 > Ce document décrit la cible. Le format exact de ce qui est déjà implémenté est dans [format-pack.md](format-pack.md).
 
 ## 1. Objectif

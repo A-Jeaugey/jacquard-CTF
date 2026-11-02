@@ -4,6 +4,7 @@
   import { refreshMe, session } from "../lib/session.svelte";
   import { story, unreadCount } from "../lib/story.svelte";
   import { t } from "../lib/strings";
+  import { theme } from "../lib/theme.svelte";
   import Countdown from "./Countdown.svelte";
 
   let open = $state(false);
@@ -23,7 +24,10 @@
 
 <header class="nav">
   <div class="nav-inner container">
-    <a class="brand" href="/">{session.event?.name}</a>
+    <a class="brand" href="/">
+      {#if theme.data?.logo_url}<img class="brand-logo" src={theme.data.logo_url} alt="" />{/if}
+      {session.event?.name}
+    </a>
     <button class="nav-toggle" aria-expanded={open} aria-label="Menu" onclick={() => (open = !open)}>☰</button>
     <nav class:open>
       <a href="/challenges" class:active={route.path === "/challenges"}>{t("nav.board")}</a>

@@ -181,3 +181,38 @@ export interface BoardData {
   challenges: ChallengeSummary[];
   difficulties: string[];
 }
+
+export interface ZoneConfig {
+  element: string;
+  target: { category: string | null; challenge: string | null };
+  label: string | null;
+}
+
+export interface ThemeLayout {
+  type: "image-map";
+  background_url: string | null;
+  zones: ZoneConfig[];
+}
+
+export interface Theme {
+  tokens: Record<string, string>;
+  strings: Record<string, string>;
+  logo_url: string | null;
+  css_url: string | null;
+  layouts: Record<string, ThemeLayout>;
+}
+
+export interface ScreenData {
+  id: string;
+  title: string;
+  layout: string | null;
+  frozen: boolean;
+  active_teams: number;
+  categories: { id: string; name: string; color: string | null; progress: number }[];
+}
+
+export type FeedItem =
+  | { kind: "first_blood"; at: string; team: string; challenge: string }
+  | { kind: "announcement"; at: string; title: string };
+
+export type ZoneState = "locked" | "available" | "in-progress" | "completed";

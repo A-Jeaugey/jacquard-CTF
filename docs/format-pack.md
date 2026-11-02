@@ -11,8 +11,9 @@ Pour un exemple complet et fonctionnel, voir [examples/demo-pack](../examples/de
 3. [challenge.yml](#3-challengeyml)
 4. [Règles de déblocage](#4-règles-de-déblocage)
 5. [Chapitres d'histoire](#5-chapitres-dhistoire)
-6. [Validation](#6-validation)
-7. [Conseils d'écriture](#7-conseils-décriture)
+6. [Thème et grand écran](#6-thème-et-grand-écran)
+7. [Validation](#7-validation)
+8. [Conseils d'écriture](#8-conseils-décriture)
 
 ## 1. Arborescence
 
@@ -52,7 +53,8 @@ Les identifiants (`id`) sont en minuscules, chiffres et tirets, 64 caractères m
 | `scoring.default` | barème | statique 100 | Barème des défis qui n'en déclarent pas |
 | `scoring.first_blood` | liste d'entiers | `[]` | Bonus des 1re, 2e… équipes à résoudre un défi |
 | `submissions.rate_limit` | `{max, per_seconds}` | `{10, 60}` | Tentatives par équipe et par défi |
-| `board.layout` | `grid` | `grid` | Présentation du tableau des défis |
+| `board.layout` | `grid`, `list` ou layout du thème | `grid` | Présentation du tableau des défis |
+| `screens` | liste | `[]` | Grands écrans publics : `{id, title?, layout?}` (voir §6) |
 | `items` | liste | `[]` | Objets obtenables : `{id, name, description?}` |
 | `hints.require_points` | booléen | `false` | Si vrai, un indice payant exige assez de points |
 
@@ -179,7 +181,43 @@ Le texte du chapitre, en **Markdown**.
 | `unlock` | règle | toujours débloqué | Débloqué à partir du début de l'événement |
 | `public` | booléen | `false` | Visible par tous, avant le début et sans compte (prologue) ; incompatible avec `unlock` |
 
-## 6. Validation
+## 6. Thème et grand écran
+
+Fichier facultatif `theme/theme.yml` ; tous les fichiers qu'il cite sont dans `theme/`.
+
+```yaml
+tokens:                       # variables CSS de l'interface (--color-bg, --color-accent...)
+  color-bg: "#0b1020"
+  color-accent: "#f5c542"
+strings:                      # remplace n'importe quel libellé de l'interface
+  board.title: "Le plan"
+  nav.story: "Transmissions"
+logo: assets/logo.svg         # facultatif (svg, png, jpg, webp)
+css: theme.css                # CSS supplémentaire, facultatif
+layouts:
+  carte:
+    type: image-map
+    background: layouts/carte.svg
+    zones:
+      - { element: "#zone-web", target: { category: web }, label: "Le quartier web" }
+      - { element: "#zone-final", target: { challenge: final } }
+```
+
+- **Layout `image-map`** : chaque zone désigne un élément du SVG par son `id` et vise une
+  catégorie ou un défi. L'élément reçoit la classe `map-zone`, une classe d'état
+  (`is-locked`, `is-available`, `is-in-progress`, `is-completed`) et la variable CSS
+  `--progress` (0 à 1) : le thème décide du rendu (couleur, lueur...). Cliquer sur une zone
+  filtre les défis affichés sous la carte ; les joueurs peuvent aussi passer en vue grille.
+- **Sécurité** : le SVG ne doit contenir ni script, ni gestionnaire d'événement (`onload=`...),
+  ni lien `javascript:`, ni ressource externe ; le CSS ni `@import` ni `url()` externe. Les
+  valeurs des `tokens` ne peuvent pas contenir `;`, `{`, `}`, `<`, `>`.
+- **Grand écran** : chaque entrée de `screens` est affichée à l'adresse `/ecran/<id>`,
+  sans connexion. Il montre la carte du layout indiqué en progression **globale** (part
+  moyenne des défis de chaque catégorie résolus par les équipes actives), le top 10, les
+  premiers sangs et les annonces. Les défis cachés n'y sont jamais nommés, et le gel du
+  classement s'applique.
+
+## 7. Validation
 
 ```bash
 jacquard pack validate <dossier>
@@ -202,7 +240,7 @@ Avertissements :
 
 La synchronisation (`jacquard pack sync`) est idempotente et peut être relancée pendant l'événement : un défi retiré est désactivé, jamais supprimé, et les résolutions, achats d'indices et déblocages sont conservés.
 
-## 7. Conseils d'écriture
+## 8. Conseils d'écriture
 
 - Commencer par un défi `bienvenue` sans règle, dont le flag est dans la description : tout le monde marque un point dès la première minute.
 - Préférer `teaser` pour les défis qu'on veut faire désirer, `hidden` pour les surprises.

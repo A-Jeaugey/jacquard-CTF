@@ -2,13 +2,14 @@
   import { untrack } from "svelte";
 
   import ChallengeModal from "../components/ChallengeModal.svelte";
-  import { getLayout } from "../components/layouts";
+  import { getLayout, ImageMapBoard } from "../components/layouts";
   import { api, errorMessage } from "../lib/api";
   import { poll } from "../lib/format";
   import { live } from "../lib/live.svelte";
   import { navigate } from "../lib/router.svelte";
   import { session } from "../lib/session.svelte";
   import { t } from "../lib/strings";
+  import { theme } from "../lib/theme.svelte";
   import type { BoardData, ChallengeList } from "../lib/types";
 
   let list = $state<ChallengeList | null>(null);
@@ -41,7 +42,28 @@
     if (untrack(() => list)) void load();
   });
 
-  const Layout = $derived(getLayout(session.event?.board.layout));
+  const layoutId = $derived(session.event?.board.layout ?? "grid");
+  const mapLayout = $derived(theme.data?.layouts[layoutId] ?? null);
+  const Layout = $derived(getLayout(layoutId));
+
+  // Choix carte / grille mémorisé dans le navigateur (simple confort).
+  const VIEW_KEY = "jq_board_view";
+  let gridView = $state(readGridPreference());
+  function readGridPreference(): boolean {
+    try {
+      return localStorage.getItem(VIEW_KEY) === "grid";
+    } catch {
+      return false;
+    }
+  }
+  function toggleView(): void {
+    gridView = !gridView;
+    try {
+      localStorage.setItem(VIEW_KEY, gridView ? "grid" : "map");
+    } catch {
+      // stockage indisponible : le choix vaut pour cette page seulement
+    }
+  }
   const data = $derived<BoardData>({
     categories: session.event?.categories ?? [],
     difficulties: session.event?.difficulties ?? [],
@@ -53,7 +75,12 @@
 <div class="page-header">
   <h1>{t("board.title")}</h1>
   {#if list?.challenges.length}
-    <label class="checkbox"><input type="checkbox" bind:checked={hideSolved} /> {t("board.filter.unsolved")}</label>
+    <div class="board-tools">
+      {#if mapLayout}
+        <button class="small secondary" onclick={toggleView}>{gridView ? t("board.view_map") : t("board.view_grid")}</button>
+      {/if}
+      <label class="checkbox"><input type="checkbox" bind:checked={hideSolved} /> {t("board.filter.unsolved")}</label>
+    </div>
   {/if}
 </div>
 
@@ -71,7 +98,11 @@
 {:else if list.challenges.length === 0}
   <div class="card">{t("board.empty")}</div>
 {:else}
-  <Layout {data} onOpen={(id) => (openId = id)} />
+  {#if mapLayout && !gridView}
+    <ImageMapBoard {data} layout={mapLayout} onOpen={(id) => (openId = id)} />
+  {:else}
+    <Layout {data} onOpen={(id) => (openId = id)} />
+  {/if}
 {/if}
 
 {#if openId}

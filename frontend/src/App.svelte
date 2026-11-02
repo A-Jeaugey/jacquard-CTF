@@ -13,6 +13,7 @@
   import NotFound from "./pages/NotFound.svelte";
   import Register from "./pages/Register.svelte";
   import Scoreboard from "./pages/Scoreboard.svelte";
+  import Screen from "./pages/Screen.svelte";
   import Story from "./pages/Story.svelte";
   import Team from "./pages/Team.svelte";
 
@@ -28,6 +29,8 @@
   } as const;
 
   const Page = $derived(pages[route.path as keyof typeof pages] ?? NotFound);
+  // Grand écran : /ecran/<id>, plein écran sans barre de navigation.
+  const screenId = $derived(route.path.match(/^\/ecran\/([a-z0-9-]+)$/)?.[1] ?? null);
 
   void bootstrap();
 
@@ -49,6 +52,8 @@
   <main class="container">
     <div class="card">{t("error.not_configured")}</div>
   </main>
+{:else if screenId}
+  <Screen id={screenId} />
 {:else}
   <Nav />
   <main class="container">

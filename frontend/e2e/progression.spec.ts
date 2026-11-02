@@ -70,7 +70,8 @@ test("indices et journal", async ({ browser }) => {
   await expect(page.locator(".rewards")).toContainText("Nouveau chapitre dans le journal : Premiers pas");
   await page.keyboard.press("Escape");
 
-  const journal = page.getByRole("link", { name: /Journal/ });
+  // Le thème du pack de démo renomme « Journal » en « Carnet ».
+  const journal = page.getByRole("link", { name: /Carnet/ });
   await expect(journal.locator(".badge")).toHaveText("2");
   await journal.click();
   await expect(page.getByRole("heading", { name: "Premiers pas" })).toBeVisible();

@@ -29,7 +29,7 @@ scripts/     Utilitaires de développement
 | M0 Fondations | ✅ |
 | M1 Cœur (comptes, équipes, défis, flags, score, classement, admin) | ✅ |
 | M2 Mécaniques (règles de déblocage, inventaire, indices, histoire, temps réel) | ✅ |
-| M3 Personnalisation (thèmes, layouts `image-map`, grand écran) | À faire |
+| M3 Personnalisation (thèmes, layouts `image-map` et `list`, grand écran) | ✅ |
 | M4 Robustesse (flags par équipe, anti-triche, export CTFd, test de charge) | À faire |
 
 ## Développement

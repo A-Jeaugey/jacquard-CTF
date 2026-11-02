@@ -1,4 +1,5 @@
 import { api, ApiError } from "./api";
+import { loadTheme } from "./theme.svelte";
 import type { EventInfo, Me } from "./types";
 
 interface SessionState {
@@ -36,7 +37,8 @@ export async function refreshMe(): Promise<void> {
 }
 
 export async function bootstrap(): Promise<void> {
-  await Promise.allSettled([refreshEvent(), refreshMe()]);
+  // Le thème est chargé avant le premier affichage : ses libellés remplacent ceux par défaut.
+  await Promise.allSettled([refreshEvent(), refreshMe(), loadTheme()]);
   session.ready = true;
 }
 
