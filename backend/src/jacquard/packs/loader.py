@@ -9,6 +9,7 @@ entre défis, objets et indices, et absence de défi impossible à débloquer.
 """
 
 import hashlib
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -17,12 +18,14 @@ import yaml
 from pydantic import BaseModel, ValidationError
 
 from jacquard.packs.schema import (
+    BUILTIN_LAYOUTS,
     ChallengeConfig,
     DynamicScoring,
     EventConfig,
     GrantItem,
     Rule,
     StoryConfig,
+    ThemeConfig,
 )
 from jacquard.rules import ChallengeMeta, Unlockable, possible, reachable, references
 
@@ -66,6 +69,37 @@ class LoadedStory:
     body_md: str
 
 
+CONTENT_TYPES = {
+    ".svg": "image/svg+xml",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".css": "text/css",
+    ".woff2": "font/woff2",
+}
+# Le SVG des layouts est injecté dans la page : rien qui puisse exécuter du code ou charger
+# une ressource externe.
+SVG_FORBIDDEN = re.compile(
+    r"<script|<foreignobject|<iframe|<embed|<object|javascript:|\son[a-z]+\s*=|href\s*=\s*[\"']?(?:https?:|//)",
+    re.IGNORECASE,
+)
+CSS_FORBIDDEN = re.compile(r"@import|url\(\s*[\"']?(?:https?:|//)|expression\(", re.IGNORECASE)
+
+
+@dataclass(frozen=True)
+class ThemeAsset:
+    path: str  # chemin relatif au dossier theme/, tel qu'écrit dans theme.yml
+    file: PackFile
+    content_type: str
+
+
+@dataclass(frozen=True)
+class LoadedTheme:
+    config: ThemeConfig
+    assets: list[ThemeAsset]
+
+
 @dataclass
 class Pack:
     root: Path
@@ -73,6 +107,7 @@ class Pack:
     challenges: list[LoadedChallenge]
     digest: str
     story: list[LoadedStory] = field(default_factory=list)
+    theme: LoadedTheme | None = None
     warnings: list[PackIssue] = field(default_factory=list)
 
 
@@ -364,6 +399,110 @@ def _check_consistency(
             )
 
 
+def _load_theme(root: Path, errors: list[PackIssue]) -> LoadedTheme | None:
+    theme_dir = root / "theme"
+    manifest = theme_dir / "theme.yml"
+    if not manifest.is_file():
+        return None
+    config = _parse(ThemeConfig, root, manifest, errors)
+    if config is None:
+        return None
+    location = _relative(root, manifest)
+    wanted = [p for p in (config.logo, config.css) if p] + [
+        layout.background for layout in config.layouts.values()
+    ]
+    assets: list[ThemeAsset] = []
+    for entry in dict.fromkeys(wanted):
+        path = _safe_child(theme_dir.resolve(), theme_dir, entry)
+        suffix = Path(entry).suffix.lower()
+        if path is None:
+            errors.append(PackIssue(location, f"fichier hors du dossier theme/ : {entry}"))
+        elif not path.is_file():
+            errors.append(PackIssue(location, f"fichier introuvable : {entry}"))
+        elif suffix not in CONTENT_TYPES:
+            errors.append(PackIssue(location, f"type de fichier non pris en charge : {entry}"))
+        elif path.stat().st_size > 5 * 1024 * 1024:
+            errors.append(PackIssue(location, f"fichier trop volumineux (> 5 Mo) : {entry}"))
+        else:
+            if suffix in (".svg", ".css"):
+                text = path.read_text(encoding="utf-8", errors="replace")
+                pattern = SVG_FORBIDDEN if suffix == ".svg" else CSS_FORBIDDEN
+                found = pattern.search(text)
+                if found:
+                    errors.append(
+                        PackIssue(location, f"contenu interdit dans {entry} : « {found.group(0)} »")
+                    )
+                    continue
+            assets.append(
+                ThemeAsset(
+                    path=entry,
+                    file=PackFile(
+                        name=path.name, path=path, sha256=_sha256(path), size=path.stat().st_size
+                    ),
+                    content_type=CONTENT_TYPES[suffix],
+                )
+            )
+    for layout_id, layout in config.layouts.items():
+        if Path(layout.background).suffix.lower() != ".svg":
+            errors.append(PackIssue(location, f"le fond du layout {layout_id} doit être un SVG"))
+    return LoadedTheme(config=config, assets=assets)
+
+
+def _check_theme(
+    event: EventConfig,
+    theme: LoadedTheme | None,
+    challenges: list[LoadedChallenge],
+    errors: list[PackIssue],
+    warnings: list[PackIssue],
+) -> None:
+    layouts = set(BUILTIN_LAYOUTS) | (set(theme.config.layouts) if theme else set())
+    if event.board.layout not in layouts:
+        errors.append(
+            PackIssue("event.yml [board.layout]", f"layout inconnu : {event.board.layout}")
+        )
+    for screen in event.screens:
+        if screen.layout and screen.layout not in layouts - set(BUILTIN_LAYOUTS):
+            errors.append(
+                PackIssue(
+                    f"event.yml [screens.{screen.id}]", f"layout de thème inconnu : {screen.layout}"
+                )
+            )
+    ids = [s.id for s in event.screens]
+    for duplicate in sorted({i for i in ids if ids.count(i) > 1}):
+        errors.append(PackIssue("event.yml [screens]", f"écran en double : {duplicate}"))
+    if theme is None:
+        return
+    categories = {c.id for c in event.categories}
+    challenge_ids = {c.config.id for c in challenges}
+    for layout_id, layout in theme.config.layouts.items():
+        svg = next((a for a in theme.assets if a.path == layout.background), None)
+        text = svg.file.path.read_text(encoding="utf-8", errors="replace") if svg else ""
+        for zone in layout.zones:
+            where = f"theme/theme.yml [layouts.{layout_id}]"
+            target = zone.target
+            if target.category and target.category not in categories:
+                errors.append(PackIssue(where, f"catégorie inconnue : {target.category}"))
+            if target.challenge and target.challenge not in challenge_ids:
+                errors.append(PackIssue(where, f"défi inconnu : {target.challenge}"))
+            element_id = zone.element[1:]
+            if text and not re.search(rf"\bid\s*=\s*[\"']{re.escape(element_id)}[\"']", text):
+                errors.append(PackIssue(where, f"élément absent du SVG : {zone.element}"))
+        if layout_id == event.board.layout:
+            covered = {z.target.category for z in layout.zones if z.target.category}
+            covered |= {
+                c.config.category
+                for c in challenges
+                if c.config.id in {z.target.challenge for z in layout.zones}
+            }
+            for category in sorted(categories - covered):
+                warnings.append(
+                    PackIssue(
+                        f"theme/theme.yml [layouts.{layout_id}]",
+                        f"aucune zone pour la catégorie {category}",
+                    )
+                )
+
+
 def load_pack(path: Path) -> Pack:
     """Charge et valide un pack. Lève `PackError` avec la liste complète des erreurs."""
     root = path.resolve()
@@ -409,8 +548,11 @@ def load_pack(path: Path) -> Pack:
             if chapter is not None:
                 story.append(chapter)
 
+    theme = _load_theme(root, errors)
+
     if not errors:
         _check_consistency(event, challenges, story, root, errors, warnings)
+        _check_theme(event, theme, challenges, errors, warnings)
     if errors:
         raise PackError(errors)
 
@@ -419,13 +561,17 @@ def load_pack(path: Path) -> Pack:
         event=event,
         challenges=challenges,
         story=story,
-        digest=_pack_digest(event, challenges, story),
+        theme=theme,
+        digest=_pack_digest(event, challenges, story, theme),
         warnings=warnings,
     )
 
 
 def _pack_digest(
-    event: EventConfig, challenges: list[LoadedChallenge], story: list[LoadedStory]
+    event: EventConfig,
+    challenges: list[LoadedChallenge],
+    story: list[LoadedStory],
+    theme: LoadedTheme | None = None,
 ) -> str:
     digest = hashlib.sha256(event.model_dump_json().encode())
     for challenge in sorted(challenges, key=lambda c: c.config.id):
@@ -436,4 +582,8 @@ def _pack_digest(
     for chapter in sorted(story, key=lambda c: c.config.id):
         digest.update(chapter.config.model_dump_json().encode())
         digest.update(chapter.body_md.encode())
+    if theme is not None:
+        digest.update(theme.config.model_dump_json().encode())
+        for asset in theme.assets:
+            digest.update(asset.file.sha256.encode())
     return digest.hexdigest()

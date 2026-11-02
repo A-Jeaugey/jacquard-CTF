@@ -230,8 +230,21 @@ class EventScoring(StrictModel):
     first_blood: list[Annotated[int, Field(ge=0)]] = Field(default_factory=list, max_length=10)
 
 
+BUILTIN_LAYOUTS = ("grid", "list")
+
+
 class Board(StrictModel):
-    layout: Literal["grid"] = "grid"
+    """`layout` : « grid », « list » ou l'identifiant d'un layout déclaré dans le thème."""
+
+    layout: Identifier = "grid"
+
+
+class Screen(StrictModel):
+    """Écran public à projeter (carte de progression globale, classement, fil d'actualité)."""
+
+    id: Identifier
+    title: str | None = Field(default=None, max_length=128)
+    layout: Identifier | None = None
 
 
 class ItemDefinition(StrictModel):
@@ -261,6 +274,7 @@ class EventConfig(StrictModel):
     scoring: EventScoring = EventScoring()
     submissions: Submissions = Submissions()
     board: Board = Board()
+    screens: list[Screen] = Field(default_factory=list)
     # Adresse des services de défis, substituée à « {challenge_host} » dans `connection`.
     challenge_host: str | None = Field(
         default=None, max_length=253, pattern=r"^[A-Za-z0-9.\-:\[\]]+$"
@@ -402,4 +416,51 @@ class StoryConfig(StrictModel):
     def _public_has_no_rule(self) -> "StoryConfig":
         if self.public and self.unlock is not None:
             raise ValueError("un chapitre public ne peut pas avoir de règle de déblocage")
+        return self
+
+
+# --------------------------------------------------------------------------- theme/theme.yml
+
+TokenName = Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]{0,40}$")]
+# Valeur CSS d'un jeton : pas de quoi sortir de la déclaration (« ; », accolades, balises).
+TokenValue = Annotated[str, Field(max_length=200, pattern=r"^[^;{}<>\\]*$")]
+StringName = Annotated[str, Field(pattern=r"^[a-z0-9_.]{1,64}$")]
+AssetPath = Annotated[str, Field(min_length=1, max_length=200)]
+
+
+class ZoneTarget(StrictModel):
+    category: Identifier | None = None
+    challenge: Identifier | None = None
+
+    @model_validator(mode="after")
+    def _exactly_one(self) -> "ZoneTarget":
+        if (self.category is None) == (self.challenge is None):
+            raise ValueError("indiquer exactement une cible : category ou challenge")
+        return self
+
+
+class MapZone(StrictModel):
+    element: str = Field(pattern=r"^#[A-Za-z][A-Za-z0-9_-]{0,63}$")
+    target: ZoneTarget
+    label: str | None = Field(default=None, max_length=64)
+
+
+class ImageMapLayout(StrictModel):
+    type: Literal["image-map"]
+    background: AssetPath
+    zones: list[MapZone] = Field(min_length=1)
+
+
+class ThemeConfig(StrictModel):
+    tokens: dict[TokenName, TokenValue] = Field(default_factory=dict)
+    strings: dict[StringName, Annotated[str, Field(max_length=500)]] = Field(default_factory=dict)
+    logo: AssetPath | None = None
+    css: AssetPath | None = None
+    layouts: dict[Identifier, ImageMapLayout] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _no_builtin_names(self) -> "ThemeConfig":
+        clash = set(self.layouts) & set(BUILTIN_LAYOUTS)
+        if clash:
+            raise ValueError(f"noms de layout réservés : {', '.join(sorted(clash))}")
         return self

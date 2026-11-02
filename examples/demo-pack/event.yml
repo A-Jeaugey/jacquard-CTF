@@ -33,6 +33,12 @@ scoring:
 submissions:
   rate_limit: { max: 10, per_seconds: 60 }
 
+board:
+  layout: carte
+
+screens:
+  - { id: projecteur, title: "Démo — grand écran", layout: carte }
+
 items:
   - id: cle-crypto
     name: "Clé de cryptographie"

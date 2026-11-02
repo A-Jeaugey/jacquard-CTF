@@ -1,0 +1,17 @@
+# Thème de démonstration : couleurs, libellés, et une carte interactive à trois zones.
+tokens:
+  color-accent: "#38bdf8"
+  color-accent-text: "#04121c"
+strings:
+  board.title: "Le plan du coffre"
+  story.title: "Carnet de bord"
+  nav.story: "Carnet"
+css: theme.css
+layouts:
+  carte:
+    type: image-map
+    background: layouts/carte.svg
+    zones:
+      - { element: "#zone-misc", target: { category: misc }, label: "Le hall" }
+      - { element: "#zone-crypto", target: { category: crypto }, label: "La salle des chiffres" }
+      - { element: "#zone-osint", target: { category: osint }, label: "La tour d'observation" }

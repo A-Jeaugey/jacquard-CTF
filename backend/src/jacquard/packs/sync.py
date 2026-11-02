@@ -11,11 +11,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, selectinload
 
 from jacquard.markdown import render_markdown
-from jacquard.models import Challenge, ChallengeFile, EventRow, Flag, Hint, StoryEntry
+from jacquard.models import Challenge, ChallengeFile, EventRow, Flag, Hint, StoryEntry, ThemeAsset
 from jacquard.packs.loader import LoadedChallenge, Pack
 from jacquard.packs.schema import GrantItem, dump_rule
 from jacquard.security import flag_digest
@@ -210,6 +210,7 @@ def sync_pack(
             hint.active = False
 
     _sync_story(session, pack, report)
+    _sync_theme(session, pack, event, files_dir, dry_run)
 
     if dry_run:
         session.rollback()
@@ -242,3 +243,22 @@ def _sync_story(session: Session, pack: Pack, report: SyncReport) -> None:
         if entry.active:
             entry.active = False
             report.story_deactivated.append(entry.id)
+
+
+def _sync_theme(
+    session: Session, pack: Pack, event: EventRow, files_dir: Path, dry_run: bool
+) -> None:
+    theme = pack.theme
+    event.theme = theme.config.model_dump(mode="json") if theme else None
+    session.execute(delete(ThemeAsset))
+    for asset in theme.assets if theme else []:
+        session.add(
+            ThemeAsset(
+                path=asset.path,
+                sha256=asset.file.sha256,
+                content_type=asset.content_type,
+                size=asset.file.size,
+            )
+        )
+        if not dry_run:
+            _store_file(files_dir, asset.file.sha256, asset.file.path)

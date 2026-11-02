@@ -33,6 +33,8 @@ class EventRow(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
     slug: Mapped[str] = mapped_column(String(64))
     config: Mapped[dict[str, Any]] = mapped_column(JSON)
+    # Thème du pack (theme/theme.yml validé), ou None.
+    theme: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     pack_digest: Mapped[str] = mapped_column(String(64))
     synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
@@ -250,3 +252,14 @@ class Unlock(Base):
     kind: Mapped[str] = mapped_column(String(16))  # challenge | hint | story
     target_id: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class ThemeAsset(Base):
+    """Fichier du thème (logo, CSS, fond de carte), servi tel quel."""
+
+    __tablename__ = "theme_assets"
+
+    path: Mapped[str] = mapped_column(String(200), primary_key=True)
+    sha256: Mapped[str] = mapped_column(String(64))
+    content_type: Mapped[str] = mapped_column(String(64))
+    size: Mapped[int] = mapped_column(Integer)

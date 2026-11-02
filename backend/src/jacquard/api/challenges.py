@@ -37,6 +37,7 @@ from jacquard.services import (
     compute_snapshot,
     is_frozen,
     phase,
+    public_challenge_name,
     public_cutoff,
     team_progress,
 )
@@ -332,14 +333,17 @@ def submit_flag(
     notifications = [a["notify_html"] for a in challenge.on_solve if "notify_html" in a]
 
     # Pendant le gel, seules l'équipe concernée et l'orga sont prévenues.
+    # Les autres équipes reçoivent cet événement : on ne révèle ni l'identifiant ni le nom
+    # d'un défi caché qu'elles n'ont peut-être pas encore débloqué.
+    secret = public_challenge_name(challenge) != challenge.name
     publish(
         db,
         "solve",
         {
             "team_id": team_id,
             "team": team.name,
-            "challenge_id": challenge.id,
-            "challenge": challenge.name,
+            "challenge_id": None if secret else challenge.id,
+            "challenge": public_challenge_name(challenge),
             "first_blood": first_blood,
         },
         public=not team.hidden and not is_frozen(event, now),

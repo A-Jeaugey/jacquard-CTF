@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
 from jacquard import __version__
-from jacquard.api import admin, auth, challenges, live, public, story, teams
+from jacquard.api import admin, auth, challenges, live, public, story, teams, theme
 from jacquard.api.deps import CSRF_COOKIE, CSRF_HEADER
 from jacquard.config import get_settings
 from jacquard.realtime import broker
@@ -77,7 +77,7 @@ def create_app() -> FastAPI:
             response.headers.setdefault(name, value)
         return response
 
-    for module in (public, auth, teams, challenges, story, live, admin):
+    for module in (public, auth, teams, challenges, story, live, theme, admin):
         app.include_router(module.router)
     return app
 

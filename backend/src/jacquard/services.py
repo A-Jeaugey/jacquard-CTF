@@ -197,3 +197,16 @@ def team_progress(
     if rows:
         session.execute(insert(Unlock).values(rows).on_conflict_do_nothing())
     return progress
+
+
+SECRET_CHALLENGE_LABEL = "un défi secret"  # noqa: S105 (libellé, pas un mot de passe)
+
+
+def public_challenge_name(challenge: Challenge) -> str:
+    """Nom affichable publiquement (fil d'actualité, notifications aux autres équipes).
+
+    Un défi caché tant qu'il est verrouillé ne doit pas révéler son existence aux équipes
+    qui ne l'ont pas encore débloqué."""
+    if challenge.unlock is not None and challenge.when_locked == "hidden":
+        return SECRET_CHALLENGE_LABEL
+    return challenge.name
