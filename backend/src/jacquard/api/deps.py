@@ -23,7 +23,10 @@ def api_error(status: int, code: str, message: str, **extra: object) -> NoReturn
     raise HTTPException(status_code=status, detail={"code": code, "message": message, **extra})
 
 
-DbSession = Annotated[Session, Depends(get_db)]
+# `scope="function"` : la transaction est validée AVANT l'envoi de la réponse. Avec la
+# portée par défaut (« request »), FastAPI la validerait après : le navigateur pourrait
+# recevoir son cookie de session avant que la session n'existe en base.
+DbSession = Annotated[Session, Depends(get_db, scope="function")]
 Now = Annotated[datetime, Depends(get_now)]
 AppSettings = Annotated[Settings, Depends(get_settings)]
 

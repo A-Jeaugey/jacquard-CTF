@@ -7,7 +7,9 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
   workers: 1,
-  retries: process.env.CI ? 1 : 0,
+  // Pas de relance : les tests partagent une base, une relance échouerait pour une autre
+  // raison et masquerait l'erreur d'origine.
+  retries: 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
     baseURL: `http://localhost:${WEB_PORT}`,

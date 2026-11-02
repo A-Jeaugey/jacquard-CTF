@@ -17,8 +17,12 @@
   const teamsMode = $derived(session.event?.participation.mode === "teams");
 
   async function load(): Promise<void> {
-    team = await api.get<TeamDetail | null>("/api/teams/me");
-    loaded = true;
+    try {
+      team = await api.get<TeamDetail | null>("/api/teams/me");
+      loaded = true;
+    } catch (e) {
+      error = errorMessage(e);
+    }
   }
 
   async function run(action: () => Promise<unknown>): Promise<void> {
@@ -58,7 +62,7 @@
 {#if error}<p class="error" role="alert">{error}</p>{/if}
 
 {#if !loaded}
-  <p class="muted">{t("loading")}</p>
+  {#if !error}<p class="muted">{t("loading")}</p>{/if}
 {:else if team}
   <section class="card">
     <h1>{team.name}</h1>
