@@ -261,6 +261,10 @@ class EventConfig(StrictModel):
     scoring: EventScoring = EventScoring()
     submissions: Submissions = Submissions()
     board: Board = Board()
+    # Adresse des services de défis, substituée à « {challenge_host} » dans `connection`.
+    challenge_host: str | None = Field(
+        default=None, max_length=253, pattern=r"^[A-Za-z0-9.\-:\[\]]+$"
+    )
     items: list[ItemDefinition] = Field(default_factory=list)
     hints: HintPolicy = HintPolicy()
 

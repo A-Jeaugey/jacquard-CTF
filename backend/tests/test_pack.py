@@ -193,3 +193,16 @@ def test_impossible_story_is_a_warning(make_pack) -> None:  # type: ignore[no-un
         encoding="utf-8",
     )
     assert any("jamais" in str(w) for w in load_pack(pack).warnings)
+
+
+def test_challenge_host_placeholder(make_pack, db, sync) -> None:  # type: ignore[no-untyped-def]
+    from jacquard.models import Challenge
+
+    pack = make_pack()
+    write_challenge(pack, {**BASE, "connection": "nc {challenge_host} 4000"})
+    assert any("challenge_host" in e for e in errors_of(pack))
+
+    pack = make_pack(challenge_host="defis.example.org")
+    write_challenge(pack, {**BASE, "connection": "nc {challenge_host} 4000"})
+    sync(pack)
+    assert db.get(Challenge, "nouveau").connection == "nc defis.example.org 4000"

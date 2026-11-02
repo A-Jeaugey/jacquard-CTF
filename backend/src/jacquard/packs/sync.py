@@ -146,7 +146,11 @@ def sync_pack(
         challenge.tags = list(config.tags)
         challenge.description_html = render_markdown(loaded.description_md)
         challenge.scoring = (config.scoring or default_scoring).model_dump(mode="json")
-        challenge.connection = config.connection
+        challenge.connection = (
+            config.connection.replace("{challenge_host}", pack.event.challenge_host or "")
+            if config.connection
+            else None
+        )
         challenge.position = config.position
         challenge.active = True
         challenge.unlock = dump_rule(config.unlock)
