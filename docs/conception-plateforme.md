@@ -1,7 +1,7 @@
 # Conception de la plateforme CTF
 
 > Nom de code : **Jacquard** (à valider).
-> Statut : brouillon de conception, rien n'est encore implémenté.
+> Statut : étapes M0 et M1 implémentées (voir le README).
 
 ## 1. Objectif
 

@@ -7,7 +7,7 @@ propre au déploiement (base de données, secrets, chemins).
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     # Limites de tentatives de connexion (fenêtre glissante).
     login_max_failures: int = 10
     login_window_seconds: int = 900
+
+    @field_validator("registration_code", mode="before")
+    @classmethod
+    def _empty_is_none(cls, value: object) -> object:
+        # Docker Compose transmet une variable vide plutôt que de l'omettre.
+        return None if value == "" else value
 
     @property
     def files_dir(self) -> Path:

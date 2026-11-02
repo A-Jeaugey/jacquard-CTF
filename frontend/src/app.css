@@ -1,0 +1,546 @@
+/* Thème par défaut de la plateforme. Les packs surchargeront ces variables
+   (docs/conception-plateforme.md, §6.1). */
+:root {
+  --color-bg: #0b0e14;
+  --color-surface: #151a23;
+  --color-surface-2: #1d2430;
+  --color-border: #2a3342;
+  --color-text: #e6e8eb;
+  --color-muted: #8a94a6;
+  --color-accent: #f5c542;
+  --color-accent-text: #1a1400;
+  --color-ok: #34d399;
+  --color-error: #f87171;
+  --color-warn: #fbbf24;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-body);
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius: 10px;
+  --gap: 1rem;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  line-height: 1.2;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+code,
+pre,
+.mono {
+  font-family: var(--font-mono);
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+main.container {
+  padding-top: 1.5rem;
+  padding-bottom: 3rem;
+}
+
+.muted {
+  color: var(--color-muted);
+}
+.small {
+  font-size: 0.85rem;
+}
+.center {
+  text-align: center;
+}
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.break {
+  word-break: break-all;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* ---------------------------------------------------------------- navigation */
+.nav {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  min-height: 56px;
+  flex-wrap: wrap;
+}
+.brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: none;
+  margin-right: auto;
+}
+.nav nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.nav nav a {
+  color: var(--color-muted);
+  text-decoration: none;
+}
+.nav nav a.active,
+.nav nav a:hover {
+  color: var(--color-text);
+}
+.nav nav a.button {
+  color: var(--color-accent-text);
+}
+.nav-toggle {
+  display: none;
+}
+.countdown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 720px) {
+  .nav-toggle {
+    display: block;
+    background: none;
+    color: var(--color-text);
+    padding: 0.25rem 0.5rem;
+  }
+  .nav nav {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    padding-bottom: 0.75rem;
+  }
+  .nav nav.open {
+    display: flex;
+  }
+  .countdown {
+    order: -1;
+    width: 100%;
+    padding-top: 0.5rem;
+  }
+}
+
+/* ---------------------------------------------------------------- éléments */
+button,
+.button {
+  display: inline-block;
+  font: inherit;
+  font-weight: 600;
+  border: 0;
+  border-radius: var(--radius);
+  padding: 0.6rem 1.1rem;
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  cursor: pointer;
+  text-decoration: none;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button.secondary,
+.button.secondary {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+button.small,
+.button.small {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+}
+button.link {
+  background: none;
+  color: var(--color-muted);
+  padding: 0;
+  font-weight: 400;
+}
+button.link:hover {
+  color: var(--color-text);
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+select {
+  width: auto;
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+label.checkbox input {
+  width: auto;
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: var(--gap);
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+.form h1,
+.form h2 {
+  margin: 0;
+}
+.narrow {
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--gap);
+}
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+}
+.badge.warn {
+  color: var(--color-warn);
+  border-color: var(--color-warn);
+}
+
+.error {
+  color: var(--color-error);
+}
+.feedback {
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+}
+.feedback.ok {
+  color: var(--color-ok);
+  border-color: var(--color-ok);
+}
+.feedback.error {
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+.feedback.info {
+  color: var(--color-muted);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th,
+td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+th {
+  color: var(--color-muted);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+.table-wrap {
+  overflow-x: auto;
+}
+tr.ok td {
+  color: var(--color-ok);
+}
+
+.prose :where(p, ul, ol, pre, blockquote, table) {
+  margin: 0 0 0.9rem;
+}
+.prose pre,
+pre.connection {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.prose code {
+  background: var(--color-bg);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}
+.prose pre code {
+  padding: 0;
+  background: none;
+}
+.prose img {
+  max-width: 100%;
+}
+
+/* ---------------------------------------------------------------- pages */
+.hero {
+  padding: 2rem 0;
+}
+.hero h1 {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  margin: 0 0 0.5rem;
+}
+.tagline {
+  font-size: 1.2rem;
+  color: var(--color-muted);
+}
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+.announcement header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.stats {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+.stats div {
+  display: flex;
+  flex-direction: column;
+}
+.stats strong {
+  font-size: 1.6rem;
+}
+.invite {
+  font-size: 1.3rem;
+  letter-spacing: 0.15em;
+  user-select: all;
+}
+
+.scoreboard tr.mine td {
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+.scoreboard tr.podium td:first-child {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--gap);
+  overflow-x: auto;
+}
+.tabs button {
+  background: none;
+  color: var(--color-muted);
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+}
+.tabs button.active {
+  color: var(--color-text);
+  border-bottom-color: var(--color-accent);
+}
+.toolbar {
+  margin-bottom: var(--gap);
+}
+
+/* ---------------------------------------------------------------- tableau grille */
+.grid-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--gap);
+  margin-top: var(--gap);
+}
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.column-title {
+  font-size: 1.05rem;
+  margin: 0 0 0.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 3px solid var(--category-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.challenge-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  text-align: left;
+  width: 100%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--category-color);
+  font-weight: 400;
+  transition:
+    transform 0.1s,
+    border-color 0.1s;
+}
+.challenge-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--category-color);
+}
+.challenge-card.solved {
+  opacity: 0.6;
+  background: color-mix(in srgb, var(--color-ok) 8%, var(--color-surface));
+}
+.challenge-name {
+  font-weight: 600;
+}
+.challenge-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* ---------------------------------------------------------------- modale */
+.modal {
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.modal::backdrop {
+  background: rgb(0 0 0 / 60%);
+}
+.modal-body {
+  padding: 1.5rem;
+  position: relative;
+}
+.modal-body h2 {
+  margin: 0 2rem 0.25rem 0;
+}
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 1.2rem;
+}
+.files {
+  padding-left: 1.2rem;
+}
+.files li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+.flag-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.flag-form input {
+  flex: 1;
+}
+.shake {
+  animation: shake 0.35s;
+}
+@keyframes shake {
+  25% {
+    transform: translateX(-6px);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shake {
+    animation: none;
+  }
+  .challenge-card {
+    transition: none;
+  }
+}
