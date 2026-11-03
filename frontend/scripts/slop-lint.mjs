@@ -181,8 +181,11 @@ const RULES = [
   }],
   ["T8", "P2", "Libellés « MOT — fragment »", ({ markup }) =>
     [...markup.matchAll(/\b[A-ZÀ-Ý][A-ZÀ-Ý0-9]{2,}(?:\s[A-ZÀ-Ý0-9]{2,})*\s[—–]\s[A-Za-zÀ-ÿ]/g)].map((m) => m[0])],
-  ["K4", "P2", "Fausse fenêtre (trois pastilles façon macOS)", ({ css, markup }) =>
-    [...(css + markup).matchAll(/#(ff5f57|febc2e|ffbd2e|28c840|27c93f)\b/gi)].map((m) => m[0])],
+  ["K4", "P2", "Fausse fenêtre (trois pastilles façon macOS)", ({ css, markup }) => [
+    ...(css + markup).matchAll(/#(ff5f57|febc2e|ffbd2e|28c840|27c93f)\b/gi),
+    // barre de titre dont les trois premiers enfants sont des éléments vides
+    ...markup.matchAll(/class=["'][^"']*\b(?:bar|titlebar|title-bar|chrome|window|dots|traffic|toolbar|topbar)\b[^"']*["'][^>]*>\s*(?:<(i|span)\b[^>]*>\s*<\/\1>\s*){3}/gi),
+  ].map((m) => m[0].slice(0, 40))],
   ["C6", "P2", "Vert émeraude, accent de repli des modèles", ({ css }) =>
     [...css.matchAll(/#(10b981|059669|34d399|6ee7b7|047857)\b/gi)].map((m) => m[0])],
   ["C7", "P1", "Bouton principal violet ou indigo", ({ css }) =>

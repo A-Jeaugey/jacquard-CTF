@@ -17,3 +17,7 @@ frontend/dist/
 !.env.example
 frontend/test-results/
 frontend/playwright-report/
+
+# Sorties des contrôles de design
+frontend/design-check/
+frontend/audit/
