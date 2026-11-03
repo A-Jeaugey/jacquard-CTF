@@ -128,9 +128,18 @@ const RULES = [
       .filter((r) => (r.body.match(COLOR_RE) || []).map(parseColor).filter(Boolean).some(isNearBlack)).map((r) => r.sel)],
   ["K1", "P1", "Verre dépoli (backdrop-filter: blur)", ({ css }) =>
     [...css.matchAll(/backdrop-filter\s*:\s*[^;]*blur/gi)].map(() => "backdrop-filter")],
-  ["K2", "P1", "Bordure colorée sur un côté d'une carte", ({ css }) =>
-    cssRules(css).filter((r) => /border-(left|right|top)\s*:\s*([3-9]|\d\d)px\s+solid/.test(r.body)
-      || /border-(left|top)-width\s*:\s*([3-9]|\d\d)px/.test(r.body)).map((r) => r.sel)],
+  ["K2", "P1", "Bordure colorée sur un côté d'une carte", ({ css }, all) =>
+    // Un filet neutre (gris, pierre) qui sépare des sections n'est pas visé : seulement un
+    // bord épais et saturé, la « languette » des cartes générées.
+    cssRules(css).filter((r) => [...r.body.matchAll(/border-(left|right|top)\s*:\s*([3-9]|\d\d)px\s+solid\s+([^;]+)/g)]
+      .some((m) => {
+        const resolved = all.resolve(m[3]);
+        // Couleur fixée élément par élément (variable non résolue) sur un bord latéral : la
+        // languette colorée par catégorie, motif le plus typique.
+        if (m[1] !== "top" && /var\(/.test(m[3]) && !(resolved.match(COLOR_RE) || []).length) return true;
+        return (resolved.match(COLOR_RE) || []).map(parseColor).filter(Boolean).some((c) => hsl(c).s > 0.35 && c.a > 0.5);
+      }))
+      .map((r) => r.sel)],
   ["K3", "P2", "Pastilles en série (border-radius: 999px)", ({ css }) => {
     const hits = [...css.matchAll(/border-radius\s*:\s*(999|9999|100)px|border-radius\s*:\s*50vh/gi)];
     return hits.length >= 3 ? hits.map(() => "pastille") : [];
@@ -195,7 +204,8 @@ const RULES = [
     // Texte visible seulement : le texte entre les balises, et les chaînes du script qui
     // ressemblent à une phrase (avec une espace), pas les clés ni les noms d'événements.
     const visibleText = markup.replace(/<[^>]*>/g, " ").replace(/\{[^}]*\}/g, " ");
-    const phrases = [...script.matchAll(/(["'`])((?:\\.|(?!\1).){3,200})\1/g)].map((m) => m[2]).filter((s) => / /.test(s));
+    const phrases = [...script.matchAll(/(["'`])((?:\\.|(?!\1).){3,200})\1/g)].map((m) => m[2].replace(/<[^>]*>/g, " "))
+      .filter((s) => / /.test(s.trim()));
     const text = visibleText + "\n" + phrases.join("\n");
     return [...text.matchAll(/\b(soumettre|en savoir plus|cliquez ici|découvrez|boostez|révolutionn\w*|sans effort|en toute simplicité|de pointe|incroyable|libérez|transformez|élevez|plongez dans|submit|learn more|click here|get started|seamless|cutting-edge|unleash|elevate|supercharge|next-generation)\b/gi)]
       .map((m) => m[0]);
@@ -259,7 +269,12 @@ function main() {
     return { file: f, text, ...split(f, text) };
   });
   const allCss = parts.map((p) => p.css).join("\n");
+  const vars = {};
+  for (const m of allCss.matchAll(/--([\w-]+)\s*:\s*([^;}]+)/g)) vars[m[1]] = m[2].trim();
+  const resolve = (v, depth = 0) => (depth > 6 ? v : v.replace(/var\(\s*--([\w-]+)\s*(?:,\s*([^)]+))?\)/g,
+    (_, n, fallback) => (vars[n] !== undefined ? resolve(vars[n], depth + 1) : fallback || "")));
   const all = {
+    resolve,
     fontFaces: new Set([...allCss.matchAll(/@font-face\s*\{[^}]*font-family\s*:\s*["']?([^"';}]+)/gi)].map((m) => m[1].trim().toLowerCase())),
     hasFocusVisible: /:focus-visible/.test(allCss),
   };
