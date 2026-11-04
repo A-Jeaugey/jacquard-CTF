@@ -336,7 +336,7 @@ const defaults = {
   "error.event_title": "Événement indisponible",
   "error.event_unavailable": "Impossible de charger l'événement. Réessaie dans un instant ; si ça continue, préviens un organisateur.",
   "error.stale": "Les dernières données reçues restent affichées.",
-  "credits.fonts": "Polices : Le Murmure (Jérémy Landes, Velvetyne, OFL) et Luciole (Laurent Bourcellier et Jonathan Fabreguettes, CC BY 4.0).",
+  "credits.fonts": "Polices : Lumignons, d'après Le Murmure (Jérémy Landes, Velvetyne, OFL), et Luciole (Laurent Bourcellier et Jonathan Fabreguettes, CC BY 4.0).",
 
   "error.generic": "Une erreur est survenue. Réessaie dans un instant ; si ça continue, préviens un organisateur.",
   "error.network": "Impossible de joindre le serveur. Vérifie ta connexion, puis réessaie.",

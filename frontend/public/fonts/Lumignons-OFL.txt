@@ -1,6 +1,10 @@
 Copyright (c) 2020, Jérémy Landes <jeremy@studiotriple.fr>
 with Reserved Font Names "Murmure", "Le Murmure".
 
+Lumignons is a modified version of Le Murmure (Velvetyne Type Foundry): the glyphs C, c, Ç
+and ç were redrawn in 2026 for the Jacquard platform (scripts/police-lumignons.py). In
+accordance with the Reserved Font Names above, the modified version is named "Lumignons".
+
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
 http://scripts.sil.org/OFL

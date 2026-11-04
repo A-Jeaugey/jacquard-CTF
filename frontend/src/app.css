@@ -3,9 +3,11 @@
    Tailles rendues : 14, 16, 18, 21, 24, 36, 48 px. Espacements : multiples de 4.
    slop-ok: K5 arrondis voulus : 0 pour l'architecture, 2 px pour toutes les commandes (DESIGN.md). */
 
+/* Lumignons : Le Murmure (Jérémy Landes, Velvetyne, OFL) dont C, c, Ç et ç ont été redessinés
+   (le C d'origine se lisait comme un E) ; voir scripts/police-lumignons.py. */
 @font-face {
-  font-family: "Le Murmure";
-  src: url("/fonts/LeMurmure-Regular.woff2") format("woff2");
+  font-family: "Lumignons";
+  src: url("/fonts/Lumignons-Regular.woff2") format("woff2");
   font-display: swap;
 }
 @font-face {
@@ -46,7 +48,7 @@
   --douce: #bcb3c2;
   --voile: #a6bdd1;
 
-  --display: "Le Murmure", "Luciole", serif;
+  --display: "Lumignons", "Luciole", serif;
   --texte: "Luciole", "Trebuchet MS", sans-serif;
 
   --e1: 4px;
@@ -146,7 +148,7 @@ svg {
   display: none !important;
 }
 
-/* Titres : Le Murmure, jamais sous 21 px. */
+/* Titres : Lumignons, jamais sous 21 px. */
 /* Titres équilibrés : jamais un mot seul sur la dernière ligne. */
 .titre-page,
 .titre-section,

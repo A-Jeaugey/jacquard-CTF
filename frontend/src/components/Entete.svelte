@@ -109,7 +109,7 @@
     line-clamp: 2;
     overflow: hidden;
     line-height: 1.1;
-    /* Le Murmure dépasse de ses lignes (accents des capitales en haut, hampes de la ligne
+    /* Lumignons dépasse de ses lignes (accents des capitales en haut, hampes de la ligne
        masquée en bas) : place pour les accents au-dessus, coupe juste au-dessus des hampes de
        la troisième ligne en dessous. */
     padding-top: 0.12em;

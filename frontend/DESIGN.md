@@ -34,8 +34,12 @@ Le chaud ne sert jamais d'accent d'interface : il marque seulement ce que l'équ
 
 ## Typographie
 
-- **Le Murmure** (Velvetyne, OFL 1.1) : logotype, titres de page, noms de quartier, titres
-  d'événement en direct. **Jamais sous 21 px, jamais pour un chiffre.**
+- **Lumignons** : Le Murmure (Jérémy Landes, Velvetyne, OFL 1.1) dont le C, le c, le Ç et
+  le ç ont été redessinés. Le terminal du haut d'origine plongeait vers l'intérieur et faisait
+  lire « Eroix-Rousse » ; les nouvelles lettres ont une ouverture franche, avec les terminaux
+  fins de la police. Renommée parce que la licence réserve le nom « Le Murmure » ; se
+  reconstruit avec `scripts/police-lumignons.py`. Logotype, titres de page, noms de quartier,
+  titres d'événement en direct. **Jamais sous 21 px, jamais pour un chiffre.**
 - **Luciole** (Laurent Bourcellier et Jonathan Fabreguettes, CC BY 4.0, **crédit affiché en
   pied de page**) : tout le reste. Chiffres en `tabular-nums` ; ordinal « 2e » en
   `font-variant-position: super`.
@@ -82,7 +86,7 @@ survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau),
   **Erreur** : cadre 3 px `--lumen` **et** message précédé du mot « Refusé » en gras (pas la
   couleur seule).
 - **Événement en direct** (premier sang, annonce) : pas de boîte ni de notification flottante
-  à bordure ; une ligne de chronique sous la carte, filet de 1 px au-dessus, titre en Le Murmure,
+  à bordure ; une ligne de chronique sous la carte, filet de 1 px au-dessus, titre en Lumignons,
   actions en ligne. Les notifications éphémères gardent la même forme, empilées en bas.
 - **Panneau** (défi ouvert) : fond `--pierre-sombre`, titre 48 px, élévation de l'immeuble avec
   la fenêtre du défi cadrée et une phrase d'ordre (« Deuxième des trois défis… Après « X ».
