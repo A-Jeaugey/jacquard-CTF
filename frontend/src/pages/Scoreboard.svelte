@@ -42,6 +42,15 @@
   const ECART = 6;
   const HAUTEURS = [44, 54, 38, 58, 42, 50, 38, 46];
   const etagesPour = (n: number): number => (n <= 2 ? 1 : n <= 8 ? 2 : n <= 15 ? 3 : 4);
+  // Chaque défi garde sa fenêtre pour toutes les équipes, mais les places ne suivent pas
+  // l'ordre des défis : une façade remplie dans l'ordre se lirait comme une jauge. L'ordre des
+  // places est un mélange fixe, propre à chaque immeuble.
+  const brouille = (x: number): number => Math.imul(x ^ (x >>> 15), 0x2c1b3c6d) >>> 0;
+  const melange = (n: number, graine: number): number[] => {
+    const places = Array.from({ length: n }, (_, k) => k);
+    const cle = places.map((k) => brouille(k * 97 + graine * 7919 + 1));
+    return places.sort((a, b) => (cle[a] ?? 0) - (cle[b] ?? 0));
+  };
   const ville = $derived.by(() => {
     let x = 0;
     let premier = 0;
@@ -50,7 +59,7 @@
       const colonnes = Math.ceil(d.count / etages);
       const largeur = colonnes * PAS + 3;
       const hauteur = Math.max(HAUTEURS[i % HAUTEURS.length] ?? 44, etages * ETAGE + 8);
-      const immeuble = { x, largeur, hauteur, premier, n: d.count, etages, colonnes };
+      const immeuble = { x, largeur, hauteur, premier, n: d.count, etages, colonnes, places: melange(d.count, i) };
       x += largeur + ECART;
       premier += d.count;
       return immeuble;
@@ -108,12 +117,12 @@
                   {#each ville as b, j (j)}
                     <rect class="toit" x={b.x - 1} y={HAUT - b.hauteur - 3} width={b.largeur + 2} height="3" />
                     <rect class="facade-mur" x={b.x} y={HAUT - b.hauteur} width={b.largeur} height={b.hauteur} />
-                    {#each { length: b.n } as _, k (k)}
+                    {#each b.places as place, k (k)}
                       <rect
                         class="fenetre"
                         class:allumee={allumees.has(b.premier + k)}
-                        x={b.x + 3 + (k % b.colonnes) * PAS}
-                        y={HAUT - 4 - (b.etages - Math.floor(k / b.colonnes)) * ETAGE}
+                        x={b.x + 3 + (place % b.colonnes) * PAS}
+                        y={HAUT - 4 - (b.etages - Math.floor(place / b.colonnes)) * ETAGE}
                         width="8"
                         height="12"
                       />

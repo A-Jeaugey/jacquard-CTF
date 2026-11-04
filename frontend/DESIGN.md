@@ -127,7 +127,8 @@ survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau),
   alignée à gauche ; l'univers passe par les mots, la couleur `--lumignon` réservée à ce qui
   est gagné et les dessins de la ville : sur le classement, chaque équipe a sa ville (la même
   silhouette pour toutes : un immeuble par quartier, une fenêtre de 8 × 12 par défi public
-  toujours à la même place, allumée quand l'équipe l'a résolu ; un quartier fourni monte en
+  toujours à la même place, allumée quand l'équipe l'a résolu ; les places sont mélangées une
+  fois pour toutes, pour qu'une façade ne se remplisse pas comme une jauge ; un quartier fourni monte en
   étages, quatre au plus, plutôt qu'en largeur ; le nombre seul à côté, sans libellé répété ;
   une phrase sous l'introduction nomme les quartiers de gauche à droite). La ville ne prend
   jamais la place du nom : le nom garde 10 rem au moins, la ville se réduit (18 rem au plus)
