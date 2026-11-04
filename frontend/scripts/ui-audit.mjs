@@ -112,7 +112,9 @@ function measure(isMobile) {
     const ratio = (l1 + 0.05) / (l2 + 0.05);
     const large = size >= 24 || (size >= 18.66 && +cs.fontWeight >= 700);
     if (ratio < (large ? 3 : 4.5)) report.contrast.push({ ...describe(el), ratio: +ratio.toFixed(2), size });
-    if (el.scrollWidth > el.clientWidth + 1 && ["hidden", "clip"].includes(cs.overflowX)) report.clipped.push(describe(el));
+    // Un texte réservé aux lecteurs d'écran (1 × 1 px, découpé exprès) n'est pas un texte coupé.
+    const reserveLecteurs = el.clientWidth <= 1 && el.clientHeight <= 1;
+    if (!reserveLecteurs && el.scrollWidth > el.clientWidth + 1 && ["hidden", "clip"].includes(cs.overflowX)) report.clipped.push(describe(el));
   }
   for (const el of document.querySelectorAll("body *")) {
     if (!visible(el)) continue;
