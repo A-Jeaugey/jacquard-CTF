@@ -15,10 +15,13 @@
   let bouton = $state<HTMLButtonElement>();
   // Un nouvel échec doit se voir (et s'entendre) : l'erreur affichée, elle, ne change pas.
   let echec = $state<string | null>(null);
+  let essais = 1;
 
   async function relancer(): Promise<void> {
     if (envoi) return;
     envoi = true;
+    // Le message du dernier échec ne reste pas affiché pendant le nouvel essai.
+    echec = null;
     try {
       await Promise.all([action(), new Promise((fin) => setTimeout(fin, 400))]);
     } finally {
@@ -26,7 +29,12 @@
     }
     await tick();
     if (bouton?.isConnected) {
-      echec = t("action.retry_failed", { time: formatHeure(new Date().toISOString(), session.event?.timezone) });
+      // Numéroté, et vidé avant d'être rempli : deux échecs dans la même minute restent
+      // deux messages distincts, vus et annoncés.
+      essais += 1;
+      echec = null;
+      await tick();
+      echec = t("action.retry_failed", { n: essais, time: formatHeure(new Date().toISOString(), session.event?.timezone) });
       return;
     }
     if (cible) document.getElementById(cible)?.focus();

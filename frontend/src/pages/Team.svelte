@@ -190,7 +190,7 @@
     </p>
 
     <section class="bloc" aria-labelledby="h-resolus">
-      <h2 class="titre-section" id="h-resolus">{t("team.solves")}</h2>
+      <h2 class="titre-section" id="h-resolus">{t("team.districts")}</h2>
       {#each parQuartier as groupe (groupe.id)}
         <div class="q-tete">
           {#if groupe.quartier}
@@ -201,7 +201,8 @@
           <div>
             <h3 class="titre-bloc">{groupe.nom}</h3>
             {#if groupe.quartier}
-              <p class="meta">{tn("board.done", groupe.quartier.resolus, { total: groupe.quartier.defis.length })}</p>
+              <!-- L'immeuble montre l'avancement ; on le dit aux lecteurs d'écran. -->
+              <p class="sr-only">{tn("board.done", groupe.quartier.resolus, { total: groupe.quartier.defis.length })}</p>
             {/if}
           </div>
         </div>
@@ -374,7 +375,7 @@
   }
   .q-tete {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: var(--e4);
     margin-top: var(--e6);
     margin-bottom: var(--e3);
@@ -385,7 +386,7 @@
     flex: none;
     display: flex;
     align-items: flex-end;
-    justify-content: center;
+    justify-content: flex-start;
     width: 96px;
     height: 64px;
   }

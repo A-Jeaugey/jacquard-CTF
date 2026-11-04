@@ -198,7 +198,11 @@
     void loadAnnouncements();
   });
 
-  const unChiffre = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
+  // Toujours une décimale : les virgules s'alignent dans les colonnes.
+  const unChiffre = new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  // Les identifiants du pack deviennent les noms que tout le monde lit ailleurs.
+  const nomQuartier = (id: string): string => session.event?.categories.find((c) => c.id === id)?.name ?? id;
+  const nomDefi = (id: string): string => stats?.challenges.find((c) => c.id === id)?.name ?? id;
   const minutes = (valeur: number | null): string => (valeur === null ? "—" : unChiffre.format(valeur));
 </script>
 
@@ -367,7 +371,7 @@
               {#each stats.challenges as c (c.id)}
                 <tr class:inactif={c.attempts === 0}>
                   <td>
-                    {c.name}<br /><span class="meta">{c.category}{#if c.attempts === 0}, {t("admin.no_attempts")}{/if}</span>
+                    {c.name}<br /><span class="meta">{nomQuartier(c.category)}{#if c.attempts === 0}, {t("admin.no_attempts")}{/if}</span>
                   </td>
                   <td class="nombre tnum">{c.solves}</td>
                   <td class="nombre tnum">{c.wrong}</td>
@@ -391,7 +395,7 @@
             <p class="signal">
               {#if signal.kind === "shared_ip"}{t("admin.signal.shared_ip", { ip: signal.ip, teams: signal.teams.join(", ") })}
               {:else if signal.kind === "burst"}{t("admin.signal.burst", { team: signal.team, at: minutes(signal.at_minutes) })}
-              {:else}{t("admin.signal.same_wrong", { challenge: signal.challenge, value: signal.value, teams: signal.teams.join(", ") })}{/if}
+              {:else}{t("admin.signal.same_wrong", { challenge: nomDefi(signal.challenge), value: signal.value, teams: signal.teams.join(", ") })}{/if}
             </p>
           {:else}
             <p class="secondaire">{t("admin.signals.none")}</p>

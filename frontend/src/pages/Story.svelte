@@ -69,7 +69,7 @@
   .repere {
     margin-top: var(--e7);
     font-weight: 700;
-    border-bottom: 2px solid var(--claire);
+    border-bottom: 1px solid var(--pierre);
     padding-bottom: var(--e2);
   }
   .repere + .message {

@@ -140,11 +140,15 @@ export interface ScoreboardEntry {
   score: number;
   solves: number;
   last_solve_at: string | null;
+  /** Fenêtres allumées de la ville commune (indices dans `districts`). */
+  lit?: number[];
 }
 
 export interface Scoreboard {
   /** Défis dont l'existence est publique (ouverts d'emblée ou montrés verrouillés). */
   challenges?: number;
+  /** La ville commune : quartiers dans l'ordre de l'événement, nombre de défis publics. */
+  districts?: { category: string; count: number }[];
   frozen: boolean;
   frozen_at: string | null;
   teams: ScoreboardEntry[];

@@ -31,20 +31,25 @@
 
   const monEquipe = $derived(session.me?.team?.id ?? null);
 
-  // La façade d'une équipe : le même immeuble pour toutes, une fenêtre par défi public, rangées
-  // sur deux étages au-delà de douze ; les fenêtres des défis résolus sont allumées.
+  // La ville de chaque équipe : la même silhouette pour toutes (un immeuble par quartier, une
+  // fenêtre par défi public, toujours à la même place) ; ses fenêtres résolues sont allumées.
   const PAS = 9;
-  const total = $derived(Math.max(classement?.challenges ?? 0, ...(classement?.teams.map((e) => e.solves) ?? [0])));
-  const etages = $derived(total > 12 ? 2 : 1);
-  const parEtage = $derived(Math.max(1, Math.ceil(total / etages)));
-  const largeur = $derived(parEtage * PAS + 3);
-  const hauteur = $derived(etages * 12 + 3);
-  const fenetres = $derived(
-    Array.from({ length: total }, (_, i) => ({
-      x: 3 + (i % parEtage) * PAS,
-      y: 3 + (etages - 1 - Math.floor(i / parEtage)) * 12,
-    })),
-  );
+  const ECART = 5;
+  const HAUTEURS = [26, 34, 22, 38, 24, 30, 20, 28];
+  const ville = $derived.by(() => {
+    let x = 0;
+    let premier = 0;
+    return (classement?.districts ?? []).map((d, i) => {
+      const largeur = d.count * PAS + 3;
+      const hauteur = HAUTEURS[i % HAUTEURS.length] ?? 26;
+      const immeuble = { x, largeur, hauteur, premier, n: d.count };
+      x += largeur + ECART;
+      premier += d.count;
+      return immeuble;
+    });
+  });
+  const HAUT = Math.max(...HAUTEURS) + 4;
+  const largeurVille = $derived(ville.length ? (ville.at(-1)?.x ?? 0) + (ville.at(-1)?.largeur ?? 0) : 0);
 </script>
 
 <div class="page">
@@ -83,12 +88,22 @@
               {#if mien}<span class="meta">{t("scoreboard.yours")}</span>{/if}
             </span>
             <span class="facade">
-              {#if total > 0}
-                <svg viewBox="-2 -4 {largeur + 4} {hauteur + 4}" width={largeur + 4} height={hauteur + 4} aria-hidden="true" focusable="false">
-                  <rect class="toit" x="-2" y="-4" width={largeur + 4} height="4" />
-                  <rect class="facade-mur" x="0" y="0" width={largeur} height={hauteur} />
-                  {#each fenetres as f, i (i)}
-                    <rect class="fenetre" class:allumee={i < ligne.solves} x={f.x} y={f.y} width="6" height="9" />
+              {#if ville.length}
+                {@const allumees = new Set(ligne.lit ?? [])}
+                <svg viewBox="0 0 {largeurVille} {HAUT}" width={largeurVille} height={HAUT} aria-hidden="true" focusable="false">
+                  {#each ville as b, j (j)}
+                    <rect class="toit" x={b.x - 1} y={HAUT - b.hauteur - 3} width={b.largeur + 2} height="3" />
+                    <rect class="facade-mur" x={b.x} y={HAUT - b.hauteur} width={b.largeur} height={b.hauteur} />
+                    {#each { length: b.n } as _, k (k)}
+                      <rect
+                        class="fenetre"
+                        class:allumee={allumees.has(b.premier + k)}
+                        x={b.x + 3 + k * PAS}
+                        y={HAUT - 13}
+                        width="6"
+                        height="9"
+                      />
+                    {/each}
                   {/each}
                 </svg>
               {/if}

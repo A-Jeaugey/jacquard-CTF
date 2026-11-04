@@ -30,13 +30,13 @@
   <nav class="nav" aria-label={t("nav.label")}>
     <ul>
       {#if session.me}
-        <li><a href="/challenges" aria-current={courant("/challenges")}><span class="libelle" data-texte={t("nav.board")}>{t("nav.board")}</span></a></li>
+        <li><a href="/challenges" aria-current={courant("/challenges")}><span class="libelle">{t("nav.board")}</span></a></li>
       {/if}
-      <li><a href="/scoreboard" aria-current={courant("/scoreboard")}><span class="libelle" data-texte={t("nav.scoreboard")}>{t("nav.scoreboard")}</span></a></li>
+      <li><a href="/scoreboard" aria-current={courant("/scoreboard")}><span class="libelle">{t("nav.scoreboard")}</span></a></li>
       {#if avecJournal}
         <li>
           <a href="/story" aria-current={courant("/story")}>
-            <span class="libelle" data-texte={t("nav.story")}>{t("nav.story")}</span>
+            <span class="libelle">{t("nav.story")}</span>
             {#if nonLus > 0 && route.path !== "/story"}
               <span class="compteur tnum" aria-label={tn("nav.unread", nonLus)}>{nonLus}</span>
             {/if}
@@ -44,7 +44,7 @@
         </li>
       {/if}
       {#if session.me?.user.role === "admin"}
-        <li><a href="/admin" aria-current={courant("/admin")}><span class="libelle" data-texte={t("nav.admin")}>{t("nav.admin")}</span></a></li>
+        <li><a href="/admin" aria-current={courant("/admin")}><span class="libelle">{t("nav.admin")}</span></a></li>
       {/if}
     </ul>
   </nav>
@@ -70,9 +70,9 @@
     <button type="button" class="btn-texte sortie" onclick={seDeconnecter}>{t("nav.logout")}</button>
   {:else if session.event}
     <div class="acces">
-      <a class="lien" href="/login" aria-current={courant("/login")}><span class="libelle" data-texte={t("nav.login")}>{t("nav.login")}</span></a>
+      <a class="lien" href="/login" aria-current={courant("/login")}><span class="libelle">{t("nav.login")}</span></a>
       {#if inscriptionsOuvertes()}
-        <a class="lien" href="/register" aria-current={courant("/register")}><span class="libelle" data-texte={t("nav.register")}>{t("nav.register")}</span></a>
+        <a class="lien" href="/register" aria-current={courant("/register")}><span class="libelle">{t("nav.register")}</span></a>
       {/if}
     </div>
   {/if}
@@ -126,18 +126,7 @@
     text-decoration: none;
   }
   .libelle {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: flex-start;
-    text-underline-offset: 8px;
-  }
-  .libelle::after {
-    content: attr(data-texte) / "";
-    height: 0;
-    overflow: hidden;
-    visibility: hidden;
-    font-weight: 700;
-    pointer-events: none;
+    text-underline-offset: 4px;
   }
   .nav a:hover,
   .lien:hover {
@@ -147,10 +136,10 @@
   .lien:hover .libelle {
     text-decoration: underline;
   }
+  /* Page courante : clair et souligné de 2 px, sans gras (rien ne change de largeur). */
   .nav a[aria-current="page"],
   .lien[aria-current="page"] {
     color: var(--claire);
-    font-weight: 700;
   }
   .nav a[aria-current="page"] .libelle,
   .lien[aria-current="page"] .libelle {
@@ -183,6 +172,9 @@
   a.equipe[aria-current="page"] .equipe-nom {
     text-decoration: underline;
     text-underline-offset: 4px;
+  }
+  a.equipe[aria-current="page"] .equipe-nom {
+    text-decoration-thickness: 2px;
   }
   .equipe-nom {
     max-width: 24ch;
@@ -246,9 +238,13 @@
       grid-column: 1 / -1;
       flex-direction: row;
       justify-content: flex-start;
+      margin-left: calc(-1 * var(--e3));
     }
     .sortie {
       grid-area: sortie;
+      /* Le filet passe sous la gouttière : une seule ligne avec celui de l'équipe. */
+      margin-left: calc(-1 * var(--e4));
+      padding-left: var(--e4);
       border-top: 1px solid var(--pierre);
       padding-top: var(--e2);
       margin-top: var(--e1);

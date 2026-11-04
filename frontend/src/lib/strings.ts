@@ -73,6 +73,7 @@ const defaults = {
   "team.score": "Score",
   "team.rank": "Rang",
   "team.solves": "Défis résolus",
+  "team.districts": "Les quartiers",
   "team.no_solves": "Aucun défi résolu pour l'instant.",
   "team.leave": "Quitter l'équipe",
   "team.leave.confirm": "Quitter l'équipe ? Tu pourras en rejoindre une autre ensuite.",
@@ -325,7 +326,7 @@ const defaults = {
   "action.retry": "Réessayer",
 
   "action.retrying": "Nouvel essai…",
-  "action.retry_failed": "Nouvel essai à {time} : toujours en échec.",
+  "action.retry_failed": "Essai n° {n}, à {time} : toujours en échec.",
   "action.cancel": "Annuler",
   "error.title": "Erreur :",
   "error.event_title": "Événement indisponible",

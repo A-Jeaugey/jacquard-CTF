@@ -243,8 +243,8 @@ export const PONTS = [
   [218, 628, 72],
 ] as const;
 export const NOMS_RIVIERES = [
-  { nom: "Saône", x: 216, y: 48, angle: -90 },
-  { nom: "Rhône", x: 474, y: 232, angle: -69 },
+  { nom: "Saône", x: 196, y: 165, angle: -90 },
+  { nom: "Rhône", x: 486, y: 226, angle: -69 },
 ];
 
 interface Emplacement {
