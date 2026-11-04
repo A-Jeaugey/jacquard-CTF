@@ -66,7 +66,7 @@ export const GABARITS: Record<NomGabarit, Gabarit> = {
     w: 130,
     h: 96,
     dessin: [
-      p("toit", "5,96 13,4 21,96"),
+      p("facade", "5,96 13,4 21,96"),
       r("toit", 9, 40, 8, 2),
       r("toit", 7, 66, 12, 2),
       r("facade", 36, 44, 80, 52),

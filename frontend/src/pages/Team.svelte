@@ -150,7 +150,8 @@
         quartier: ville?.find((q) => q.categorie.id === c.id) ?? null,
         defis: equipe?.solves.filter((s) => s.category === c.id) ?? [],
       }))
-      .filter((g) => g.defis.length > 0);
+      // Un quartier sans défi résolu reste affiché, éteint : les huit quartiers sont là.
+      .filter((g) => g.defis.length > 0 || g.quartier !== null);
     const connus = new Set(categories.map((c) => c.id));
     const autres = equipe.solves.filter((s) => !connus.has(s.category));
     if (autres.length) groupes.push({ id: "", nom: t("team.solves"), quartier: null, defis: autres });
@@ -206,14 +207,18 @@
             {/if}
           </div>
         </div>
-        <ol class="resolus">
-          {#each groupe.defis as r (r.challenge_id)}
-            <li>
-              <span class="r-nom">{typo(r.challenge_name)}</span>
-              <span class="r-qui">{t("team.solved_by", { user: r.solved_by ?? "—", time: heure(r.solved_at) })}</span>
-            </li>
-          {/each}
-        </ol>
+        {#if groupe.defis.length === 0}
+          <p class="secondaire vide-quartier">{t("team.district_empty")}</p>
+        {:else}
+          <ol class="resolus">
+            {#each groupe.defis as r (r.challenge_id)}
+              <li>
+                <span class="r-nom">{typo(r.challenge_name)}</span>
+                <span class="r-qui">{t("team.solved_by", { user: r.solved_by ?? "—", time: heure(r.solved_at) })}</span>
+              </li>
+            {/each}
+          </ol>
+        {/if}
       {:else}
         <p class="secondaire">{t("team.no_solves")}</p>
         <p><a class="btn-ligne" href="/challenges">{t("team.go_board")}</a></p>
@@ -227,7 +232,11 @@
             <li>
               <p class="fil-nom">{typo(objet.name)}</p>
               <FilDeSoie motif={motif(objet.description)} />
-              {#if objet.description}<p class="meta">{typo(objet.description)}</p>{/if}
+              {#if objet.description}
+                {@const m = motif(objet.description)}
+                <p class="meta">{typo(m ? objet.description.replace(/,?\s*motif\s*:\s*[●○]+\.?\s*$/, ".") : objet.description)}</p>
+                {#if m}<p class="motif tnum">{t("team.pattern", { pattern: m })}</p>{/if}
+              {/if}
             </li>
           {/each}
         </ul>
@@ -373,6 +382,14 @@
   .fil-nom {
     font-weight: 700;
   }
+  .vide-quartier {
+    padding: var(--e2) 0 var(--e3);
+    border-top: 1px solid var(--pierre);
+  }
+  .motif {
+    font-size: var(--t-nom);
+    overflow-wrap: anywhere;
+  }
   .q-tete {
     display: flex;
     align-items: center;
@@ -411,6 +428,7 @@
   .r-qui {
     font-size: var(--t-meta);
     color: var(--douce);
+    overflow-wrap: anywhere;
   }
   .code {
     display: flex;

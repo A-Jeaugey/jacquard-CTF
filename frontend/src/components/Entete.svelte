@@ -168,8 +168,12 @@
     line-height: 1.25;
     text-decoration: none;
   }
+  a.equipe .equipe-nom {
+    color: var(--douce);
+  }
   a.equipe:hover .equipe-nom,
   a.equipe[aria-current="page"] .equipe-nom {
+    color: var(--claire);
     text-decoration: underline;
     text-underline-offset: 4px;
   }
@@ -191,9 +195,11 @@
   }
   .sortie {
     color: var(--douce);
+    text-decoration: none;
   }
   .sortie:hover {
     color: var(--claire);
+    text-decoration: underline;
   }
   .acces {
     display: flex;
@@ -238,7 +244,10 @@
       grid-column: 1 / -1;
       flex-direction: row;
       justify-content: flex-start;
-      margin-left: calc(-1 * var(--e3));
+      margin-right: 0;
+    }
+    .acces .lien:first-child {
+      padding-left: 0;
     }
     .sortie {
       grid-area: sortie;

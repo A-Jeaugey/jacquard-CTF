@@ -495,14 +495,14 @@
   .onglets button:active {
     color: var(--claire);
     text-decoration: underline;
-    text-underline-offset: 8px;
+    text-underline-offset: 4px;
   }
+  /* Onglet courant : même marque que la page courante de l'en-tête, sans gras (rien ne bouge). */
   .onglets button[aria-selected="true"] {
     color: var(--claire);
-    font-weight: 700;
     text-decoration: underline;
     text-decoration-thickness: 2px;
-    text-underline-offset: 8px;
+    text-underline-offset: 4px;
   }
   .contenu {
     margin-top: var(--e5);
@@ -548,7 +548,7 @@
   td {
     padding: var(--e3);
     border-bottom: 1px solid var(--pierre);
-    vertical-align: top;
+    vertical-align: baseline;
   }
   /* Un seul bord gauche et un seul bord droit : ceux du titre de la page. */
   th:first-child,
@@ -573,9 +573,11 @@
     color: var(--lumignon);
     font-weight: 700;
   }
+  /* --voile est réservé au verrouillé : une équipe masquée ou un défi sans tentative est
+     du secondaire, et le mot l'écrit. */
   .masquee td,
   .inactif td {
-    color: var(--voile);
+    color: var(--douce);
   }
   .suite {
     margin-top: var(--e5);

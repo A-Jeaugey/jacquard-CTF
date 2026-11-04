@@ -33,28 +33,42 @@
 
   // La ville de chaque équipe : la même silhouette pour toutes (un immeuble par quartier, une
   // fenêtre par défi public, toujours à la même place) ; ses fenêtres résolues sont allumées.
-  const PAS = 9;
-  const ECART = 5;
-  const HAUTEURS = [26, 34, 22, 38, 24, 30, 20, 28];
+  // Fenêtres de 8 × 12 (deux tiers de la marque du plan) : des façades, pas une barre. Un
+  // quartier fourni monte en étages (quatre au plus) plutôt qu'en largeur, pour que la ville
+  // reste lisible quand l'événement compte beaucoup de défis. Les quartiers sont dans l'ordre
+  // du plan, nommés une fois dans la légende.
+  const PAS = 11;
+  const ETAGE = 15;
+  const ECART = 6;
+  const HAUTEURS = [44, 54, 38, 58, 42, 50, 38, 46];
+  const etagesPour = (n: number): number => (n <= 2 ? 1 : n <= 8 ? 2 : n <= 15 ? 3 : 4);
   const ville = $derived.by(() => {
     let x = 0;
     let premier = 0;
     return (classement?.districts ?? []).map((d, i) => {
-      const largeur = d.count * PAS + 3;
-      const hauteur = HAUTEURS[i % HAUTEURS.length] ?? 26;
-      const immeuble = { x, largeur, hauteur, premier, n: d.count };
+      const etages = etagesPour(d.count);
+      const colonnes = Math.ceil(d.count / etages);
+      const largeur = colonnes * PAS + 3;
+      const hauteur = Math.max(HAUTEURS[i % HAUTEURS.length] ?? 44, etages * ETAGE + 8);
+      const immeuble = { x, largeur, hauteur, premier, n: d.count, etages, colonnes };
       x += largeur + ECART;
       premier += d.count;
       return immeuble;
     });
   });
-  const HAUT = Math.max(...HAUTEURS) + 4;
+  const HAUT = $derived(Math.max(...HAUTEURS, ...ville.map((b) => b.hauteur)) + 4);
+  const legende = $derived(
+    (classement?.districts ?? [])
+      .map((d) => session.event?.categories.find((c) => c.id === d.category)?.name ?? d.category)
+      .join(", "),
+  );
   const largeurVille = $derived(ville.length ? (ville.at(-1)?.x ?? 0) + (ville.at(-1)?.largeur ?? 0) : 0);
 </script>
 
 <div class="page">
   <h1 class="titre-page" id="titre-classement" tabindex="-1">{t("scoreboard.title")}</h1>
   <p class="intro">{t("scoreboard.intro")}</p>
+  {#if legende}<p class="legende">{t("scoreboard.legend", { names: legende })}</p>{/if}
 
   {#if erreur}
     <div class="etat" role="alert">
@@ -98,10 +112,10 @@
                       <rect
                         class="fenetre"
                         class:allumee={allumees.has(b.premier + k)}
-                        x={b.x + 3 + k * PAS}
-                        y={HAUT - 13}
-                        width="6"
-                        height="9"
+                        x={b.x + 3 + (k % b.colonnes) * PAS}
+                        y={HAUT - 4 - (b.etages - Math.floor(k / b.colonnes)) * ETAGE}
+                        width="8"
+                        height="12"
                       />
                     {/each}
                   {/each}
@@ -129,6 +143,11 @@
     font-size: var(--t-nom);
     max-width: 56ch;
   }
+  .legende {
+    margin-top: var(--e2);
+    max-width: 64ch;
+    color: var(--douce);
+  }
   .etat {
     margin-top: var(--e3);
   }
@@ -141,7 +160,8 @@
     position: relative;
     isolation: isolate;
     display: grid;
-    grid-template-columns: 4rem minmax(0, 1fr) auto auto;
+    /* Le nom garde au moins 10rem ; la ville se réduit (18rem au plus) au lieu de l'écraser. */
+    grid-template-columns: 4rem minmax(10rem, 1fr) minmax(0, 18rem) auto;
     column-gap: var(--e4);
     margin-top: var(--e5);
     border-top: 1px solid var(--pierre);
@@ -186,6 +206,8 @@
   }
   .facade svg {
     display: block;
+    flex: 0 1 auto;
+    min-width: 0;
     max-width: 100%;
     height: auto;
   }
@@ -219,7 +241,8 @@
   .mien .score {
     color: var(--lumignon);
   }
-  @media (max-width: 640px) {
+  /* Empilé dès 760 px : sous cette largeur, la ville passe sous le nom. */
+  @media (max-width: 760px) {
     .classement {
       display: block;
     }
