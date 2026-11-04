@@ -120,15 +120,20 @@ survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau),
   calée sur le bord droit comme sur les pages d'accès ; puis le prologue (visiteurs seulement :
   les joueurs le retrouvent dans leurs messages) et les annonces.
 - **Accès** (connexion, inscription, page introuvable) : contenu à gauche sur 480 px au plus,
-  la ville éteinte en décor à droite (masquée sous 900 px). Le décor ne porte aucune
-  information.
+  titre et phrase d'accueil dans la voix de l'événement, la ville éteinte en décor calée sur
+  le bord droit (sous le contenu en dessous de 900 px, comme sur l'accueil). Le décor ne porte
+  aucune information.
 - **Joueur** (équipe, classement, messages) : une colonne de lecture de 880 px au plus,
   alignée à gauche ; l'univers passe par les mots, la couleur `--lumignon` réservée à ce qui
-  est gagné et les dessins de la ville : sur le classement, chaque équipe a sa façade (une
-  fenêtre chaude par défi résolu, la même marque que sur le plan, sans libellé répété) ; sur
-  la page équipe, les fils de soie et, pour chaque quartier, son immeuble aux fenêtres de
-  l'équipe au-dessus de ses défis résolus. Les messages de l'histoire sont des lettres :
-  titre, texte, signature ; la voix de LUMEN y est une citation en `--lumen`.
+  est gagné et les dessins de la ville : sur le classement, chaque équipe a son immeuble (le
+  même pour toutes : une fenêtre par défi public, sur deux étages au-delà de douze, allumée
+  quand l'équipe l'a résolu ; le nombre seul à côté, sans libellé répété) ; la page équipe
+  commence par les quartiers (leur immeuble aux fenêtres de l'équipe, la progression avec les
+  mots du plan, puis les défis résolus : qui, quand), puis les fils de soie, puis l'atelier
+  (code d'invitation, membres, départ). Les messages de l'histoire sont des lettres : titre,
+  texte, signature ; la voix de LUMEN y est une citation en `--lumen` avec un filet de 2 px
+  `--lumen` à gauche, seule bordure de couleur du site (elle porte l'information « c'est LUMEN
+  qui parle »).
 - **Grand écran** (vidéoprojecteur, 1920 × 1080, lu à cinq mètres) : rien sous 24 px en
   1920 × 1080 (21 px sur un projecteur de moins de 1001 px de haut), aucune
   interaction, rien ne défile ; la ville s'allume avec la progression de toutes les équipes, à
