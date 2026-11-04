@@ -523,8 +523,9 @@
       display: flex;
       flex-direction: column;
     }
-    :global(body.cadre-plan main) {
-      flex: 1;
+    /* « #contenu » pour l'emporter sur la règle générale de app.css (pied en bas de page). */
+    :global(body.cadre-plan #contenu) {
+      flex: 1 1 0;
       min-height: 0;
     }
     .plan {
