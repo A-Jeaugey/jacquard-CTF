@@ -153,7 +153,7 @@
         {/if}
       </div>
     </div>
-        <section class="bloc" aria-labelledby="h-fils">
+    <section class="bloc" aria-labelledby="h-fils">
           <h2 class="titre-section" id="h-fils">{t("team.items")}</h2>
           {#if equipe.items.length}
             <ul class="fils">
@@ -240,7 +240,8 @@
   }
   .fils {
     display: grid;
-    gap: var(--e4);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: var(--e5) var(--e6);
     border-top: 1px solid var(--pierre);
     padding-top: var(--e4);
   }
