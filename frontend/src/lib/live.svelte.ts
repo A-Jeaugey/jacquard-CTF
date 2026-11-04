@@ -69,9 +69,14 @@ const handlers: Record<string, Handler> = {
   },
 };
 
+/** Mode audit (`?audit` dans l'adresse) : pas de flux temps réel. Une connexion SSE ouverte
+ * empêche les outils d'analyse de considérer la page comme chargée. */
+export const auditMode = new URLSearchParams(location.search).has("audit");
+
 /** Ouvre (ou rouvre) le flux. À rappeler quand l'utilisateur ou son équipe change. */
 export function connectLive(): void {
   source?.close();
+  if (auditMode) return;
   source = new EventSource("/api/live");
   source.onopen = () => (live.connected = true);
   source.onerror = () => (live.connected = false);
