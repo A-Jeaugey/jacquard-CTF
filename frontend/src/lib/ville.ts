@@ -62,33 +62,34 @@ export const GABARITS: Record<NomGabarit, Gabarit> = {
     socle: { x: 0, w: 120 },
   },
   // Basilique : flèche de la tour métallique, façade et tours crénelées, fenêtres en arc.
+  // Le pied de la flèche est le bord gauche du dessin : la basilique se cale comme les autres.
   basilique: {
-    w: 130,
+    w: 125,
     h: 96,
     dessin: [
-      p("facade", "5,96 13,4 21,96"),
-      r("toit", 9, 40, 8, 2),
-      r("toit", 7, 66, 12, 2),
-      r("facade", 36, 44, 80, 52),
-      p("facade", "52,45 76,26 100,45"),
-      r("facade", 28, 28, 16, 68),
-      r("facade", 108, 28, 16, 68),
-      r("toit", 28, 22, 4, 6),
-      r("toit", 34, 22, 4, 6),
-      r("toit", 40, 22, 4, 6),
-      r("toit", 108, 22, 4, 6),
-      r("toit", 114, 22, 4, 6),
-      r("toit", 120, 22, 4, 6),
+      p("facade", "0,96 8,4 16,96"),
+      r("toit", 4, 40, 8, 2),
+      r("toit", 2, 66, 12, 2),
+      r("facade", 31, 44, 80, 52),
+      p("facade", "47,45 71,26 95,45"),
+      r("facade", 23, 28, 16, 68),
+      r("facade", 103, 28, 16, 68),
+      r("toit", 23, 22, 4, 6),
+      r("toit", 29, 22, 4, 6),
+      r("toit", 35, 22, 4, 6),
+      r("toit", 103, 22, 4, 6),
+      r("toit", 109, 22, 4, 6),
+      r("toit", 115, 22, 4, 6),
     ],
     fixe: [
-      { x: 46, y: 56, w: 14, h: 26, arc: true },
-      { x: 69, y: 56, w: 14, h: 26, arc: true },
-      { x: 92, y: 56, w: 14, h: 26, arc: true },
+      { x: 41, y: 56, w: 14, h: 26, arc: true },
+      { x: 64, y: 56, w: 14, h: 26, arc: true },
+      { x: 87, y: 56, w: 14, h: 26, arc: true },
     ],
-    zone: { x: 44, y: 50, w: 64, h: 40 },
+    zone: { x: 39, y: 50, w: 64, h: 40 },
     fenetre: { w: 14, h: 26, arc: true },
     sens: "ligne",
-    socle: { x: 24, w: 106 },
+    socle: { x: 19, w: 106 },
   },
   // Immeuble traversé par une traboule (passage voûté au rez-de-chaussée).
   traboule: {
@@ -261,7 +262,7 @@ interface Emplacement {
 // Du nord au sud : la liste se lit dans le même ordre que la carte.
 const EMPLACEMENTS: Emplacement[] = [
   { categorie: "croix-rousse", gabarit: "canuts", x: 268, y: 22, w: 120, de: "de la Croix-Rousse" },
-  { categorie: "fourviere", gabarit: "basilique", x: 8, y: 108, w: 130, de: "de Fourvière" },
+  { categorie: "fourviere", gabarit: "basilique", x: 13, y: 108, w: 125, de: "de Fourvière" },
   { categorie: "traboules", gabarit: "traboule", x: 226, y: 186, w: 110, de: "des Traboules" },
   { categorie: "part-dieu", gabarit: "tour", x: 512, y: 92, w: 70, de: "de la Part-Dieu" },
   { categorie: "vieux-lyon", gabarit: "renaissance", x: 12, y: 286, w: 120, de: "du Vieux Lyon" },
@@ -281,6 +282,25 @@ export interface Quartier {
   defis: ChallengeSummary[];
   fenetres: Fen[];
   resolus: number;
+}
+
+/** Le gabarit de chaque catégorie, dans l'ordre donné : celui de son emplacement sur le plan
+ * (le premier libre pour une catégorie inconnue, comme dans `construireVille`), `null` pour
+ * toutes au-delà de huit catégories. */
+export function gabaritsDe(categories: string[]): (NomGabarit | null)[] {
+  if (categories.length > EMPLACEMENTS.length) return categories.map(() => null);
+  const libres = [...EMPLACEMENTS];
+  const places = new Map<string, Emplacement>();
+  for (const id of categories) {
+    const index = libres.findIndex((e) => e.categorie === id);
+    const [place] = index >= 0 ? libres.splice(index, 1) : [];
+    if (place) places.set(id, place);
+  }
+  for (const id of categories) {
+    const place = places.has(id) ? undefined : libres.shift();
+    if (place) places.set(id, place);
+  }
+  return categories.map((id) => places.get(id)?.gabarit ?? null);
 }
 
 /** Les quartiers à dessiner, ou `null` si les catégories ne tiennent pas sur le plan. */

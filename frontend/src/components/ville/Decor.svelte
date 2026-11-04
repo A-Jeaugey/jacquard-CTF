@@ -7,13 +7,16 @@
   // Purement illustratif (aria-hidden), sans interaction ni donnée de défi.
   const quartiers = $derived(villeEteinte(session.event?.categories ?? []));
   const pct = (valeur: number, total: number): string => `${(valeur / total) * 100}%`;
-  // Le décor est recadré à droite sur le quai du Rhône : la ville touche le bord de la colonne.
+  // Le décor est recadré à droite sur le quai du Rhône et à gauche sur le pied de la flèche de
+  // Fourvière : la ville touche les bords de la colonne, qu'elle soit à droite ou dessous.
+  const GAUCHE = 13;
   const LARGEUR = 585;
+  const VUE = LARGEUR - GAUCHE;
 </script>
 
 {#if quartiers}
   <div class="decor" aria-hidden="true">
-    <svg class="fond" viewBox="0 0 {LARGEUR} {PLAN.h}" preserveAspectRatio="none" focusable="false">
+    <svg class="fond" viewBox="{GAUCHE} 0 {VUE} {PLAN.h}" preserveAspectRatio="none" focusable="false">
       {#each RIVIERES as riviere (riviere.points)}
         <polyline class="quai" points={riviere.points} stroke-width={riviere.largeur + 4} />
       {/each}
@@ -25,12 +28,12 @@
       {/each}
     </svg>
     {#each NOMS_RIVIERES as riviere (riviere.nom)}
-      <span class="riviere" style:left={pct(riviere.x, LARGEUR)} style:top={pct(riviere.y, PLAN.h)} style:--angle="{riviere.angle}deg"
+      <span class="riviere" style:left={pct(riviere.x - GAUCHE, VUE)} style:top={pct(riviere.y, PLAN.h)} style:--angle="{riviere.angle}deg"
         >{riviere.nom}</span
       >
     {/each}
     {#each quartiers as q (q.categorie.id)}
-      <div class="immeuble" style:left={pct(q.x, LARGEUR)} style:top={pct(q.y, PLAN.h)} style:width={pct(q.w, LARGEUR)}>
+      <div class="immeuble" style:left={pct(q.x - GAUCHE, VUE)} style:top={pct(q.y, PLAN.h)} style:width={pct(q.w, VUE)}>
         <Immeuble quartier={q} />
         <span class="nom">{q.categorie.name}</span>
       </div>
@@ -42,7 +45,7 @@
   .decor {
     position: relative;
     width: 100%;
-    aspect-ratio: 585 / 650;
+    aspect-ratio: 572 / 650;
     container-type: inline-size;
   }
   .fond {

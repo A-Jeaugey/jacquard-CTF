@@ -109,6 +109,12 @@
     line-clamp: 2;
     overflow: hidden;
     line-height: 1.1;
+    /* Le Murmure dépasse de ses lignes (accents des capitales en haut, hampes de la ligne
+       masquée en bas) : place pour les accents au-dessus, coupe juste au-dessus des hampes de
+       la troisième ligne en dessous. */
+    padding-top: 0.12em;
+    margin-top: -0.12em;
+    max-height: 2.07em;
   }
   .nav ul {
     display: flex;
@@ -164,6 +170,7 @@
     flex-direction: column;
     align-items: flex-end;
     justify-content: center;
+    min-width: 0;
     min-height: 44px;
     line-height: 1.25;
     text-decoration: none;
@@ -181,12 +188,20 @@
     text-decoration-thickness: 2px;
   }
   .equipe-nom {
-    max-width: 24ch;
+    max-width: min(24ch, 100%);
+    /* Le soulignement de la page courante reste dans la boîte du nom, et à distance de la
+       ligne du rang : il appartient au nom seul. */
+    padding-bottom: 2px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* Le nom de l'administrateur n'est pas un lien : texte secondaire, comme les liens au repos. */
+  span.equipe .equipe-nom {
+    color: var(--douce);
+  }
   .equipe-score {
+    margin-top: 2px;
     font-size: var(--t-meta);
     color: var(--douce);
   }
@@ -223,7 +238,10 @@
     }
     .nav {
       grid-area: nav;
-      margin: var(--e1) calc(-1 * var(--e3)) 0;
+      margin: var(--e1) 0 0;
+    }
+    .nav li:first-child a {
+      padding-left: 0;
     }
     .nav ul {
       flex-wrap: wrap;

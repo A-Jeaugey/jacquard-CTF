@@ -75,7 +75,8 @@ const defaults = {
   "team.solves": "Défis résolus",
   "team.districts": "Les quartiers",
   "team.district_empty": "Aucun défi résolu ici pour l'instant.",
-  "team.pattern": "Motif : {pattern}",
+  "team.buildings_missing": "Les immeubles des quartiers n'ont pas pu être dessinés.",
+  "team.pattern": "Motif :",
   "team.no_solves": "Aucun défi résolu pour l'instant.",
   "team.leave": "Quitter l'équipe",
   "team.leave.confirm": "Quitter l'équipe ? Tu pourras en rejoindre une autre ensuite.",
@@ -191,7 +192,7 @@ const defaults = {
 
   "scoreboard.title": "Classement",
   "scoreboard.intro": "Chaque fenêtre est un défi résolu par l'équipe. À égalité de points, l'équipe qui a marqué en premier passe devant.",
-  "scoreboard.legend": "Les immeubles sont les quartiers, de gauche à droite : {names}.",
+  "scoreboard.legend": "Les immeubles sont les quartiers du plan, de gauche à droite : {names}.",
   "scoreboard.rank": "#",
   "scoreboard.team": "Équipe",
   "scoreboard.score": "Score",

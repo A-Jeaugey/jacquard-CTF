@@ -25,6 +25,8 @@
   let nom = $state("");
   let code = $state("");
   let erreurChargement = $state<string | null>(null);
+  // Les immeubles n'ont pas pu être dessinés (liste des défis indisponible).
+  let erreurDefis = $state<string | null>(null);
   // L'erreur d'une action s'affiche à côté de ce qui l'a provoquée.
   let erreur = $state<{ action: Action; titre: string; texte: string; champ: boolean } | null>(null);
   let envoi = $state<Action | null>(null);
@@ -44,12 +46,17 @@
       erreurChargement = errorMessage(e);
       return;
     }
-    if (equipe) {
-      // Sans la liste des défis, la page reste lisible : seuls les immeubles manquent.
-      defis = await api
-        .get<{ challenges: ChallengeSummary[] }>("/api/challenges")
-        .then((r) => r.challenges)
-        .catch(() => defis);
+    if (equipe) await chargerDefis();
+  }
+
+  async function chargerDefis(): Promise<void> {
+    try {
+      defis = (await api.get<{ challenges: ChallengeSummary[] }>("/api/challenges")).challenges;
+      erreurDefis = null;
+    } catch (e) {
+      // Sans la liste des défis, la page reste lisible : seuls les immeubles manquent. On le dit
+      // quand il n'y a rien à dessiner (une liste déjà chargée reste valable).
+      if (!defis.length) erreurDefis = errorMessage(e);
     }
   }
 
@@ -149,9 +156,8 @@
         nom: c.name,
         quartier: ville?.find((q) => q.categorie.id === c.id) ?? null,
         defis: equipe?.solves.filter((s) => s.category === c.id) ?? [],
-      }))
-      // Un quartier sans défi résolu reste affiché, éteint : les huit quartiers sont là.
-      .filter((g) => g.defis.length > 0 || g.quartier !== null);
+      }));
+    // Tous les quartiers de l'événement restent affichés, même sans défi résolu ni dessin.
     const connus = new Set(categories.map((c) => c.id));
     const autres = equipe.solves.filter((s) => !connus.has(s.category));
     if (autres.length) groupes.push({ id: "", nom: t("team.solves"), quartier: null, defis: autres });
@@ -191,7 +197,17 @@
     </p>
 
     <section class="bloc" aria-labelledby="h-resolus">
-      <h2 class="titre-section" id="h-resolus">{t("team.districts")}</h2>
+      <h2 class="titre-section" id="h-resolus" tabindex="-1">{t("team.districts")}</h2>
+      {#if erreurDefis}
+        <div class="manque" role="alert">
+          <p class="refus"><b>{t("error.title")}</b> {t("team.buildings_missing")} {erreurDefis}</p>
+          <p><Reessayer action={chargerDefis} cible="h-resolus" /></p>
+        </div>
+      {/if}
+      {#if !equipe.solves.length}
+        <p class="secondaire">{t("team.no_solves")}</p>
+        <p><a class="btn-ligne" href="/challenges">{t("team.go_board")}</a></p>
+      {/if}
       {#each parQuartier as groupe (groupe.id)}
         <div class="q-tete">
           {#if groupe.quartier}
@@ -207,9 +223,7 @@
             {/if}
           </div>
         </div>
-        {#if groupe.defis.length === 0}
-          <p class="secondaire vide-quartier">{t("team.district_empty")}</p>
-        {:else}
+        {#if groupe.defis.length}
           <ol class="resolus">
             {#each groupe.defis as r (r.challenge_id)}
               <li>
@@ -218,10 +232,9 @@
               </li>
             {/each}
           </ol>
+        {:else if equipe.solves.length}
+          <p class="secondaire vide-quartier">{t("team.district_empty")}</p>
         {/if}
-      {:else}
-        <p class="secondaire">{t("team.no_solves")}</p>
-        <p><a class="btn-ligne" href="/challenges">{t("team.go_board")}</a></p>
       {/each}
     </section>
     <section class="bloc" aria-labelledby="h-fils">
@@ -235,7 +248,20 @@
               {#if objet.description}
                 {@const m = motif(objet.description)}
                 <p class="meta">{typo(m ? objet.description.replace(/,?\s*motif\s*:\s*[●○]+\.?\s*$/, ".") : objet.description)}</p>
-                {#if m}<p class="motif tnum">{t("team.pattern", { pattern: m })}</p>{/if}
+                {#if m}
+                  <!-- Disques dessinés (pleins et vides de même taille, quelle que soit la police) ;
+                       le texte ●○ reste pour les lecteurs d'écran et le copier-coller. -->
+                  <p class="motif">
+                    {typo(t("team.pattern"))}
+                    <span class="noeuds" aria-hidden="true">
+                      {#each [...m] as c, i (i)}
+                        <svg class="noeud" viewBox="0 0 12 12" focusable="false"
+                          ><circle cx="6" cy="6" r={c === "●" ? 5.5 : 4.75} class:plein={c === "●"} /></svg
+                        >
+                      {/each}
+                    </span><span class="sr-only">{m}</span>
+                  </p>
+                {/if}
               {/if}
             </li>
           {/each}
@@ -382,13 +408,34 @@
   .fil-nom {
     font-weight: 700;
   }
+  .manque {
+    margin-top: var(--e3);
+  }
   .vide-quartier {
     padding: var(--e2) 0 var(--e3);
     border-top: 1px solid var(--pierre);
   }
   .motif {
     font-size: var(--t-nom);
-    overflow-wrap: anywhere;
+  }
+  .noeuds {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.3em;
+    vertical-align: -0.08em;
+  }
+  .noeud {
+    width: 0.8em;
+    height: 0.8em;
+  }
+  .noeud circle {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+  }
+  .noeud circle.plein {
+    fill: currentColor;
+    stroke: none;
   }
   .q-tete {
     display: flex;

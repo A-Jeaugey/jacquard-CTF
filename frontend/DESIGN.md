@@ -24,7 +24,7 @@ la demande : un fil de soie court d'appui en appui dans l'immeuble choisi.
 | `--pierre` | `#4A4354` | façades, filets de 1 px, ponts |
 | `--claire` | `#EDE7DF` | texte, bouton principal, focus, cadre « disponible » |
 | `--lumignon` | `#F5A23D` | **résolu uniquement** : fenêtres, fil parcouru, score de l'équipe |
-| `--lumen` | `#DDEBF7` | **verrouillé, compte à rebours, erreurs** : fenêtres froides, fil pointillé, quais ; la voix de LUMEN (citations des messages) |
+| `--lumen` | `#DDEBF7` | **verrouillé, compte à rebours, erreurs** : fenêtres froides, fil pointillé, quais ; LUMEN lui-même : sa voix (citations des messages) et la couronne de sa tour, à la Part-Dieu |
 | `--pierre-sombre` | `#3A3444` | survol des rangées, fond des panneaux |
 | `--toit` | `#221E29` | toits, silhouettes, façades des quartiers mis en retrait |
 | `--douce` | `#BCB3C2` | texte secondaire (≥ 6,9:1), bordures des commandes |
@@ -126,7 +126,10 @@ survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau),
 - **Joueur** (équipe, classement, messages) : une colonne de lecture de 880 px au plus,
   alignée à gauche ; l'univers passe par les mots, la couleur `--lumignon` réservée à ce qui
   est gagné et les dessins de la ville : sur le classement, chaque équipe a sa ville (la même
-  silhouette pour toutes : un immeuble par quartier, une fenêtre de 8 × 12 par défi public
+  silhouette pour toutes : un immeuble par quartier, qui reprend en petit la silhouette de son
+  quartier sur le plan (la tour et sa pointe pour la Part-Dieu, la flèche et le fronton pour
+  Fourvière, les pignons du Vieux Lyon, les sheds et la cheminée de Gerland, l'école basse du
+  Terrain…, en `--pierre` comme les façades), une fenêtre de 8 × 12 par défi public
   toujours à la même place, allumée quand l'équipe l'a résolu ; les places sont mélangées une
   fois pour toutes, pour qu'une façade ne se remplisse pas comme une jauge ; un quartier fourni monte en
   étages, quatre au plus, plutôt qu'en largeur ; le nombre seul à côté, sans libellé répété ;
@@ -136,7 +139,9 @@ survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau),
   les huit toujours présents (leur immeuble aux fenêtres de l'équipe, calé à gauche ;
   l'avancement écrit seulement pour les lecteurs d'écran ; puis les défis résolus : qui,
   quand ; une phrase quand aucun ne l'est), puis les fils de soie (description, puis le motif
-  sur sa propre ligne), puis l'atelier (code d'invitation, membres, départ). Les messages de l'histoire sont des lettres : titre,
+  sur sa propre ligne, en disques pleins et vides dessinés à la même taille, le texte ●○
+  restant pour les lecteurs d'écran et le copier-coller), puis l'atelier (code d'invitation,
+  membres, départ). Les messages de l'histoire sont des lettres : titre,
   texte, signature ; la voix de LUMEN y est une citation en `--lumen` avec un filet de 2 px
   `--lumen` à gauche, seule bordure de couleur du site (elle porte l'information « c'est LUMEN
   qui parle »).
@@ -161,8 +166,11 @@ survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau),
 Tous les liens de l'en-tête (navigation, accès, nom de l'équipe, « Se déconnecter ») ont un
 seul traitement : `--douce` au repos, `--claire` et souligné au survol, `--claire` et souligné
 de 2 px sur la page courante, sans gras (rien ne change de largeur d'une page à l'autre).
-Soulignés à 4 px du texte, comme partout. Sur petit écran, les liens d'accès partent de la
-gouttière, comme le reste de l'en-tête.
+Soulignés à 4 px du texte, comme partout. Sur petit écran, la navigation et les liens
+d'accès partent de la gouttière (le premier lien n'a pas de retrait), comme le reste de
+l'en-tête. Le nom de l'équipe ne sort jamais de sa colonne (points de suspension) ; le nom
+de l'administrateur, qui n'est pas un lien, est en `--douce`. Un nom d'événement très long
+tient sur deux lignes, coupées net.
 
 ## Mouvement
 
