@@ -34,3 +34,15 @@ export function poll(task: () => unknown, ms: number): () => void {
   }, ms);
   return () => clearInterval(timer);
 }
+
+const nombres = new Intl.NumberFormat("fr-FR");
+
+/** « 4 996 pts », avec une espace insécable avant l'unité. */
+export function formatPoints(points: number): string {
+  return `${nombres.format(points)} pts`;
+}
+
+/** Heure courte (« 15:07 ») dans le fuseau de l'événement. */
+export function formatHeure(iso: string, timeZone?: string): string {
+  return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone }).format(new Date(iso));
+}

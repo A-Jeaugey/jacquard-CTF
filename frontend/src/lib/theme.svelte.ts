@@ -14,17 +14,9 @@ export async function loadTheme(): Promise<void> {
     return; // pas de thème : l'apparence par défaut s'applique
   }
   theme.data = data;
-  for (const [name, value] of Object.entries(data.tokens)) {
-    document.documentElement.style.setProperty(`--${name}`, value);
-  }
+  // La direction artistique est désormais fixe (frontend/DESIGN.md) : seuls les libellés du
+  // pack sont repris ; ses jetons et sa feuille de style ne sont plus appliqués.
   setStringOverrides(data.strings as Partial<Record<StringKey, string>>);
-  if (data.css_url && !document.querySelector("link[data-theme-css]")) {
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = data.css_url;
-    link.dataset.themeCss = "";
-    document.head.append(link);
-  }
 }
 
 /**

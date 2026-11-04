@@ -1,7 +1,8 @@
 <script lang="ts">
-  import Nav from "./components/Nav.svelte";
+  import Entete from "./components/Entete.svelte";
   import Toasts from "./components/Toasts.svelte";
-  import { connectLive } from "./lib/live.svelte";
+  import { refreshEquipe } from "./lib/equipe.svelte";
+  import { connectLive, live } from "./lib/live.svelte";
   import { refreshStory } from "./lib/story.svelte";
   import { interceptLinks, route } from "./lib/router.svelte";
   import { bootstrap, session } from "./lib/session.svelte";
@@ -34,7 +35,7 @@
 
   void bootstrap();
 
-  // Le flux temps réel et le journal dépendent de l'utilisateur et de son équipe.
+  // Le flux temps réel, le journal et l'équipe dépendent de l'utilisateur et de son équipe.
   const identity = $derived(`${session.me?.user.id ?? "-"}:${session.me?.team?.id ?? "-"}`);
   $effect(() => {
     if (!session.ready || !session.configured) return;
@@ -42,22 +43,47 @@
     connectLive();
     void refreshStory();
   });
+  $effect(() => {
+    if (!session.ready) return;
+    void identity;
+    void live.ticks.solve;
+    void live.ticks.team;
+    void refreshEquipe();
+  });
 </script>
 
 <svelte:document onclick={interceptLinks} />
 
 {#if !session.ready}
-  <p class="center muted">{t("loading")}</p>
+  <p class="attente secondaire">{t("loading")}</p>
 {:else if !session.configured}
-  <main class="container">
-    <div class="card">{t("error.not_configured")}</div>
+  <main id="contenu" class="page page-etroite">
+    <p>{t("error.not_configured")}</p>
   </main>
 {:else if screenId}
   <Screen id={screenId} />
 {:else}
-  <Nav />
-  <main class="container">
+  <Entete />
+  <main id="contenu" tabindex="-1">
     <Page />
   </main>
+  <footer class="pied">
+    <p>{t("credits.fonts")}</p>
+  </footer>
   <Toasts />
 {/if}
+
+<style>
+  .attente {
+    padding: var(--e7) var(--gouttiere);
+  }
+  .pied {
+    padding: var(--e5) var(--gouttiere) var(--e7);
+    border-top: 1px solid var(--pierre);
+    font-size: var(--t-meta);
+    color: var(--douce);
+  }
+  .pied p {
+    max-width: 64ch;
+  }
+</style>

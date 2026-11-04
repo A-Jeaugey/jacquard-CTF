@@ -76,6 +76,10 @@ export interface ChallengeSummary {
   solved: boolean;
   locked: boolean;
   locked_message: string | null;
+  /** Défis (visibles) à résoudre avant celui-ci, d'après sa règle de déblocage. */
+  after?: string[];
+  /** Heure d'ouverture d'une règle de temps. */
+  opens_at?: string | null;
 }
 
 export interface HintView {
