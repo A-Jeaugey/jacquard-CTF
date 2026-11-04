@@ -117,6 +117,7 @@
 
       <section aria-labelledby="h-classement">
         <h2 class="sous-titre" id="h-classement">{t("screen.top")}</h2>
+        <p class="equipes">{tn("screen.active_teams", ecran.active_teams)}</p>
         {#if ecran.frozen}<p class="gel">{t("screen.frozen")}</p>{/if}
         <ol class="classement">
           {#each (classement?.teams ?? []).slice(0, 10) as ligne (ligne.team_id)}
@@ -132,7 +133,7 @@
       <section aria-labelledby="h-direct">
         <h2 class="sous-titre" id="h-direct">{t("screen.feed")}</h2>
         <ul class="direct">
-          {#each flux.slice(0, 4) as evenement (`${evenement.kind}-${evenement.at}`)}
+          {#each flux.slice(0, 2) as evenement (`${evenement.kind}-${evenement.at}`)}
             <li>
               <span class="heure tnum">{heure(evenement.at)}</span>
               <span>
@@ -147,16 +148,17 @@
         </ul>
       </section>
 
-      <p class="equipes">{tn("screen.active_teams", ecran.active_teams)}</p>
     </div>
   {/if}
 </main>
 
 <style>
   .ecran {
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-template-rows: minmax(0, 1fr);
     gap: var(--e7);
     padding: var(--e6) var(--e7);
     font-size: 24px;
@@ -170,6 +172,7 @@
     display: grid;
     place-items: center;
     min-height: 0;
+    height: 100%;
   }
   .carte {
     position: relative;
@@ -216,8 +219,10 @@
   .cote {
     display: flex;
     flex-direction: column;
-    gap: var(--e6);
+    gap: var(--e5);
     min-width: 0;
+    min-height: 0;
+    overflow: hidden;
   }
   .titre {
     font-family: var(--display);
@@ -288,7 +293,7 @@
     color: var(--douce);
   }
   .equipes {
-    margin-top: auto;
+    margin: calc(-1 * var(--e2)) 0 var(--e3);
     color: var(--douce);
   }
 </style>

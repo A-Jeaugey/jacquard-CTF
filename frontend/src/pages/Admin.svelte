@@ -90,6 +90,9 @@
     if (tab === "stats") return poll(loadStats, 30_000);
     void loadAnnouncements();
   });
+
+  const unChiffre = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
+  const minutes = (valeur: number | null): string => (valeur === null ? "—" : unChiffre.format(valeur));
 </script>
 
 <div class="page">
@@ -209,8 +212,8 @@
                   <td class="nombre tnum">{c.solves}</td>
                   <td class="nombre tnum">{c.wrong}</td>
                   <td class="nombre tnum">{c.hints}</td>
-                  <td class="nombre tnum">{c.first_solve_minutes ?? "—"}</td>
-                  <td class="nombre tnum">{c.median_solve_minutes ?? "—"}</td>
+                  <td class="nombre tnum">{minutes(c.first_solve_minutes)}</td>
+                  <td class="nombre tnum">{minutes(c.median_solve_minutes)}</td>
                   <td>
                     {#each c.top_wrong as w (w.value)}
                       <div><code class="valeur">{w.value}</code> <span class="meta">{t("admin.times", { n: w.count })}</span></div>
