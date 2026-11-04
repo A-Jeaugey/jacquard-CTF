@@ -448,3 +448,28 @@ export function ordreEnPhrases(
   }
   return phrases.join(" ");
 }
+
+// ---------------------------------------------------------------- la ville éteinte (décor)
+
+/** La ville avant le jeu : mêmes immeubles, toutes les fenêtres tenues par LUMEN. Sert de
+ * décor (accueil, connexion) ; aucune donnée de défi n'y figure. */
+export function villeEteinte(categories: Category[]): Quartier[] | null {
+  const factices = categories.flatMap((cat) => {
+    const emplacement = EMPLACEMENTS.find((e) => e.categorie === cat.id) ?? null;
+    const n = emplacement ? GABARITS[emplacement.gabarit].fixe.length : 3;
+    return Array.from({ length: n }, (_, i): ChallengeSummary => ({
+      id: `${cat.id}-${i}`,
+      name: "",
+      category: cat.id,
+      difficulty: null,
+      tags: [],
+      value: 0,
+      solves: 0,
+      solved: false,
+      locked: true,
+      locked_message: null,
+      after: [],
+    }));
+  });
+  return construireVille(categories, factices, []);
+}
