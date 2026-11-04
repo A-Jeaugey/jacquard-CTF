@@ -24,7 +24,7 @@ la demande : un fil de soie court d'appui en appui dans l'immeuble choisi.
 | `--pierre` | `#4A4354` | façades, filets de 1 px, ponts |
 | `--claire` | `#EDE7DF` | texte, bouton principal, focus, cadre « disponible » |
 | `--lumignon` | `#F5A23D` | **résolu uniquement** : fenêtres, fil parcouru, score de l'équipe |
-| `--lumen` | `#DDEBF7` | **verrouillé, compte à rebours, erreurs** : fenêtres froides, fil pointillé, quais |
+| `--lumen` | `#DDEBF7` | **verrouillé, compte à rebours, erreurs** : fenêtres froides, fil pointillé, quais ; la voix de LUMEN (citations des messages) |
 | `--pierre-sombre` | `#3A3444` | survol des rangées, fond des panneaux |
 | `--toit` | `#221E29` | toits, silhouettes, façades des quartiers mis en retrait |
 | `--douce` | `#BCB3C2` | texte secondaire (≥ 6,9:1), bordures des commandes |
@@ -49,8 +49,8 @@ grand écran). À 640 px et moins, rien sous 16 px.
 | Taille | Usage |
 |---|---|
 | 48 | titre de page, titre du défi ouvert |
-| 36 | logotype, nom de quartier dans la liste |
-| 24 | nom de quartier sur la carte large et sous l'élévation du panneau, titre d'événement |
+| 36 | logotype, nom de quartier dans la liste du plan |
+| 24 | nom de quartier sur la carte large, sous l'élévation du panneau et dans la page équipe (sous un titre de section à 36), titre d'événement |
 | 21 | compte à rebours ; nom de quartier sur une carte étroite |
 | 18 | nom de défi, valeurs, énoncé, champ du flag |
 | 16 | texte courant, navigation, boutons, légende |
@@ -114,20 +114,29 @@ survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau),
 
 ## Les autres pages
 
-- **Accueil** (connecté ou non) : le prologue et l'action suivante à gauche, la ville éteinte en
-  décor à droite (sous le texte d'introduction en dessous de 900 px), puis les annonces.
+- **Accueil** : le titre est l'accroche de l'événement (son nom est déjà le logotype de
+  l'en-tête), puis les dates, la phase, l'action suivante et, pour un joueur, la situation de
+  son équipe ; la ville éteinte en décor à droite (sous l'introduction en dessous de 900 px),
+  calée sur le bord droit comme sur les pages d'accès ; puis le prologue (visiteurs seulement :
+  les joueurs le retrouvent dans leurs messages) et les annonces.
 - **Accès** (connexion, inscription, page introuvable) : contenu à gauche sur 480 px au plus,
   la ville éteinte en décor à droite (masquée sous 900 px). Le décor ne porte aucune
   information.
 - **Joueur** (équipe, classement, messages) : une colonne de lecture de 880 px au plus,
-  alignée à gauche, sans illustration ; l'univers passe par les mots, la
-  couleur `--lumignon` réservée à ce qui est gagné (score, défis résolus, fils de soie) et les
-  fils de soie dessinés sur la page équipe. Les messages de l'histoire sont des lettres : titre,
-  texte, signature.
+  alignée à gauche ; l'univers passe par les mots, la couleur `--lumignon` réservée à ce qui
+  est gagné et les dessins de la ville : sur le classement, chaque équipe a sa façade (une
+  fenêtre chaude par défi résolu, la même marque que sur le plan, sans libellé répété) ; sur
+  la page équipe, les fils de soie et, pour chaque quartier, son immeuble aux fenêtres de
+  l'équipe au-dessus de ses défis résolus. Les messages de l'histoire sont des lettres :
+  titre, texte, signature ; la voix de LUMEN y est une citation en `--lumen`.
 - **Grand écran** (vidéoprojecteur, 1920 × 1080, lu à cinq mètres) : rien sous 24 px, aucune
   interaction, rien ne défile ; la ville s'allume avec la progression de toutes les équipes, à
-  côté du compte à rebours, du classement (10 premiers) et des deux derniers événements. Ouvert
-  sur un petit écran (ce n'est pas son usage), tout s'empile sans débordement.
+  côté du compte à rebours et du classement (autant d'équipes que la hauteur en montre, et la
+  page le dit) ; sous la ville, la progression en une phrase et le dernier événement (la même
+  chronique que sous le plan, sans action). Tailles par paliers selon la hauteur de l'écran
+  (72/48/36/24 dès 1001 px, 48/36/24/21 en dessous). Si le réseau saute, la dernière image
+  reste affichée. Ouvert sur un petit écran (ce n'est pas son usage), tout s'empile sans
+  débordement.
 - **Administration** : outil des organisateurs, pas une page du jeu. Tableaux, onglets et
   formulaires sont attendus ici ; mêmes jetons, mêmes composants, aucune illustration.
 
