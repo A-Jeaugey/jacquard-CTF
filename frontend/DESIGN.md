@@ -13,6 +13,14 @@ comme le 8 décembre à Lyon. Chaque quartier (catégorie) est un immeuble ; cha
 fenêtre, rangée dans l'ordre où les défis s'ouvrent. La structure de déblocage n'apparaît qu'à
 la demande : un fil de soie court d'appui en appui dans l'immeuble choisi.
 
+Les immeubles sont de l'architecture, pas des icônes : chacun reprend son quartier (l'immeuble
+de canuts et ses hautes fenêtres d'atelier, la basilique et sa tour métallique, le crayon de
+la Part-Dieu, les pignons du Vieux Lyon, la traboule et son passage voûté, le musée des
+Confluences, la halle de Gerland, l'école du Terrain), avec ses étages, corniches, cheminées,
+portes et volets clos. Les volets clos sont le décor ; seules les fenêtres des défis portent
+une lumière. Couleurs : façades `--pierre`, ombres et cordons `--pierre-sombre` ou `--toit`,
+portes `--eau`.
+
 **Une seule audace : le plan de nuit.** Tout le reste est calme, discipliné, lisible.
 
 ## Couleurs : 6 nommées, 4 dérivées (aucune autre valeur, aucune opacité pour « éteindre »)

@@ -41,76 +41,142 @@ export interface Gabarit {
 
 const r = (c: string, x: number, y: number, w: number, h: number): Forme => ({ el: "rect", c, x, y, w, h });
 const p = (c: string, points: string): Forme => ({ el: "polygon", c, points });
+const d = (c: string, chemin: string): Forme => ({ el: "path", c, d: chemin });
+/** Volet clos : deux battants, sans lumière. Le décor de la façade ; seules les fenêtres des
+ * défis s'éclairent. */
+const volet = (x: number, y: number, w: number, h: number): Forme[] => [r("toit", x, y, w, h), r("ombre", x + w / 2 - 0.5, y, 1, h)];
+/** Arc plein cintre (porte, passage, boutique). */
+const arche = (c: string, x: number, bas: number, w: number, piedroit: number): Forme =>
+  d(c, `M${x} ${bas}v${-piedroit}a${w / 2} ${w / 2} 0 0 1 ${w} 0v${piedroit}z`);
+/** Petit cercle (oculus, rose). */
+const rond = (c: string, cx: number, cy: number, rayon: number): Forme =>
+  d(c, `M${cx - rayon} ${cy}a${rayon} ${rayon} 0 1 0 ${2 * rayon} 0a${rayon} ${rayon} 0 1 0 ${-2 * rayon} 0z`);
 
 export type NomGabarit = "canuts" | "basilique" | "traboule" | "tour" | "renaissance" | "ecole" | "musee" | "usine";
 
+// Chaque quartier a son architecture : proportions, étages, volets clos, corniches, portes. Seules
+// les fenêtres des défis (« fixe », ou réparties dans « zone ») portent une lumière.
+// Classes : facade (pierre), ombre (pierre sombre), toit (toits, volets, cordons), passage
+// (portes, arches), couronne (la pointe de LUMEN), trait (treillis, arêtes).
 export const GABARITS: Record<NomGabarit, Gabarit> = {
-  // Immeuble de canuts : hautes fenêtres des ateliers.
+  // Immeuble de canuts des pentes : haut étage des ateliers (les défis), volets clos aux autres
+  // étages, corniche, souches de cheminées, portes de traboules au rez-de-chaussée.
   canuts: {
     w: 120,
     h: 92,
-    dessin: [r("toit", 22, 2, 8, 14), r("toit", 90, 0, 8, 16), r("facade", 6, 14, 108, 78), r("toit", 2, 12, 116, 4)],
-    fixe: [
-      { x: 14, y: 30, w: 16, h: 36 },
-      { x: 39, y: 30, w: 16, h: 36 },
-      { x: 65, y: 30, w: 16, h: 36 },
-      { x: 90, y: 30, w: 16, h: 36 },
+    dessin: [
+      r("facade", 14, 5, 16, 9),
+      r("facade", 15, 1, 4, 4),
+      r("facade", 21, 1, 4, 4),
+      r("facade", 88, 4, 20, 10),
+      r("facade", 89, 0, 4, 4),
+      r("facade", 95, 0, 4, 4),
+      r("facade", 101, 0, 4, 4),
+      r("facade", 2, 12, 116, 3),
+      r("facade", 6, 15, 108, 77),
+      r("toit", 6, 15, 108, 1.5),
+      r("toit", 6, 29, 108, 1),
+      r("toit", 6, 57, 108, 1),
+      r("toit", 6, 73, 108, 1),
+      ...[16, 42, 68, 94].flatMap((x) => [...volet(x, 18, 10, 9), ...volet(x, 60, 10, 10), r("ombre", x - 2, 54, 14, 1.5)]),
+      r("toit", 46, 78, 28, 14),
+      r("ombre", 46, 78, 28, 2),
+      arche("passage", 17, 92, 14, 9),
+      arche("passage", 89, 92, 14, 9),
     ],
-    zone: { x: 14, y: 24, w: 92, h: 60 },
-    fenetre: { w: 16, h: 36 },
+    fixe: [
+      { x: 15, y: 32, w: 12, h: 22 },
+      { x: 41, y: 32, w: 12, h: 22 },
+      { x: 67, y: 32, w: 12, h: 22 },
+      { x: 93, y: 32, w: 12, h: 22 },
+    ],
+    zone: { x: 12, y: 31, w: 96, h: 24 },
+    fenetre: { w: 12, h: 22 },
     sens: "ligne",
     socle: { x: 0, w: 120 },
   },
-  // Basilique : flèche de la tour métallique, façade et tours crénelées, fenêtres en arc.
-  // Le pied de la flèche est le bord gauche du dessin : la basilique se cale comme les autres.
+  // Fourvière : la tour métallique en treillis, deux tours crénelées, le fronton et sa rose,
+  // le portail entre deux colonnes ; les défis sont les baies de la nef.
   basilique: {
     w: 125,
     h: 96,
     dessin: [
-      p("facade", "0,96 8,4 16,96"),
-      r("toit", 4, 40, 8, 2),
-      r("toit", 2, 66, 12, 2),
-      r("facade", 31, 44, 80, 52),
-      p("facade", "47,45 71,26 95,45"),
-      r("facade", 23, 28, 16, 68),
-      r("facade", 103, 28, 16, 68),
-      r("toit", 23, 22, 4, 6),
-      r("toit", 29, 22, 4, 6),
-      r("toit", 35, 22, 4, 6),
-      r("toit", 103, 22, 4, 6),
-      r("toit", 109, 22, 4, 6),
-      r("toit", 115, 22, 4, 6),
+      p("facade", "8,0 0,96 16,96"),
+      r("toit", 4.5, 30, 7, 2),
+      r("toit", 2.8, 56, 10.4, 2),
+      r("toit", 1, 80, 14, 2),
+      d("trait", "M6.6 32.5L12.4 55.5M9.4 32.5L3.6 55.5M4.2 58.5L13.4 79.5M11.8 58.5L2.6 79.5M2.2 82.5L14.6 95.5M13.8 82.5L1.4 95.5"),
+      ...[23, 103].flatMap((x) => [
+        r("facade", x, 30, 16, 66),
+        ...[0, 4.33, 8.67, 13].map((dx) => r("facade", x + dx, 25, 3, 5)),
+        r("toit", x, 30, 16, 1.5),
+        arche("passage", x + 6, 52, 4, 5),
+        arche("passage", x + 6, 74, 4, 5),
+        r("ombre", x + 2, 84, 12, 1),
+      ]),
+      r("facade", 39, 50, 64, 46),
+      p("facade", "37,51 71,30 105,51"),
+      p("ombre", "45,49 71,34 97,49"),
+      rond("toit", 71, 43, 3.5),
+      r("toit", 39, 52, 64, 1.5),
+      arche("passage", 61, 96, 20, 7),
+      r("ombre", 52, 79, 2, 17),
+      r("ombre", 88, 79, 2, 17),
     ],
     fixe: [
-      { x: 41, y: 56, w: 14, h: 26, arc: true },
-      { x: 64, y: 56, w: 14, h: 26, arc: true },
-      { x: 87, y: 56, w: 14, h: 26, arc: true },
+      { x: 46, y: 57, w: 12, h: 19, arc: true },
+      { x: 65, y: 57, w: 12, h: 19, arc: true },
+      { x: 84, y: 57, w: 12, h: 19, arc: true },
     ],
-    zone: { x: 39, y: 50, w: 64, h: 40 },
-    fenetre: { w: 14, h: 26, arc: true },
+    zone: { x: 43, y: 55, w: 56, h: 22 },
+    fenetre: { w: 12, h: 19, arc: true },
     sens: "ligne",
     socle: { x: 19, w: 106 },
   },
-  // Immeuble traversé par une traboule (passage voûté au rez-de-chaussée).
+  // Immeuble traversé par une traboule : toit à deux pans, passage voûté au rez-de-chaussée,
+  // fenêtres grillées de part et d'autre ; les défis sont au premier étage.
   traboule: {
     w: 110,
     h: 88,
-    dessin: [p("toit", "4,22 55,6 106,22"), r("facade", 8, 20, 94, 68), { el: "path", c: "passage", d: "M41 88v-12a14 14 0 0 1 28 0v12z" }],
-    fixe: [
-      { x: 20, y: 32, w: 14, h: 22 },
-      { x: 48, y: 32, w: 14, h: 22 },
-      { x: 76, y: 32, w: 14, h: 22 },
+    dessin: [
+      p("toit", "2,20 55,6 108,20"),
+      r("facade", 78, 7, 8, 9),
+      r("facade", 4, 19, 102, 3),
+      r("facade", 8, 22, 94, 66),
+      r("toit", 8, 22, 94, 1.5),
+      r("toit", 8, 46, 94, 1),
+      r("toit", 8, 62, 94, 1),
+      ...[20, 49, 78].flatMap((x) => [r("ombre", x - 1, 43.5, 14, 1.5), ...volet(x + 1, 49, 10, 10)]),
+      r("toit", 16, 70, 12, 10),
+      r("ombre", 21.5, 70, 1, 10),
+      r("toit", 82, 70, 12, 10),
+      r("ombre", 87.5, 70, 1, 10),
+      arche("passage", 42, 88, 26, 10),
     ],
-    zone: { x: 16, y: 28, w: 78, h: 42 },
-    fenetre: { w: 14, h: 22 },
+    fixe: [
+      { x: 20, y: 26, w: 12, h: 17 },
+      { x: 49, y: 26, w: 12, h: 17 },
+      { x: 78, y: 26, w: 12, h: 17 },
+    ],
+    zone: { x: 14, y: 25, w: 82, h: 19 },
+    fenetre: { w: 12, h: 17 },
     sens: "ligne",
     socle: { x: 0, w: 110 },
   },
-  // Tour : on la gravit, premier défi en bas, dernier en haut. Sa couronne reste à LUMEN.
+  // Le « crayon » de la Part-Dieu : fût cerclé d'étages, ombré d'un côté, posé sur ses tours
+  // basses ; on le gravit, premier défi en bas, dernier en haut. Sa pointe reste à LUMEN.
   tour: {
     w: 70,
     h: 206,
-    dessin: [r("toit", 0, 184, 70, 22), r("facade", 20, 40, 30, 166), p("couronne", "20,40 35,2 50,40")],
+    dessin: [
+      r("ombre", 0, 182, 70, 24),
+      ...[5, 15, 48, 58].map((x) => r("toit", x, 188, 7, 9)),
+      r("facade", 20, 40, 30, 166),
+      r("ombre", 43, 40, 7, 166),
+      ...Array.from({ length: 20 }, (_, i) => r("toit", 20, 47 + i * 7, 30, 1)),
+      r("toit", 19, 39, 32, 2),
+      p("couronne", "20,40 35,2 50,40"),
+    ],
     fixe: [
       { x: 28, y: 142, w: 14, h: 22 },
       { x: 28, y: 102, w: 14, h: 22 },
@@ -121,7 +187,8 @@ export const GABARITS: Record<NomGabarit, Gabarit> = {
     sens: "colonne",
     socle: { x: 0, w: 70 },
   },
-  // Maisons Renaissance à pignons, fenêtres en arc.
+  // Maisons Renaissance du Vieux Lyon : trois pignons étroits, cordons d'étage, oculus,
+  // croisée, arcades de boutiques ; une baie cintrée par maison pour les défis.
   renaissance: {
     w: 120,
     h: 96,
@@ -131,59 +198,101 @@ export const GABARITS: Record<NomGabarit, Gabarit> = {
       p("facade", "80,96 80,40 97,28 114,40 114,96"),
       r("toit", 40, 24, 1, 72),
       r("toit", 79, 28, 1, 68),
+      rond("toit", 22, 33, 2.5),
+      rond("toit", 60, 17, 3),
+      rond("toit", 97, 37, 2.5),
+      r("toit", 4, 46, 36, 1),
+      r("toit", 4, 72, 36, 1),
+      r("toit", 41, 30, 38, 1),
+      r("toit", 41, 58, 38, 1),
+      r("toit", 41, 78, 38, 1),
+      r("toit", 80, 48, 34, 1),
+      r("toit", 80, 74, 34, 1),
+      r("toit", 54, 61, 12, 13),
+      r("ombre", 59.5, 61, 1, 13),
+      r("ombre", 54, 66.5, 12, 1),
+      arche("passage", 13, 96, 18, 10),
+      arche("passage", 52, 96, 16, 8),
+      arche("passage", 88, 96, 18, 10),
     ],
     fixe: [
-      { x: 15, y: 52, w: 14, h: 26, arc: true },
-      { x: 53, y: 38, w: 14, h: 26, arc: true },
-      { x: 90, y: 56, w: 14, h: 26, arc: true },
+      { x: 16, y: 49, w: 12, h: 20, arc: true },
+      { x: 54, y: 33, w: 12, h: 20, arc: true },
+      { x: 91, y: 51, w: 12, h: 19, arc: true },
     ],
-    zone: { x: 10, y: 44, w: 100, h: 44 },
-    fenetre: { w: 14, h: 26, arc: true },
+    zone: { x: 10, y: 44, w: 100, h: 28 },
+    fenetre: { w: 12, h: 20, arc: true },
     sens: "ligne",
     socle: { x: 0, w: 120 },
   },
-  // Bâtiment bas et large (l'école).
+  // L'école (Terrain) : bâtiment bas, dalle de toit, bande vitrée à meneaux, entrée sous auvent.
   ecole: {
     w: 120,
     h: 70,
-    dessin: [r("facade", 6, 20, 108, 50), r("toit", 2, 16, 116, 4)],
-    fixe: [
-      { x: 18, y: 34, w: 20, h: 18 },
-      { x: 50, y: 34, w: 20, h: 18 },
-      { x: 82, y: 34, w: 20, h: 18 },
+    dessin: [
+      r("facade", 16, 10, 14, 6),
+      r("facade", 88, 12, 10, 4),
+      r("toit", 2, 16, 116, 4),
+      r("facade", 6, 20, 108, 50),
+      r("ombre", 10, 30, 100, 20),
+      ...Array.from({ length: 9 }, (_, i) => r("toit", 20 + i * 10, 30, 1, 20)),
+      r("toit", 44, 52, 32, 2),
+      r("passage", 52, 54, 16, 16),
+      r("ombre", 59.5, 54, 1, 16),
     ],
-    zone: { x: 14, y: 28, w: 92, h: 36 },
-    fenetre: { w: 20, h: 18 },
+    fixe: [
+      { x: 16, y: 32, w: 20, h: 16 },
+      { x: 50, y: 32, w: 20, h: 16 },
+      { x: 84, y: 32, w: 20, h: 16 },
+    ],
+    zone: { x: 12, y: 31, w: 96, h: 18 },
+    fenetre: { w: 20, h: 16 },
     sens: "ligne",
     socle: { x: 0, w: 120 },
   },
-  // Musée aux volumes obliques (Confluence).
+  // Musée des Confluences : volumes obliques, facette sombre, arêtes du cristal, socle vitré.
   musee: {
     w: 96,
     h: 76,
-    dessin: [p("facade", "6,76 14,32 46,12 90,34 84,76")],
-    fixe: [
-      { x: 22, y: 42, w: 14, h: 20 },
-      { x: 41, y: 42, w: 14, h: 20 },
-      { x: 60, y: 42, w: 14, h: 20 },
+    dessin: [
+      p("facade", "6,76 14,32 46,12 90,34 84,76"),
+      p("ombre", "46,12 90,34 84,76 64,76 60,38"),
+      d("trait", "M14 32L36 42L46 12M36 42L60 38M36 42L30 68"),
+      r("passage", 14, 68, 64, 8),
     ],
-    zone: { x: 18, y: 38, w: 62, h: 32 },
-    fenetre: { w: 14, h: 20 },
+    fixe: [
+      { x: 22, y: 46, w: 12, h: 16 },
+      { x: 39, y: 46, w: 12, h: 16 },
+      { x: 56, y: 46, w: 12, h: 16 },
+    ],
+    zone: { x: 18, y: 42, w: 56, h: 22 },
+    fenetre: { w: 12, h: 16 },
     sens: "ligne",
     socle: { x: 0, w: 96 },
   },
-  // Usine à toit en sheds et cheminée (Gerland).
+  // Gerland : la halle industrielle, toit en sheds, cheminée cerclée, pilastres, baies cintrées.
   usine: {
     w: 140,
     h: 80,
-    dessin: [r("toit", 122, 0, 8, 36), r("facade", 6, 30, 128, 50), p("toit", "6,31 6,14 38,31 38,14 70,31 70,14 102,31 102,14 134,31")],
-    fixe: [
-      { x: 24, y: 46, w: 16, h: 22 },
-      { x: 62, y: 46, w: 16, h: 22 },
-      { x: 100, y: 46, w: 16, h: 22 },
+    dessin: [
+      r("facade", 122, 0, 8, 36),
+      r("toit", 121, 6, 10, 2),
+      r("toit", 121, 18, 10, 2),
+      p("toit", "6,31 6,14 38,31 38,14 70,31 70,14 102,31 102,14 134,31"),
+      r("facade", 6, 30, 128, 50),
+      r("toit", 6, 30, 128, 1.5),
+      r("ombre", 6, 36, 128, 1),
+      r("ombre", 44, 37, 4, 43),
+      r("ombre", 82, 37, 4, 43),
+      r("toit", 6, 72, 128, 1),
     ],
-    zone: { x: 14, y: 38, w: 112, h: 36 },
-    fenetre: { w: 16, h: 22 },
+    fixe: [
+      { x: 24, y: 44, w: 16, h: 22, arc: true },
+      { x: 62, y: 44, w: 16, h: 22, arc: true },
+      { x: 100, y: 44, w: 16, h: 22, arc: true },
+    ],
+    zone: { x: 14, y: 40, w: 112, h: 28 },
+    fenetre: { w: 16, h: 22, arc: true },
     sens: "ligne",
     socle: { x: 0, w: 140 },
   },

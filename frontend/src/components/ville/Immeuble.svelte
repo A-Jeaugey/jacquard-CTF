@@ -78,6 +78,14 @@
   .toit {
     fill: var(--toit);
   }
+  .ombre {
+    fill: var(--pierre-sombre);
+  }
+  .trait {
+    fill: none;
+    stroke: var(--toit);
+    stroke-width: 1;
+  }
   .passage {
     fill: var(--eau);
   }
@@ -127,12 +135,11 @@
   /* Quartier en retrait : une silhouette, sans couleur d'état (jetons, pas d'opacité). */
   .retrait .facade,
   .retrait .socle,
+  .retrait .ombre,
   .retrait .couronne {
     fill: var(--toit);
   }
-  .retrait .fen,
-  .retrait .fen[data-etat] {
-    fill: var(--pierre);
-    stroke: none;
+  .retrait .trait {
+    stroke: var(--toit);
   }
 </style>
