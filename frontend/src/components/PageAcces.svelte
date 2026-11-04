@@ -4,8 +4,8 @@
   import Decor from "./ville/Decor.svelte";
 
   // Mise en page des pages d'accès (connexion, inscription, page introuvable, équipe sans
-  // équipe) : le contenu à gauche sur 480 px au plus, la ville éteinte à droite (masquée
-  // sur petit écran).
+  // équipe) : le contenu à gauche sur 480 px au plus, la ville éteinte à droite (dessous sur
+  // petit écran).
   let { children }: { children: Snippet } = $props();
 </script>
 
@@ -32,13 +32,17 @@
     width: 100%;
     max-width: 640px;
   }
+  /* Sous 900 px, la ville passe sous le contenu, comme sur l'accueil. */
   @media (max-width: 900px) {
     .acces {
       grid-template-columns: minmax(0, 1fr);
+      row-gap: var(--e7);
       padding-top: var(--e5);
     }
     .illustration {
-      display: none;
+      position: static;
+      justify-self: start;
+      max-width: 520px;
     }
   }
 </style>

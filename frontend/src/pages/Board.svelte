@@ -24,6 +24,18 @@
   let annonce = $state("");
   // Un lien vers un défi qui ne peut pas s'ouvrir : on dit pourquoi au lieu de rien.
   let refusLien = $state<string | null>(null);
+
+  // « Masquer » retire le bouton lui-même : le focus revient au titre du plan, jamais au vide.
+  async function masquerAvis(): Promise<void> {
+    refusLien = null;
+    await tick();
+    document.getElementById("titre-plan")?.focus();
+  }
+  async function masquerChronique(): Promise<void> {
+    chroniqueFermee = cleChronique;
+    await tick();
+    document.getElementById("titre-plan")?.focus();
+  }
   let chroniqueFermee = $state<string | null>(null);
   let declencheur: HTMLElement | null = null;
   let ouvertParNous = false;
@@ -231,7 +243,7 @@
       {#if refusLien}
         <p class="refus avis">
           {refusLien}
-          <button type="button" class="btn-texte" onclick={() => (refusLien = null)}>{t("live.dismiss")}</button>
+          <button type="button" class="btn-texte" aria-label={t("board.link_dismiss")} onclick={masquerAvis}>{t("live.dismiss")}</button>
         </p>
       {/if}
     </div>
@@ -287,7 +299,7 @@
                   {t("live.see_district", { name: quartierChronique.nom })}
                 </button>
               {/if}
-              <button type="button" class="btn-texte" onclick={() => (chroniqueFermee = cleChronique)}>{t("live.dismiss")}</button>
+              <button type="button" class="btn-texte" aria-label={t("live.dismiss_chronicle")} onclick={masquerChronique}>{t("live.dismiss")}</button>
             </p>
           </div>
         {/if}
@@ -361,6 +373,7 @@
   .avis {
     margin-top: var(--e3);
     max-width: 56ch;
+    font-size: var(--t-texte);
   }
   .ville-zone {
     padding: var(--e4) var(--gouttiere) 0;

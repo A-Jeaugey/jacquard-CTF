@@ -31,9 +31,20 @@
 
   const monEquipe = $derived(session.me?.team?.id ?? null);
 
-  // La façade d'une équipe : une fenêtre chaude par défi résolu, posée sur un socle.
+  // La façade d'une équipe : le même immeuble pour toutes, une fenêtre par défi public, rangées
+  // sur deux étages au-delà de douze ; les fenêtres des défis résolus sont allumées.
   const PAS = 9;
-  const largeur = (n: number): number => Math.max(n * PAS - 3, 24);
+  const total = $derived(Math.max(classement?.challenges ?? 0, ...(classement?.teams.map((e) => e.solves) ?? [0])));
+  const etages = $derived(total > 12 ? 2 : 1);
+  const parEtage = $derived(Math.max(1, Math.ceil(total / etages)));
+  const largeur = $derived(parEtage * PAS + 3);
+  const hauteur = $derived(etages * 12 + 3);
+  const fenetres = $derived(
+    Array.from({ length: total }, (_, i) => ({
+      x: 3 + (i % parEtage) * PAS,
+      y: 3 + (etages - 1 - Math.floor(i / parEtage)) * 12,
+    })),
+  );
 </script>
 
 <div class="page">
@@ -72,12 +83,15 @@
               {#if mien}<span class="meta">{t("scoreboard.yours")}</span>{/if}
             </span>
             <span class="facade">
-              <svg viewBox="0 0 {largeur(ligne.solves)} 14" width={largeur(ligne.solves)} height="14" aria-hidden="true" focusable="false">
-                {#each { length: ligne.solves } as _, i (i)}
-                  <rect class="fenetre" x={i * PAS} y="0" width="6" height="10" />
-                {/each}
-                <rect class="socle" x="0" y="12" width={largeur(ligne.solves)} height="2" />
-              </svg>
+              {#if total > 0}
+                <svg viewBox="-2 -4 {largeur + 4} {hauteur + 4}" width={largeur + 4} height={hauteur + 4} aria-hidden="true" focusable="false">
+                  <rect class="toit" x="-2" y="-4" width={largeur + 4} height="4" />
+                  <rect class="facade-mur" x="0" y="0" width={largeur} height={hauteur} />
+                  {#each fenetres as f, i (i)}
+                    <rect class="fenetre" class:allumee={i < ligne.solves} x={f.x} y={f.y} width="6" height="9" />
+                  {/each}
+                </svg>
+              {/if}
               <span class="nombre tnum" aria-hidden="true">{ligne.solves}</span>
               <span class="sr-only">{tn("scoreboard.solves", ligne.solves)}</span>
             </span>
@@ -160,11 +174,17 @@
     max-width: 100%;
     height: auto;
   }
-  .fenetre {
-    fill: var(--lumignon);
+  .toit {
+    fill: var(--toit);
   }
-  .socle {
+  .facade-mur {
     fill: var(--pierre);
+  }
+  .fenetre {
+    fill: var(--eau);
+  }
+  .fenetre.allumee {
+    fill: var(--lumignon);
   }
   .nombre {
     order: -1;

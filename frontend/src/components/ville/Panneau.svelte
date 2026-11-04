@@ -60,17 +60,23 @@
   const resolution = $derived(equipe.data?.solves.find((s) => s.challenge_id === id) ?? null);
   const majuscule = (texte: string): string => texte.charAt(0).toUpperCase() + texte.slice(1);
 
-  async function charger(): Promise<void> {
-    defi = null;
-    erreurChargement = null;
-    retour = null;
-    reussite = null;
-    flag = "";
+  // `relance` : appelé par « Réessayer ». L'erreur reste affichée pendant le nouvel essai (le
+  // bouton garde le focus et dit qu'il travaille) ; en cas de nouvel échec, le focus y reste.
+  async function charger(relance = false): Promise<void> {
+    if (!relance) {
+      defi = null;
+      erreurChargement = null;
+      retour = null;
+      reussite = null;
+      flag = "";
+    }
     try {
       defi = await api.get<ChallengeDetail>(`/api/challenges/${encodeURIComponent(id)}`);
+      erreurChargement = null;
     } catch (error) {
       erreurChargement = errorMessage(error);
     }
+    if (relance && erreurChargement) return;
     await tick();
     titre?.focus({ preventScroll: true });
     defilement?.scrollTo(0, 0);
@@ -265,7 +271,7 @@
 
     {#if erreurChargement}
       <p class="refus" role="alert"><b>{t("error.title")}</b> {erreurChargement}</p>
-      <Reessayer action={charger} cible="titre-defi" />
+      <Reessayer action={() => charger(true)} cible="titre-defi" />
     {:else if !defi}
       <p class="secondaire">{t("loading")}</p>
     {:else}

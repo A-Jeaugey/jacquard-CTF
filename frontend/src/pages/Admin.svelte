@@ -115,8 +115,9 @@
     }
     await tick();
     if (retour?.sorte === "erreur") {
+      // Le champ en cause s'il est connu ; sinon le message lui-même, pas un champ au hasard.
       const premier = champsAnnonce[0];
-      document.getElementById(premier ? (CHAMPS_ANNONCE[premier]?.id ?? "annonce-titre") : "annonce-titre")?.focus();
+      document.getElementById(premier ? (CHAMPS_ANNONCE[premier]?.id ?? "retour-annonce") : "retour-annonce")?.focus();
     }
   }
 
@@ -178,6 +179,13 @@
     aSupprimer = null;
   }
 
+  // Depuis un état vide : l'onglet Annonces s'ouvre et le focus va au champ à remplir.
+  async function allerAuxAnnonces(): Promise<void> {
+    choisir("announcements");
+    await tick();
+    document.getElementById("annonce-titre")?.focus();
+  }
+
   $effect(() => {
     if (session.me?.user.role !== "admin") {
       navigate("/", true);
@@ -216,7 +224,10 @@
     {#if retour.sorte === "ok"}
       <p class="succes" role="status">{retour.texte}</p>
     {:else}
-      <p class="refus" id={ou === "form" ? "retour-annonce" : undefined} role="alert"><b>{t("error.title")}</b> {retour.texte}</p>
+      <p class="refus" id={ou === "form" ? "retour-annonce" : undefined} tabindex="-1" role="alert">
+        <b>{t("error.title")}</b>
+        {retour.texte}
+      </p>
     {/if}
   {/if}
 {/snippet}
@@ -288,7 +299,7 @@
         <p class="suite"><button type="button" class="btn-ligne" onclick={() => (filter = "all")}>{t("admin.filter.reset")}</button></p>
       {:else if charges.submissions}
         <p class="secondaire">{t("admin.submissions.none")}</p>
-        <p class="suite"><button type="button" class="btn-ligne" onclick={() => choisir("announcements")}>{t("admin.go_announce")}</button></p>
+        <p class="suite"><button type="button" class="btn-ligne" onclick={allerAuxAnnonces}>{t("admin.go_announce")}</button></p>
       {/if}
     {:else if tab === "teams"}
       {@render etat("teams")}
@@ -330,7 +341,7 @@
         </div>
       {:else if charges.teams}
         <p class="secondaire">{t("admin.teams.none")}</p>
-        <p class="suite"><button type="button" class="btn-ligne" onclick={() => choisir("announcements")}>{t("admin.go_announce")}</button></p>
+        <p class="suite"><button type="button" class="btn-ligne" onclick={allerAuxAnnonces}>{t("admin.go_announce")}</button></p>
       {/if}
     {:else if tab === "stats"}
       {@render etat("stats")}
@@ -379,7 +390,7 @@
           {#each stats.signals as signal, i (i)}
             <p class="signal">
               {#if signal.kind === "shared_ip"}{t("admin.signal.shared_ip", { ip: signal.ip, teams: signal.teams.join(", ") })}
-              {:else if signal.kind === "burst"}{t("admin.signal.burst", { team: signal.team, at: signal.at_minutes })}
+              {:else if signal.kind === "burst"}{t("admin.signal.burst", { team: signal.team, at: minutes(signal.at_minutes) })}
               {:else}{t("admin.signal.same_wrong", { challenge: signal.challenge, value: signal.value, teams: signal.teams.join(", ") })}{/if}
             </p>
           {:else}

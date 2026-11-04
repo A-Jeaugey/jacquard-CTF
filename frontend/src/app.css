@@ -367,9 +367,12 @@ svg {
 .prose em {
   color: var(--douce);
 }
-/* Dans les messages, la citation est la voix de LUMEN : sa lumière froide. */
+/* Dans les messages, la citation est la voix de LUMEN : sa lumière froide, et un filet de
+   2 px qui la sépare de la voix de Navette (seule bordure de couleur : elle porte qui parle). */
 .prose blockquote {
   margin: 0;
+  padding-left: var(--e4);
+  border-left: 2px solid var(--lumen);
   color: var(--lumen);
 }
 .prose code {

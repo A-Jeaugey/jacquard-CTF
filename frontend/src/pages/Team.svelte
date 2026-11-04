@@ -5,7 +5,6 @@
   import Reessayer from "../components/Reessayer.svelte";
   import FilDeSoie from "../components/ville/FilDeSoie.svelte";
   import Immeuble from "../components/ville/Immeuble.svelte";
-  import Marque from "../components/ville/Marque.svelte";
   import { api, ApiError, errorMessage } from "../lib/api";
   import { refreshEquipe } from "../lib/equipe.svelte";
   import { formatHeure, formatPoints } from "../lib/format";
@@ -190,6 +189,53 @@
       {#if equipe.penalty > 0}{t("team.penalty", { points: formatPoints(equipe.penalty) })}{/if}
     </p>
 
+    <section class="bloc" aria-labelledby="h-resolus">
+      <h2 class="titre-section" id="h-resolus">{t("team.solves")}</h2>
+      {#each parQuartier as groupe (groupe.id)}
+        <div class="q-tete">
+          {#if groupe.quartier}
+            <div class="q-dessin">
+              <Immeuble quartier={groupe.quartier} />
+            </div>
+          {/if}
+          <div>
+            <h3 class="titre-bloc">{groupe.nom}</h3>
+            {#if groupe.quartier}
+              <p class="meta">{tn("board.done", groupe.quartier.resolus, { total: groupe.quartier.defis.length })}</p>
+            {/if}
+          </div>
+        </div>
+        <ol class="resolus">
+          {#each groupe.defis as r (r.challenge_id)}
+            <li>
+              <span class="r-nom">{typo(r.challenge_name)}</span>
+              <span class="r-qui">{t("team.solved_by", { user: r.solved_by ?? "—", time: heure(r.solved_at) })}</span>
+            </li>
+          {/each}
+        </ol>
+      {:else}
+        <p class="secondaire">{t("team.no_solves")}</p>
+        <p><a class="btn-ligne" href="/challenges">{t("team.go_board")}</a></p>
+      {/each}
+    </section>
+    <section class="bloc" aria-labelledby="h-fils">
+      <h2 class="titre-section" id="h-fils">{t("team.items")}</h2>
+      {#if equipe.items.length}
+        <ul class="fils">
+          {#each equipe.items as objet (objet.id)}
+            <li>
+              <p class="fil-nom">{typo(objet.name)}</p>
+              <FilDeSoie motif={motif(objet.description)} />
+              {#if objet.description}<p class="meta">{typo(objet.description)}</p>{/if}
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <p class="secondaire">{t("team.no_items")}</p>
+        <p><a class="btn-ligne" href="/challenges">{t("team.go_board")}</a></p>
+      {/if}
+    </section>
+
     <div class="haut">
       <div>
         {#if equipe.invite_code}
@@ -229,54 +275,6 @@
       </div>
     </div>
 
-    <section class="bloc" aria-labelledby="h-fils">
-      <h2 class="titre-section" id="h-fils">{t("team.items")}</h2>
-      {#if equipe.items.length}
-        <ul class="fils">
-          {#each equipe.items as objet (objet.id)}
-            <li>
-              <p class="fil-nom">{typo(objet.name)}</p>
-              <FilDeSoie motif={motif(objet.description)} />
-              {#if objet.description}<p class="meta">{typo(objet.description)}</p>{/if}
-            </li>
-          {/each}
-        </ul>
-      {:else}
-        <p class="secondaire">{t("team.no_items")}</p>
-        <p><a class="btn-ligne" href="/challenges">{t("team.go_board")}</a></p>
-      {/if}
-    </section>
-
-    <section class="bloc" aria-labelledby="h-resolus">
-      <h2 class="titre-section" id="h-resolus">{t("team.solves")}</h2>
-      {#each parQuartier as groupe (groupe.id)}
-        <div class="q-tete">
-          {#if groupe.quartier}
-            <div class="q-dessin">
-              <Immeuble quartier={groupe.quartier} />
-            </div>
-          {/if}
-          <div>
-            <h3 class="titre-bloc">{groupe.nom}</h3>
-            {#if groupe.quartier}
-              <p class="meta">{t("team.district_progress", { n: groupe.quartier.resolus, total: groupe.quartier.defis.length })}</p>
-            {/if}
-          </div>
-        </div>
-        <ol class="resolus">
-          {#each groupe.defis as r (r.challenge_id)}
-            <li>
-              <Marque etat="resolu" />
-              <span class="r-nom">{typo(r.challenge_name)}</span>
-              <span class="r-qui">{t("team.solved_by", { user: r.solved_by ?? "—", time: heure(r.solved_at) })}</span>
-            </li>
-          {/each}
-        </ol>
-      {:else}
-        <p class="secondaire">{t("team.no_solves")}</p>
-        <p><a class="btn-ligne" href="/challenges">{t("team.go_board")}</a></p>
-      {/each}
-    </section>
   </div>
 {:else if modeEquipes}
   <PageAcces>
@@ -401,26 +399,15 @@
   }
   .resolus li {
     display: grid;
-    grid-template-columns: 12px minmax(0, 1fr);
-    grid-template-areas: "m nom" ". qui";
-    column-gap: var(--e3);
     row-gap: var(--e1);
-    align-items: baseline;
     padding: var(--e3) 0;
     border-bottom: 1px solid var(--pierre);
   }
-  .resolus :global(.marque) {
-    grid-area: m;
-    align-self: start;
-    margin-top: var(--e1);
-  }
   .r-nom {
-    grid-area: nom;
     font-size: var(--t-nom);
     overflow-wrap: anywhere;
   }
   .r-qui {
-    grid-area: qui;
     font-size: var(--t-meta);
     color: var(--douce);
   }

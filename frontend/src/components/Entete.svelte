@@ -30,13 +30,13 @@
   <nav class="nav" aria-label={t("nav.label")}>
     <ul>
       {#if session.me}
-        <li><a href="/challenges" aria-current={courant("/challenges")}>{t("nav.board")}</a></li>
+        <li><a href="/challenges" aria-current={courant("/challenges")}><span class="libelle" data-texte={t("nav.board")}>{t("nav.board")}</span></a></li>
       {/if}
-      <li><a href="/scoreboard" aria-current={courant("/scoreboard")}>{t("nav.scoreboard")}</a></li>
+      <li><a href="/scoreboard" aria-current={courant("/scoreboard")}><span class="libelle" data-texte={t("nav.scoreboard")}>{t("nav.scoreboard")}</span></a></li>
       {#if avecJournal}
         <li>
           <a href="/story" aria-current={courant("/story")}>
-            {t("nav.story")}
+            <span class="libelle" data-texte={t("nav.story")}>{t("nav.story")}</span>
             {#if nonLus > 0 && route.path !== "/story"}
               <span class="compteur tnum" aria-label={tn("nav.unread", nonLus)}>{nonLus}</span>
             {/if}
@@ -44,7 +44,7 @@
         </li>
       {/if}
       {#if session.me?.user.role === "admin"}
-        <li><a href="/admin" aria-current={courant("/admin")}>{t("nav.admin")}</a></li>
+        <li><a href="/admin" aria-current={courant("/admin")}><span class="libelle" data-texte={t("nav.admin")}>{t("nav.admin")}</span></a></li>
       {/if}
     </ul>
   </nav>
@@ -70,9 +70,9 @@
     <button type="button" class="btn-texte sortie" onclick={seDeconnecter}>{t("nav.logout")}</button>
   {:else if session.event}
     <div class="acces">
-      <a class="lien" href="/login" aria-current={courant("/login")} data-texte={t("nav.login")}>{t("nav.login")}</a>
+      <a class="lien" href="/login" aria-current={courant("/login")}><span class="libelle" data-texte={t("nav.login")}>{t("nav.login")}</span></a>
       {#if inscriptionsOuvertes()}
-        <a class="lien" href="/register" aria-current={courant("/register")} data-texte={t("nav.register")}>{t("nav.register")}</a>
+        <a class="lien" href="/register" aria-current={courant("/register")}><span class="libelle" data-texte={t("nav.register")}>{t("nav.register")}</span></a>
       {/if}
     </div>
   {/if}
@@ -114,7 +114,10 @@
     display: flex;
     gap: var(--e1);
   }
-  .nav a {
+  /* Un seul traitement pour tous les liens de l'en-tête (navigation et accès) : souligné au
+     survol, gras et souligné sur la page courante, sans que le gras déplace quoi que ce soit. */
+  .nav a,
+  .lien {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -122,17 +125,37 @@
     color: var(--douce);
     text-decoration: none;
   }
-  .nav a:hover {
-    color: var(--claire);
-    text-decoration: underline;
+  .libelle {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
     text-underline-offset: 8px;
   }
-  .nav a[aria-current="page"] {
+  .libelle::after {
+    content: attr(data-texte) / "";
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    font-weight: 700;
+    pointer-events: none;
+  }
+  .nav a:hover,
+  .lien:hover {
+    color: var(--claire);
+  }
+  .nav a:hover .libelle,
+  .lien:hover .libelle {
+    text-decoration: underline;
+  }
+  .nav a[aria-current="page"],
+  .lien[aria-current="page"] {
     color: var(--claire);
     font-weight: 700;
+  }
+  .nav a[aria-current="page"] .libelle,
+  .lien[aria-current="page"] .libelle {
     text-decoration: underline;
     text-decoration-thickness: 2px;
-    text-underline-offset: 8px;
   }
   .compteur {
     display: inline-grid;
@@ -183,40 +206,16 @@
   .acces {
     display: flex;
     align-items: center;
-    gap: var(--e4);
+    gap: var(--e1);
+    margin-right: calc(-1 * var(--e3));
   }
-  .lien {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    color: var(--douce);
-    text-underline-offset: 8px;
-  }
-  /* Réserve la largeur du texte en gras : passer sur la page courante ne décale rien. */
-  .lien::after {
-    content: attr(data-texte) / "";
-    height: 0;
-    overflow: hidden;
-    visibility: hidden;
-    font-weight: 700;
-    pointer-events: none;
-  }
-  .lien:hover,
-  .lien[aria-current="page"] {
-    color: var(--claire);
-  }
-  .lien[aria-current="page"] {
-    font-weight: 700;
-    text-decoration-thickness: 2px;
-  }
+
 
   @media (max-width: 1099px) {
     .barre {
       display: grid;
       align-items: stretch;
-      gap: 0;
+      gap: 0 var(--e4);
       grid-template-columns: minmax(0, 1fr) auto;
       grid-template-areas: "logo compte" "nav nav" "equipe sortie";
       padding: var(--e2) var(--gouttiere);

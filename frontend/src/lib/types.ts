@@ -143,6 +143,8 @@ export interface ScoreboardEntry {
 }
 
 export interface Scoreboard {
+  /** Défis dont l'existence est publique (ouverts d'emblée ou montrés verrouillés). */
+  challenges?: number;
   frozen: boolean;
   frozen_at: string | null;
   teams: ScoreboardEntry[];

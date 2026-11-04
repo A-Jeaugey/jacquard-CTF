@@ -310,7 +310,7 @@
     white-space: nowrap;
   }
   .progression {
-    margin-top: var(--e3);
+    margin-top: var(--e5);
     font-size: var(--t-moyen);
     line-height: 1.25;
   }

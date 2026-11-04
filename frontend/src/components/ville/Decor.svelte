@@ -7,11 +7,13 @@
   // Purement illustratif (aria-hidden), sans interaction ni donnée de défi.
   const quartiers = $derived(villeEteinte(session.event?.categories ?? []));
   const pct = (valeur: number, total: number): string => `${(valeur / total) * 100}%`;
+  // Le décor est recadré à droite sur le quai du Rhône : la ville touche le bord de la colonne.
+  const LARGEUR = 585;
 </script>
 
 {#if quartiers}
   <div class="decor" aria-hidden="true">
-    <svg class="fond" viewBox="0 0 {PLAN.w} {PLAN.h}" preserveAspectRatio="none" focusable="false">
+    <svg class="fond" viewBox="0 0 {LARGEUR} {PLAN.h}" preserveAspectRatio="none" focusable="false">
       {#each RIVIERES as riviere (riviere.points)}
         <polyline class="quai" points={riviere.points} stroke-width={riviere.largeur + 4} />
       {/each}
@@ -23,12 +25,12 @@
       {/each}
     </svg>
     {#each NOMS_RIVIERES as riviere (riviere.nom)}
-      <span class="riviere" style:left={pct(riviere.x, PLAN.w)} style:top={pct(riviere.y, PLAN.h)} style:--angle="{riviere.angle}deg"
+      <span class="riviere" style:left={pct(riviere.x, LARGEUR)} style:top={pct(riviere.y, PLAN.h)} style:--angle="{riviere.angle}deg"
         >{riviere.nom}</span
       >
     {/each}
     {#each quartiers as q (q.categorie.id)}
-      <div class="immeuble" style:left={pct(q.x, PLAN.w)} style:top={pct(q.y, PLAN.h)} style:width={pct(q.w, PLAN.w)}>
+      <div class="immeuble" style:left={pct(q.x, LARGEUR)} style:top={pct(q.y, PLAN.h)} style:width={pct(q.w, LARGEUR)}>
         <Immeuble quartier={q} />
         <span class="nom">{q.categorie.name}</span>
       </div>
@@ -40,7 +42,7 @@
   .decor {
     position: relative;
     width: 100%;
-    aspect-ratio: 600 / 650;
+    aspect-ratio: 585 / 650;
     container-type: inline-size;
   }
   .fond {
