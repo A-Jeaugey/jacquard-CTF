@@ -183,6 +183,15 @@ Le texte du chapitre, en **Markdown**.
 
 ## 6. Thème et grand écran
 
+> **État actuel de l'interface (novembre 2026).** L'interface livrée a une direction
+> artistique fixe, décrite dans `frontend/DESIGN.md` : le plan de nuit de Lyon, un immeuble
+> par catégorie (huit au plus), une fenêtre par défi. Seuls les libellés (`strings`) du
+> thème sont appliqués ; `tokens`, `css`, `logo` et `layouts` sont toujours validés à
+> l'import mais ne changent pas le rendu. Les rendre de nouveau configurables est prévu pour
+> une prochaine version. Le grand écran montre la ville en progression globale, le compte à
+> rebours, le classement (autant d'équipes que la hauteur de l'écran le permet, en le
+> disant) et le dernier événement (premier sang ou annonce).
+
 Fichier facultatif `theme/theme.yml` ; tous les fichiers qu'il cite sont dans `theme/`.
 
 ```yaml

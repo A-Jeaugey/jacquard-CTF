@@ -227,8 +227,6 @@ export type FeedItem =
   | { kind: "first_blood"; at: string; team: string; challenge: string }
   | { kind: "announcement"; at: string; title: string };
 
-export type ZoneState = "locked" | "available" | "in-progress" | "completed";
-
 export interface ChallengeStats {
   id: string;
   name: string;

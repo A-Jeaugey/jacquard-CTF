@@ -269,6 +269,10 @@ layouts:
 
 ### 6.2 Layouts du tableau
 
+> État actuel (novembre 2026) : pour le premier événement, l'interface a une direction
+> artistique fixe (`frontend/DESIGN.md`) et ne rend pas encore ces layouts ; seuls les
+> libellés du thème sont appliqués. Ce qui suit reste la cible.
+
 **Layouts intégrés :**
 
 - `grid` : colonnes par catégorie, style Jeopardy.
