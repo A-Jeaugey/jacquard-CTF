@@ -113,8 +113,46 @@
 
     {#if erreur}<p class="refus" role="alert"><b>{t("error.title")}</b> {erreur}</p>{/if}
 
-    <div class="colonnes">
+    <div class="haut">
       <div>
+        {#if equipe.invite_code}
+          <section class="bloc" aria-labelledby="h-invitation">
+            <h2 class="titre-bloc" id="h-invitation">{t("team.invite")}</h2>
+            <p class="aide">{t("team.invite_hint")}</p>
+            <div class="code">
+              <span class="code-valeur tnum">{equipe.invite_code}</span>
+              <button type="button" class="btn-ligne" onclick={() => copier(equipe?.invite_code ?? "")}>{t("challenge.copy")}</button>
+            </div>
+            <p class="meta" role="status">{copie ?? ""}</p>
+          </section>
+        {:else if !modeEquipes}
+          <p class="secondaire bloc">{t("team.solo")}</p>
+        {/if}
+
+      </div>
+      <div>
+        <section class="bloc" aria-labelledby="h-membres">
+          <h2 class="titre-bloc" id="h-membres">{t("team.members_title", { n: equipe.members.length, max: equipe.max_size })}</h2>
+          <ul class="membres">
+            {#each equipe.members as membre (membre.id)}<li>{membre.username}</li>{/each}
+          </ul>
+        </section>
+
+        {#if modeEquipes && equipe.solves.length === 0}
+          <section class="bloc depart">
+            {#if confirmerDepart}
+              <p>{t("team.leave.confirm")}</p>
+              <p class="choix">
+                <button type="button" class="btn-ligne" id="confirmer-depart" disabled={envoi} onclick={quitter}>{t("team.leave")}</button>
+                <button type="button" class="btn-texte" onclick={() => (confirmerDepart = false)}>{t("action.cancel")}</button>
+              </p>
+            {:else}
+              <button type="button" class="btn-texte" onclick={demanderDepart}>{t("team.leave")}</button>
+            {/if}
+          </section>
+        {/if}
+      </div>
+    </div>
         <section class="bloc" aria-labelledby="h-fils">
           <h2 class="titre-section" id="h-fils">{t("team.items")}</h2>
           {#if equipe.items.length}
@@ -151,45 +189,6 @@
             <p><a class="btn-ligne" href="/challenges">{t("team.go_board")}</a></p>
           {/if}
         </section>
-      </div>
-
-      <div>
-        {#if equipe.invite_code}
-          <section class="bloc" aria-labelledby="h-invitation">
-            <h2 class="titre-bloc" id="h-invitation">{t("team.invite")}</h2>
-            <p class="aide">{t("team.invite_hint")}</p>
-            <div class="code">
-              <span class="code-valeur tnum">{equipe.invite_code}</span>
-              <button type="button" class="btn-ligne" onclick={() => copier(equipe?.invite_code ?? "")}>{t("challenge.copy")}</button>
-            </div>
-            <p class="meta" role="status">{copie ?? ""}</p>
-          </section>
-        {:else if !modeEquipes}
-          <p class="secondaire bloc">{t("team.solo")}</p>
-        {/if}
-
-        <section class="bloc" aria-labelledby="h-membres">
-          <h2 class="titre-bloc" id="h-membres">{t("team.members_title", { n: equipe.members.length, max: equipe.max_size })}</h2>
-          <ul class="membres">
-            {#each equipe.members as membre (membre.id)}<li>{membre.username}</li>{/each}
-          </ul>
-        </section>
-
-        {#if modeEquipes && equipe.solves.length === 0}
-          <section class="bloc depart">
-            {#if confirmerDepart}
-              <p>{t("team.leave.confirm")}</p>
-              <p class="choix">
-                <button type="button" class="btn-ligne" id="confirmer-depart" disabled={envoi} onclick={quitter}>{t("team.leave")}</button>
-                <button type="button" class="btn-texte" onclick={() => (confirmerDepart = false)}>{t("action.cancel")}</button>
-              </p>
-            {:else}
-              <button type="button" class="btn-texte" onclick={demanderDepart}>{t("team.leave")}</button>
-            {/if}
-          </section>
-        {/if}
-      </div>
-    </div>
   </div>
 {:else if modeEquipes}
   <PageAcces>
@@ -225,11 +224,13 @@
   .score {
     color: var(--lumignon);
   }
-  .colonnes {
+  .equipe {
+    max-width: 880px;
+  }
+  .haut {
     display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    gap: var(--e7);
-    margin-top: var(--e4);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--e6);
   }
   .bloc {
     margin-top: var(--e6);
@@ -322,8 +323,8 @@
     padding-top: var(--e5);
     border-top: 1px solid var(--pierre);
   }
-  @media (max-width: 900px) {
-    .colonnes {
+  @media (max-width: 760px) {
+    .haut {
       grid-template-columns: minmax(0, 1fr);
       gap: 0;
     }

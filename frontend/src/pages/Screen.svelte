@@ -296,4 +296,36 @@
     margin: calc(-1 * var(--e2)) 0 var(--e3);
     color: var(--douce);
   }
+
+  /* Ouvert sur un petit écran (ce n'est pas son usage) : tout s'empile, rien ne déborde. */
+  @media (max-width: 900px) {
+    .ecran {
+      height: auto;
+      overflow: visible;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: none;
+      padding: var(--e4);
+      font-size: var(--t-texte);
+    }
+    .ville {
+      height: auto;
+      container-type: inline-size;
+    }
+    .carte {
+      width: 100%;
+    }
+    .nom {
+      font-size: 21px;
+    }
+    .titre,
+    .valeur {
+      font-size: 48px;
+    }
+    .sous-titre {
+      font-size: 36px;
+    }
+    .cote {
+      overflow: visible;
+    }
+  }
 </style>
