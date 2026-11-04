@@ -26,6 +26,8 @@ def test_challenge_list(player) -> None:  # type: ignore[no-untyped-def]
         "solved": False,
         "locked": False,
         "locked_message": None,
+        "after": [],
+        "opens_at": None,
     }
 
 
