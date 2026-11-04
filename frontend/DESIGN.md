@@ -125,12 +125,13 @@ survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau),
   aucune information.
 - **Joueur** (équipe, classement, messages) : une colonne de lecture de 880 px au plus,
   alignée à gauche ; l'univers passe par les mots, la couleur `--lumignon` réservée à ce qui
-  est gagné et les dessins de la ville : sur le classement, chaque équipe a son immeuble (le
-  même pour toutes : une fenêtre par défi public, sur deux étages au-delà de douze, allumée
-  quand l'équipe l'a résolu ; le nombre seul à côté, sans libellé répété) ; la page équipe
-  commence par les quartiers (leur immeuble aux fenêtres de l'équipe, la progression avec les
-  mots du plan, puis les défis résolus : qui, quand), puis les fils de soie, puis l'atelier
-  (code d'invitation, membres, départ). Les messages de l'histoire sont des lettres : titre,
+  est gagné et les dessins de la ville : sur le classement, chaque équipe a sa ville (la même
+  silhouette pour toutes : un immeuble par quartier, une fenêtre par défi public toujours à la
+  même place, allumée quand l'équipe l'a résolu ; le nombre seul à côté, sans libellé
+  répété) ; la page équipe commence par « Les quartiers » (leur immeuble aux fenêtres de
+  l'équipe, calé à gauche ; l'avancement écrit seulement pour les lecteurs d'écran ; puis les
+  défis résolus : qui, quand), puis les fils de soie, puis l'atelier (code d'invitation,
+  membres, départ). Les messages de l'histoire sont des lettres : titre,
   texte, signature ; la voix de LUMEN y est une citation en `--lumen` avec un filet de 2 px
   `--lumen` à gauche, seule bordure de couleur du site (elle porte l'information « c'est LUMEN
   qui parle »).
@@ -145,6 +146,12 @@ survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau),
   débordement.
 - **Administration** : outil des organisateurs, pas une page du jeu. Tableaux, onglets et
   formulaires sont attendus ici ; mêmes jetons, mêmes composants, aucune illustration.
+
+## En-tête
+
+Tous les liens de l'en-tête (navigation, accès, équipe) ont un seul traitement : `--douce` au
+repos, souligné au survol, `--claire` et souligné de 2 px sur la page courante, sans gras
+(rien ne change de largeur d'une page à l'autre). Soulignés à 4 px du texte, comme partout.
 
 ## Mouvement
 
