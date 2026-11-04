@@ -15,7 +15,8 @@ const defaults = {
   "nav.logout": "Se déconnecter",
   "nav.skip": "Aller au contenu",
   "nav.label": "Navigation principale",
-  "nav.unread": "{n} message(s) non lu(s)",
+  "nav.unread.one": "{n} message non lu",
+  "nav.unread.many": "{n} messages non lus",
   "nav.rank_of": "sur {total}",
   "nav.team_join": "Rejoindre une équipe",
 
@@ -174,12 +175,15 @@ const defaults = {
 
   "board.windows_hint": "Chaque fenêtre est un défi ; dans un immeuble, les fenêtres suivent l'ordre où les défis s'ouvrent.",
   "board.district_selected": "{name} : seuls ses défis sont affichés.",
-  "board.district_announce": "{name} : {n} défi(s).",
+  "board.district_announce.one": "{name} : {n} défi.",
+  "board.district_announce.many": "{name} : {n} défis.",
+  "board.all_announce": "Toute la ville est affichée.",
   "board.show_all": "Revoir toute la ville",
-  "board.district_label": "{name}, {n} défi(s) résolu(s) sur {total}",
+  "board.district_label": "{name} : {n} sur {total} défis résolus",
   "board.district_progress": "{n} sur {total}",
-  "board.count.one": "{n} résolu sur {total}",
-  "board.count.many": "{n} résolus sur {total}",
+  "board.done.zero": "Aucun défi résolu sur {total}.",
+  "board.done.one": "{n} défi résolu sur {total}.",
+  "board.done.many": "{n} défis résolus sur {total}.",
   "board.legend.solved.one": "résolu",
   "board.legend.solved.many": "résolus",
   "board.legend.available.one": "disponible",
@@ -187,8 +191,9 @@ const defaults = {
   "board.legend.locked.one": "verrouillé",
   "board.legend.locked.many": "verrouillés",
   "board.legend.label": "Légende des fenêtres",
-  "board.solves.one": "{n} résolution",
-  "board.solves.many": "{n} résolutions",
+  "board.solves.zero": "personne ne l'a encore résolu",
+  "board.solves.one": "une équipe l'a résolu",
+  "board.solves.many": "{n} équipes l'ont résolu",
   "board.row.solved": "Résolu",
   "board.row.solved_by": "par {user} à {time}",
   "board.row.available": "Disponible",
@@ -196,6 +201,8 @@ const defaults = {
   "board.row.after": "après « {name} »",
   "board.row.locked": "Verrouillé.",
   "board.filtered_empty": "Aucun défi dans ce quartier pour l'instant.",
+  "board.empty_action": "Lire les annonces",
+  "board.not_started_action": "Lire le prologue",
   "board.error": "Le plan n'a pas pu être chargé :",
   "board.list_label": "Défis par quartier",
 
@@ -210,6 +217,8 @@ const defaults = {
   "challenge.copy_blocked": "Copie bloquée par le navigateur : l'adresse est sélectionnée, fais Ctrl+C.",
   "challenge.submitting": "Vérification…",
   "challenge.refused": "Refusé.",
+  "challenge.session_expired": "Ta session a expiré :",
+  "challenge.login_again": "se reconnecter",
   "challenge.flag_empty": "Colle ton flag dans le champ avant de valider.",
   "challenge.flag_format_wrong": "Il doit avoir la forme {format}, accolades comprises.",
   "challenge.rate_limited": "Trop d'essais d'un coup : réessaie dans {n} s.",
@@ -240,9 +249,12 @@ export function setStringOverrides(values: Partial<Record<StringKey, string>>): 
 
 type Plural<K> = K extends `${infer Base}.one` ? Base : never;
 
-/** Libellé au singulier (n ≤ 1) ou au pluriel : clés « <base>.one » et « <base>.many ». */
+/** Libellé selon le nombre : « <base>.zero » (si elle existe) pour 0, « <base>.one » pour 1,
+ * « <base>.many » au-delà. */
 export function tn(base: Plural<StringKey>, n: number, params: Record<string, string | number> = {}): string {
-  return t(`${base}.${n <= 1 ? "one" : "many"}` as StringKey, { n, ...params });
+  const zero = `${base}.zero`;
+  const key = n === 0 && zero in defaults ? zero : `${base}.${n <= 1 ? "one" : "many"}`;
+  return t(key as StringKey, { n, ...params });
 }
 
 export function t(key: StringKey, params: Record<string, string | number> = {}): string {

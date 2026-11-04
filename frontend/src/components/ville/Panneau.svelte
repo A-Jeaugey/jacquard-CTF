@@ -26,7 +26,9 @@
     onResolu: () => void;
   } = $props();
 
-  type Retour = { sorte: "refus" | "info"; texte: string };
+  // « refus » : le flag est refusé ; « erreur » : autre problème (réseau, serveur) ;
+  // « session » : il faut se reconnecter ; « info » : simple information.
+  type Retour = { sorte: "refus" | "erreur" | "session" | "info"; texte: string };
   interface Recompense {
     texte: string;
   }
@@ -139,10 +141,9 @@
       titre?.focus();
     } catch (error) {
       const delai = error instanceof ApiError ? error.extra.retry_after : undefined;
-      retour = {
-        sorte: "refus",
-        texte: delai ? t("challenge.rate_limited", { n: String(delai) }) : errorMessage(error),
-      };
+      if (error instanceof ApiError && error.status === 401) retour = { sorte: "session", texte: "" };
+      else if (delai) retour = { sorte: "refus", texte: t("challenge.rate_limited", { n: String(delai) }) };
+      else retour = { sorte: "erreur", texte: errorMessage(error) };
       champ?.focus();
     } finally {
       envoi = false;
@@ -195,24 +196,51 @@
     }
   }
 
+  let racine = $state<HTMLDivElement>();
+
+  function focusables(): HTMLElement[] {
+    if (!racine) return [];
+    return Array.from(
+      racine.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex='-1'])"),
+    ).filter((el) => el.offsetParent !== null);
+  }
+
+  // Écouté sur la fenêtre : Échap et Tab marchent même si le focus est sorti du panneau.
   function clavier(event: KeyboardEvent): void {
-    if (event.key !== "Escape") return;
-    event.preventDefault();
-    event.stopPropagation();
-    // Échap ferme la couche la plus interne : la confirmation d'un indice d'abord.
-    const indice = defi?.hints.find((h) => h.id === confirmation);
-    if (indice) void annulerIndice(indice);
-    else onFermer();
+    if (event.key === "Escape") {
+      event.preventDefault();
+      // Échap ferme la couche la plus interne : la confirmation d'un indice d'abord.
+      const indice = defi?.hints.find((h) => h.id === confirmation);
+      if (indice) void annulerIndice(indice);
+      else onFermer();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    // Tab boucle dans le panneau (fenêtre modale).
+    const liste = focusables();
+    if (liste.length === 0) return;
+    const premier = liste[0] as HTMLElement;
+    const dernier = liste[liste.length - 1] as HTMLElement;
+    const actif = document.activeElement;
+    const dedans = racine?.contains(actif) ?? false;
+    if (event.shiftKey && (actif === premier || !dedans || actif === titre)) {
+      event.preventDefault();
+      dernier.focus();
+    } else if (!event.shiftKey && (actif === dernier || !dedans)) {
+      event.preventDefault();
+      premier.focus();
+    }
   }
 </script>
+
+<svelte:window onkeydown={clavier} />
 
 <div
   class="panneau"
   role="dialog"
   aria-modal="true"
   aria-labelledby="titre-defi"
-  tabindex="-1"
-  onkeydown={clavier}
+  bind:this={racine}
   style:--hauteur-flag="{hauteurFlag}px"
 >
   <div class="defilement" bind:this={defilement}>
@@ -227,10 +255,7 @@
           <div class="dessin" style:aspect-ratio="{quartier.gabarit.w} / {quartier.gabarit.h + 4}">
             <Immeuble {quartier} avecFil cadre={id} />
           </div>
-          <figcaption>
-            <span class="titre-bloc">{quartier.categorie.name}</span>
-            <span class="meta tnum">{t("board.district_progress", { n: quartier.resolus, total: quartier.defis.length })}</span>
-          </figcaption>
+          <figcaption class="titre-bloc">{quartier.categorie.name}</figcaption>
         </figure>
         {#if phrase}<p class="ordre">{typo(phrase)}</p>{/if}
       </div>
@@ -371,6 +396,9 @@
           class="saisie"
           bind:this={champ}
           bind:value={flag}
+          oninput={() => {
+            if (retour?.sorte === "refus") retour = null;
+          }}
           autocomplete="off"
           autocapitalize="off"
           spellcheck="false"
@@ -383,9 +411,13 @@
           {envoi ? t("challenge.submitting") : t("challenge.submit")}
         </button>
       </div>
-      <p id="flag-aide" aria-live="polite" class={retour?.sorte === "refus" ? "refus" : "aide"}>
+      <p id="flag-aide" aria-live="polite" class={retour && retour.sorte !== "info" ? "refus" : "aide"}>
         {#if retour?.sorte === "refus"}
           <b>{t("challenge.refused")}</b> {retour.texte}
+        {:else if retour?.sorte === "erreur"}
+          <b>{t("error.title")}</b> {retour.texte}
+        {:else if retour?.sorte === "session"}
+          <b>{t("challenge.session_expired")}</b> <a href="/login">{t("challenge.login_again")}</a>.
         {:else if formatFlag}
           {t("challenge.format_hint", { format: formatFlag })}
         {/if}
@@ -416,11 +448,16 @@
     gap: var(--e4);
   }
   .titre {
+    min-width: 0;
     font-family: var(--display);
     font-weight: 400;
     font-size: 48px;
     line-height: 1;
     padding-top: var(--e1);
+    overflow-wrap: anywhere;
+  }
+  .haut .btn-texte {
+    flex: none;
   }
   .lieu {
     display: grid;
@@ -444,10 +481,8 @@
     width: auto;
   }
   figcaption {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     margin-top: var(--e1);
+    text-align: center;
   }
   .ordre {
     max-width: 40ch;
@@ -506,6 +541,12 @@
   }
   .liste {
     border-top: 1px solid var(--pierre);
+  }
+  .liste a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    overflow-wrap: anywhere;
   }
   .liste > li {
     padding: var(--e2) 0;
@@ -593,6 +634,15 @@
   @media (max-width: 640px) {
     .titre {
       font-size: 36px;
+    }
+    .flag {
+      padding: var(--e3) var(--gouttiere);
+    }
+    .flag .etiquette {
+      margin-bottom: var(--e1);
+    }
+    #flag-aide {
+      margin-top: var(--e1);
     }
     .lieu {
       gap: var(--e4);

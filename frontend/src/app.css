@@ -315,6 +315,7 @@ svg {
 .prose {
   max-width: 64ch;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 .prose > * + * {
   margin-top: var(--e3);

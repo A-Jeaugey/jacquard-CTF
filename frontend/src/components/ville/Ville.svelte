@@ -102,7 +102,6 @@
       />
       <span class="repere">
         <span class="nom">{q.categorie.name}</span>
-        <span class="progres tnum">{t("board.district_progress", { n: q.resolus, total: q.defis.length })}</span>
       </span>
     </button>
   {/each}
@@ -175,31 +174,24 @@
     line-height: 1;
     padding: var(--e1) var(--e1) 0;
   }
-  .progres {
-    font-size: var(--t-texte);
-    line-height: 1.25;
-    color: var(--douce);
-  }
   @container (max-width: 600px) {
     .nom {
       font-size: 21px;
     }
-    .progres {
-      font-size: var(--t-meta);
-    }
   }
-  .quartier:hover .nom {
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 4px;
+  @media (hover: hover) {
+    .quartier:hover .nom {
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 4px;
+    }
   }
   .quartier[aria-pressed="true"] .nom {
     background: var(--claire);
     color: var(--nuit);
     text-decoration: none;
   }
-  .en-avant .quartier:not(.avance) .nom,
-  .en-avant .quartier:not(.avance) .progres {
+  .en-avant .quartier:not(.avance) .nom {
     color: var(--douce);
   }
 </style>

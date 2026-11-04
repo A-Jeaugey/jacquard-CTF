@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick, untrack } from "svelte";
 
+  import Immeuble from "../components/ville/Immeuble.svelte";
   import Marque from "../components/ville/Marque.svelte";
   import Panneau from "../components/ville/Panneau.svelte";
   import Ville from "../components/ville/Ville.svelte";
@@ -74,11 +75,6 @@
       .filter((s) => s.defis.length > 0);
   });
   const visibles = $derived(choisi ? sections.filter((s) => s.id === choisi) : sections);
-  const comptes = $derived.by(() => {
-    const total: Record<Etat, number> = { resolu: 0, disponible: 0, verrouille: 0 };
-    for (const d of defis) total[etatDe(d)]++;
-    return total;
-  });
   const allumage = $derived(
     [...(equipe.data?.solves ?? [])].sort((a, b) => a.solved_at.localeCompare(b.solved_at)).map((s) => s.challenge_id),
   );
@@ -136,7 +132,7 @@
   async function choisir(categorie: string): Promise<void> {
     choisi = choisi === categorie ? null : categorie;
     const section = sections.find((s) => s.id === categorie);
-    annonce = choisi && section ? t("board.district_announce", { name: section.nom, n: section.defis.length }) : "";
+    annonce = choisi && section ? tn("board.district_announce", section.defis.length, { name: section.nom }) : t("board.all_announce");
     await tick();
     if (choisi) {
       // Sur mobile, la liste est sous la carte : on y va, sinon le choix ne se voit pas.
@@ -152,7 +148,7 @@
   async function revoirTout(): Promise<void> {
     const ancien = choisi;
     choisi = null;
-    annonce = "";
+    annonce = t("board.all_announce");
     await tick();
     boutonQuartier(ancien ?? undefined)?.focus();
   }
@@ -187,7 +183,14 @@
     if (d.opens_at) parties.push(` ${t("board.row.since", { time: heure(d.opens_at) })}`);
     const a = avant(d, parId);
     if (a) parties.push(`, ${t("board.row.after", { name: a.name })}`);
-    return { mot: t("board.row.available"), suite: `${parties.join("")}.` };
+    return { mot: t("board.row.available"), suite: `${parties.join("")}.${detail(d)}` };
+  }
+
+  /** « Moyen, une équipe l'a résolu. » : la difficulté et les résolutions en une phrase. */
+  function detail(d: ChallengeSummary): string {
+    const resolutions = tn("board.solves", d.solves);
+    if (!d.difficulty) return ` ${resolutions.charAt(0).toUpperCase()}${resolutions.slice(1)}.`;
+    return ` ${d.difficulty.charAt(0).toUpperCase()}${d.difficulty.slice(1)}, ${resolutions}.`;
   }
 
   const besoinEquipe = $derived(session.me !== null && !session.me.team && session.me.user.role !== "admin");
@@ -196,10 +199,6 @@
 {#snippet corps(d: ChallengeSummary, etat: Etat, ligne: { mot: string; suite: string })}
   <Marque {etat} />
   <span class="d-nom">{typo(d.name)}</span>
-  <span class="d-meta">
-    {#if d.difficulty}<span class="d-diff">{d.difficulty}</span><span class="d-sep">, </span>{/if}
-    <span class="d-res tnum">{tn("board.solves", d.solves)}</span>
-  </span>
   <span class="d-pts tnum">{formatPoints(d.value)}</span>
   <span class="d-etat"><span class="mot">{ligne.mot}</span>{typo(ligne.suite)}</span>
 {/snippet}
@@ -211,7 +210,7 @@
       {#if choisi}
         {t("board.district_selected", { name: sections.find((s) => s.id === choisi)?.nom ?? "" })}
         <button type="button" class="btn-texte" onclick={revoirTout}>{t("board.show_all")}</button>
-      {:else if ville}
+      {:else if ville && defis.length > 0}
         {t("board.zone_hint")} {t("board.windows_hint")}
       {/if}
     </p>
@@ -231,9 +230,15 @@
   {:else if !liste}
     <div class="volet etat"><p class="secondaire">{t("loading")}</p></div>
   {:else if liste.phase === "not_started" && defis.length === 0}
-    <div class="volet etat"><p>{t("board.not_started")}</p></div>
+    <div class="volet etat">
+      <p>{t("board.not_started")}</p>
+      <a class="btn-ligne" href="/">{t("board.not_started_action")}</a>
+    </div>
   {:else if defis.length === 0}
-    <div class="volet etat"><p>{t("board.empty")}</p></div>
+    <div class="volet etat">
+      <p>{t("board.empty")}</p>
+      <a class="btn-ligne" href="/">{t("board.empty_action")}</a>
+    </div>
   {:else}
     {#if ville}
       <div class="ville-zone">
@@ -241,9 +246,9 @@
           <Ville quartiers={ville} {choisi} ouvert={defiOuvert ? ouvert : null} {allumage} onChoisir={choisir} />
         </div>
         <ul class="legende" aria-label={t("board.legend.label")}>
-          <li><Marque etat="resolu" /><span><b class="tnum">{comptes.resolu}</b> {tn("board.legend.solved", comptes.resolu)}</span></li>
-          <li><Marque etat="disponible" /><span><b class="tnum">{comptes.disponible}</b> {tn("board.legend.available", comptes.disponible)}</span></li>
-          <li><Marque etat="verrouille" /><span><b class="tnum">{comptes.verrouille}</b> {tn("board.legend.locked", comptes.verrouille)}</span></li>
+          <li><Marque etat="resolu" /><span>{tn("board.legend.solved", 1)}</span></li>
+          <li><Marque etat="disponible" /><span>{tn("board.legend.available", 1)}</span></li>
+          <li><Marque etat="verrouille" /><span>{tn("board.legend.locked", 1)}</span></li>
         </ul>
         {#if chronique && cleChronique !== chroniqueFermee}
           <div class="chronique">
@@ -272,12 +277,27 @@
     <div class="volet" aria-label={t("board.list_label")} role="region">
       {#each visibles as section (section.id)}
         {@const resolus = section.defis.filter((d) => d.solved).length}
+        {@const quartier = choisi === section.id ? (ville?.find((q) => q.categorie.id === section.id) ?? null) : null}
         <section class="quartier-liste" id="q-{section.id}" aria-labelledby="h-{section.id}">
-          <div class="q-tete">
-            <h2 class="titre-section" id="h-{section.id}">{section.nom}</h2>
-            <p class="q-compte tnum">{tn("board.count", resolus, { total: section.defis.length })}</p>
+          {#if choisi}
+            <p class="retour-ville">
+              <button type="button" class="btn-texte" onclick={revoirTout}>{t("board.show_all")}</button>
+            </p>
+          {/if}
+          <div class="q-tete" class:avec-elevation={quartier}>
+            <div>
+              <h2 class="titre-section" id="h-{section.id}">{section.nom}</h2>
+              <p class="q-desc">
+                {#if section.description}{typo(section.description)}{/if}
+                <span class="q-avance tnum">{tn("board.done", resolus, { total: section.defis.length })}</span>
+              </p>
+            </div>
+            {#if quartier}
+              <div class="q-elevation" style:aspect-ratio="{quartier.gabarit.w} / {quartier.gabarit.h + 4}">
+                <Immeuble {quartier} avecFil />
+              </div>
+            {/if}
           </div>
-          {#if section.description}<p class="q-desc">{typo(section.description)}</p>{/if}
           <ol class="etages">
             {#each section.defis as d (d.id)}
               {@const etat = etatDe(d)}
@@ -316,8 +336,10 @@
     max-width: 56ch;
   }
   .indice .btn-texte {
-    min-height: 0;
     margin-left: var(--e1);
+  }
+  .retour-ville {
+    margin-bottom: var(--e2);
   }
   .ville-zone {
     padding: var(--e4) var(--gouttiere) 0;
@@ -335,9 +357,6 @@
     display: flex;
     align-items: center;
     gap: var(--e2);
-  }
-  .legende b {
-    color: var(--claire);
   }
   .chronique {
     margin-top: var(--e4);
@@ -379,18 +398,30 @@
   }
   .q-tete {
     display: flex;
-    align-items: baseline;
+    align-items: flex-end;
     justify-content: space-between;
-    gap: var(--e4);
+    gap: var(--e5);
   }
-  .q-compte {
-    color: var(--douce);
-    white-space: nowrap;
+  .q-tete h2 {
+    overflow-wrap: anywhere;
   }
   .q-desc {
     color: var(--douce);
     margin: var(--e1) 0 var(--e3);
     max-width: 60ch;
+  }
+  .q-avance {
+    color: var(--claire);
+  }
+  /* Le quartier choisi : son immeuble en grand, avec le fil de soie lisible. */
+  .q-elevation {
+    flex: none;
+    height: 160px;
+    margin-bottom: var(--e3);
+  }
+  .q-elevation :global(.bati) {
+    height: 100%;
+    width: auto;
   }
   .etages {
     border-top: 1px solid var(--pierre);
@@ -400,8 +431,8 @@
   }
   .defi {
     display: grid;
-    grid-template-columns: 12px minmax(0, 1fr) 4.5rem 7rem 5rem;
-    grid-template-areas: "m nom diff res pts" ". etat etat etat etat";
+    grid-template-columns: 12px minmax(0, 1fr) auto;
+    grid-template-areas: "m nom pts" ". etat etat";
     column-gap: var(--e3);
     row-gap: var(--e1);
     align-items: baseline;
@@ -421,22 +452,7 @@
     grid-area: nom;
     font-size: var(--t-nom);
     line-height: 1.33;
-  }
-  .d-meta {
-    display: contents;
-  }
-  .d-sep {
-    display: none;
-  }
-  .d-diff {
-    grid-area: diff;
-    font-size: var(--t-meta);
-    color: var(--douce);
-  }
-  .d-res {
-    grid-area: res;
-    font-size: var(--t-meta);
-    color: var(--douce);
+    overflow-wrap: anywhere;
   }
   .d-pts {
     grid-area: pts;
@@ -461,16 +477,17 @@
     color: var(--lumignon);
   }
   .etage[data-etat="verrouille"] .defi,
-  .etage[data-etat="verrouille"] .d-diff,
-  .etage[data-etat="verrouille"] .d-res,
   .etage[data-etat="verrouille"] .d-etat {
     color: var(--voile);
   }
-  a.defi:hover {
-    background: var(--pierre-sombre);
-  }
-  a.defi:hover .d-nom {
-    text-decoration: underline;
+  /* Survol seulement avec une souris : sur un écran tactile, il resterait collé. */
+  @media (hover: hover) {
+    a.defi:hover {
+      background: var(--pierre-sombre);
+    }
+    a.defi:hover .d-nom {
+      text-decoration: underline;
+    }
   }
   a.defi:focus-visible {
     outline-offset: -2px;
@@ -538,6 +555,9 @@
     .tete {
       grid-area: tete;
     }
+    .retour-ville {
+      display: none;
+    }
     .volet {
       grid-area: volet;
       overflow-y: auto;
@@ -584,17 +604,12 @@
       flex-direction: column;
       gap: var(--e2);
     }
-    .defi {
-      grid-template-columns: 12px minmax(0, 1fr) auto;
-      grid-template-areas: "m nom pts" ". meta meta" ". etat etat";
+    .q-tete.avec-elevation {
+      flex-direction: column-reverse;
+      align-items: flex-start;
     }
-    .d-meta {
-      display: block;
-      grid-area: meta;
-      color: var(--douce);
-    }
-    .d-sep {
-      display: inline;
+    .q-elevation {
+      height: 120px;
     }
   }
 </style>

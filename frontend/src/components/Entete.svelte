@@ -5,7 +5,7 @@
   import { navigate, route } from "../lib/router.svelte";
   import { refreshMe, session } from "../lib/session.svelte";
   import { story, unreadCount } from "../lib/story.svelte";
-  import { t } from "../lib/strings";
+  import { t, tn } from "../lib/strings";
   import Compte from "./Compte.svelte";
 
   const nonLus = $derived(story.data ? unreadCount() : 0);
@@ -31,7 +31,7 @@
           <a href="/story" aria-current={courant("/story")}>
             {t("nav.story")}
             {#if nonLus > 0 && route.path !== "/story"}
-              <span class="compteur tnum" aria-label={t("nav.unread", { n: nonLus })}>{nonLus}</span>
+              <span class="compteur tnum" aria-label={tn("nav.unread", nonLus)}>{nonLus}</span>
             {/if}
           </a>
         </li>
