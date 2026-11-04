@@ -32,6 +32,9 @@ def test_scoreboard_ranks_teams(new_client, sync) -> None:  # type: ignore[no-un
         (1, "Bravo", 80),
         (2, "Alpha", 40),
     ]
+    # Le nombre de défis publics (pour dessiner les façades) ne compte pas « Le coffre », caché
+    # tant qu'il est verrouillé ; « Niveau supérieur », montré verrouillé, est compté.
+    assert board["challenges"] == 5
 
 
 def test_freeze_hides_late_solves(new_client, sync, make_pack, clock, admin) -> None:  # type: ignore[no-untyped-def]

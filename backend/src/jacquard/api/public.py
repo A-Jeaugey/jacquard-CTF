@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from jacquard.api.deps import DbSession, Event, Now, OptionalUser
 from jacquard.api.routing import CommittingRoute
-from jacquard.models import Announcement
+from jacquard.models import Announcement, Challenge
 from jacquard.services import compute_snapshot, is_frozen, phase, public_cutoff
 
 router = APIRouter(prefix="/api", tags=["public"], route_class=CommittingRoute)
@@ -43,9 +43,17 @@ def event_info(event: Event, now: Now) -> dict[str, object]:
 def scoreboard(db: DbSession, event: Event, now: Now, user: OptionalUser) -> dict[str, object]:
     cutoff = public_cutoff(event, now, user)
     snapshot = compute_snapshot(db, event, cutoff)
+    # Défis dont l'existence est publique : ouverts d'emblée ou montrés verrouillés. Les défis
+    # cachés tant qu'ils sont verrouillés ne sont pas comptés (ils restent un secret).
+    public_challenges = sum(
+        1
+        for c in db.scalars(select(Challenge).where(Challenge.active))
+        if not c.unlock or c.when_locked == "teaser"
+    )
     return {
         "frozen": cutoff is not None,
         "frozen_at": cutoff.isoformat() if cutoff else None,
+        "challenges": public_challenges,
         "teams": [
             {
                 "rank": t.rank,
