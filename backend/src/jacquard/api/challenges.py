@@ -29,8 +29,9 @@ from jacquard.models import (
     Team,
     User,
 )
-from jacquard.packs.schema import EventConfig
+from jacquard.packs.schema import EventConfig, load_rule
 from jacquard.realtime import publish
+from jacquard.rules import prerequisites
 from jacquard.security import constant_time_equals, flag_digest, normalize_flag
 from jacquard.services import (
     Phase,
@@ -116,7 +117,15 @@ def list_challenges(user: CurrentUser, db: DbSession, event: Event, now: Now) ->
         }
         if user.is_admin:
             entry["unlock"] = c.unlock
+        needs = prerequisites(load_rule(c.unlock), event.schedule.start, event.tz)
+        entry["after"] = needs.challenges
+        entry["opens_at"] = needs.opens_at.isoformat() if needs.opens_at else None
         items.append(entry)
+    # Seuls les défis visibles par l'équipe sont nommés comme prérequis : un défi caché ne
+    # doit jamais apparaître, même par son identifiant.
+    visible = {item["id"] for item in items}
+    for item in items:
+        item["after"] = [cid for cid in item["after"] if cid in visible]  # type: ignore[attr-defined]
     return {"phase": current, "challenges": items}
 
 

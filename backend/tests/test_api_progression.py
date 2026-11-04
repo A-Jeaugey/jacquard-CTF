@@ -109,6 +109,45 @@ def test_unlocks_are_sticky(new_client, sync, make_pack) -> None:  # type: ignor
     assert "riche" in listing(api)
 
 
+def test_listing_names_visible_prerequisites_only(new_client, sync, make_pack) -> None:  # type: ignore[no-untyped-def]
+    pack = make_pack()
+    # Après « César », à heure fixe ; un prérequis caché (« coffre ») n'est jamais nommé.
+    add_challenge(
+        pack,
+        {
+            "id": "suite",
+            "name": "La suite",
+            "category": "misc",
+            "unlock": {"all": [{"solved": "cesar"}, {"time": {"elapsed_minutes": 0}}]},
+            "when_locked": "teaser",
+            "flags": [{"type": "static", "value": "DEMO{suite}"}],
+        },
+    )
+    add_challenge(
+        pack,
+        {
+            "id": "apres-coffre",
+            "name": "Après le coffre",
+            "category": "misc",
+            "unlock": {"any": [{"solved": "coffre"}, {"not": {"solved": "cesar"}}]},
+            "flags": [{"type": "static", "value": "DEMO{apres}"}],
+        },
+    )
+    sync(pack)
+    api = new_client()
+    api.register("alice")
+    api.create_team("Alpha")
+    challenges = listing(api)
+    assert challenges["suite"]["after"] == ["cesar"]
+    assert challenges["suite"]["opens_at"] is not None
+    assert challenges["cesar"]["after"] == []
+    assert challenges["cesar"]["opens_at"] is None
+    # « coffre » est caché pour l'équipe, la branche « not » n'ouvre rien : rien n'est nommé.
+    assert "coffre" not in challenges
+    assert challenges["apres-coffre"]["after"] == []
+    assert '"coffre"' not in api.get("/api/challenges").text
+
+
 def test_locked_challenge_files_are_hidden(new_client, sync, make_pack) -> None:  # type: ignore[no-untyped-def]
     pack = make_pack()
     edit_challenge(pack, "crypto/cesar", unlock={"solved": "bienvenue"}, when_locked="teaser")

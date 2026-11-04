@@ -143,6 +143,43 @@ def references(rule: Rule | None) -> References:
     return found
 
 
+@dataclass
+class Prerequisites:
+    """Ce qu'une règle exige, lisible par un joueur : les défis à résoudre avant et l'heure
+    d'ouverture. Les branches `not` sont ignorées (elles retirent, n'ouvrent pas)."""
+
+    challenges: list[str] = field(default_factory=list)
+    opens_at: datetime | None = None
+
+
+def prerequisites(rule: Rule | None, start: datetime, tz: tzinfo) -> Prerequisites:
+    found = Prerequisites()
+
+    def visit(node: Rule) -> None:
+        match node:
+            case AllRule():
+                for child in node.all:
+                    visit(child)
+            case AnyRule():
+                for child in node.any:
+                    visit(child)
+            case SolvedRule():
+                if node.solved not in found.challenges:
+                    found.challenges.append(node.solved)
+            case TimeRule():
+                moment = None
+                if node.time.elapsed_minutes is not None:
+                    moment = start + timedelta(minutes=node.time.elapsed_minutes)
+                elif node.time.after is not None:
+                    moment = _localize(node.time.after, tz)
+                if moment is not None and (found.opens_at is None or moment > found.opens_at):
+                    found.opens_at = moment
+
+    if rule is not None:
+        visit(rule)
+    return found
+
+
 # --------------------------------------------------------------------------- atteignabilité
 
 
