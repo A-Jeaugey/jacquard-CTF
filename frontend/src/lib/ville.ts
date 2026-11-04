@@ -169,8 +169,8 @@ export const GABARITS: Record<NomGabarit, Gabarit> = {
     w: 70,
     h: 206,
     dessin: [
-      r("ombre", 0, 182, 70, 24),
-      ...[5, 15, 48, 58].map((x) => r("toit", x, 188, 7, 9)),
+      r("facade", 0, 182, 70, 24),
+      ...[6, 52].map((x) => r("toit", x, 189, 12, 8)),
       r("facade", 20, 40, 30, 166),
       r("ombre", 43, 40, 7, 166),
       ...Array.from({ length: 20 }, (_, i) => r("toit", 20, 47 + i * 7, 30, 1)),

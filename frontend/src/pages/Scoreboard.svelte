@@ -281,8 +281,11 @@
     max-width: 100%;
     height: auto;
   }
+  /* Gravure, comme les immeubles du plan : contour --douce, assises de pierre. */
   .facade-mur {
-    fill: var(--pierre);
+    fill: url(#jq-assises);
+    stroke: var(--douce);
+    stroke-width: 1;
   }
   .fenetre {
     fill: var(--eau);

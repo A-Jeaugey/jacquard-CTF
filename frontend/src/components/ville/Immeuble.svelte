@@ -71,23 +71,32 @@
     height: auto;
     overflow: visible;
   }
+  /* Gravure de nuit : l'architecture au trait (--douce), assises de pierre en lignes fines,
+     ombres hachurées, portes --eau. Les motifs #jq-assises et #jq-hachures sont posés une
+     fois pour toute l'application (App.svelte). Seules les fenêtres des défis sont pleines. */
   .facade,
   .socle {
-    fill: var(--pierre);
+    fill: url(#jq-assises);
+    stroke: var(--douce);
+    stroke-width: 1;
   }
   .toit {
-    fill: var(--toit);
+    fill: var(--nuit);
+    stroke: var(--douce);
+    stroke-width: 0.8;
   }
   .ombre {
-    fill: var(--pierre-sombre);
+    fill: url(#jq-hachures);
   }
   .trait {
     fill: none;
-    stroke: var(--toit);
+    stroke: var(--douce);
     stroke-width: 1;
   }
   .passage {
     fill: var(--eau);
+    stroke: var(--douce);
+    stroke-width: 0.8;
   }
   .couronne {
     fill: var(--lumen);
@@ -132,14 +141,21 @@
     fill: var(--eau);
     stroke: none;
   }
-  /* Quartier en retrait : une silhouette, sans couleur d'état (jetons, pas d'opacité). */
+  /* Quartier en retrait : une silhouette sombre au trait --pierre, sans assises, sans hachures
+     ni couleur d'état (jetons, pas d'opacité) ; le quartier choisi garde sa gravure. */
   .retrait .facade,
   .retrait .socle,
+  .retrait .toit,
   .retrait .ombre,
+  .retrait .passage,
   .retrait .couronne {
     fill: var(--toit);
+    stroke: var(--pierre);
+  }
+  .retrait .ombre {
+    stroke: none;
   }
   .retrait .trait {
-    stroke: var(--toit);
+    stroke: var(--pierre);
   }
 </style>

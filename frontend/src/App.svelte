@@ -66,6 +66,21 @@
 
 <svelte:document onclick={interceptLinks} />
 
+<!-- Motifs de la gravure des immeubles (Immeuble.svelte, classement) : assises de pierre et
+     hachures d'ombre, aux couleurs des jetons. -->
+<svg class="motifs" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <pattern id="jq-assises" width="6" height="5" patternUnits="userSpaceOnUse">
+      <rect class="motif-fond" width="6" height="5" />
+      <rect class="motif-ligne" y="4" width="6" height="1" />
+    </pattern>
+    <pattern id="jq-hachures" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect class="motif-fond" width="4" height="4" />
+      <rect class="motif-ligne" width="1" height="4" />
+    </pattern>
+  </defs>
+</svg>
+
 {#if !session.ready}
   <p class="attente secondaire">{t("loading")}</p>
 {:else if !session.configured}
@@ -94,6 +109,16 @@
 {/if}
 
 <style>
+  .motifs {
+    position: absolute;
+  }
+  .motif-fond {
+    fill: var(--nuit);
+  }
+  .motif-ligne {
+    fill: var(--pierre);
+  }
+
   .attente {
     padding: var(--e7) var(--gouttiere);
   }

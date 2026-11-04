@@ -18,8 +18,11 @@ de canuts et ses hautes fenêtres d'atelier, la basilique et sa tour métallique
 la Part-Dieu, les pignons du Vieux Lyon, la traboule et son passage voûté, le musée des
 Confluences, la halle de Gerland, l'école du Terrain), avec ses étages, corniches, cheminées,
 portes et volets clos. Les volets clos sont le décor ; seules les fenêtres des défis portent
-une lumière. Couleurs : façades `--pierre`, ombres et cordons `--pierre-sombre` ou `--toit`,
-portes `--eau`.
+une lumière. **Rendu : gravure de nuit** (choix de l'orga) : l'architecture au trait `--douce`,
+les façades en assises de pierre (lignes `--pierre` sur `--nuit`), les ombres hachurées, les
+toits et volets au trait sur `--nuit`, les portes `--eau` ; motifs `#jq-assises` et
+`#jq-hachures` posés une fois dans `App.svelte`. Un quartier en retrait devient une silhouette
+`--toit` au trait `--pierre`, sans assises ni hachures.
 
 **Une seule audace : le plan de nuit.** Tout le reste est calme, discipliné, lisible.
 
@@ -104,7 +107,7 @@ survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau),
 ## Comportement (exigences issues des passes du juge)
 
 1. **Quartier choisi** : son immeuble garde ses couleurs et montre son fil ; les autres passent
-   en silhouette (façades `--toit`, fenêtres `--pierre`, étiquettes `--douce`). Un seul point
+   en silhouette (façades `--toit` au trait `--pierre`, fenêtres `--pierre`, étiquettes `--douce`). Un seul point
    focal. Le choix est annoncé (`aria-live` : « Fourvière : 3 défis ») ; sur mobile, la liste
    défile jusqu'au quartier (instantané en mouvement réduit). Retirer le choix rend le focus au
    bouton du quartier.
@@ -141,7 +144,7 @@ survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau),
   silhouette pour toutes : un immeuble par quartier, qui reprend en petit la silhouette de son
   quartier sur le plan (la tour et sa pointe pour la Part-Dieu, la flèche et le fronton pour
   Fourvière, les pignons du Vieux Lyon, les sheds et la cheminée de Gerland, l'école basse du
-  Terrain…, en `--pierre` comme les façades), une fenêtre de 8 × 12 par défi public
+  Terrain…, gravés au trait comme les immeubles du plan), une fenêtre de 8 × 12 par défi public
   toujours à la même place, allumée quand l'équipe l'a résolu ; les places sont mélangées une
   fois pour toutes, pour qu'une façade ne se remplisse pas comme une jauge ; un quartier fourni monte en
   étages, quatre au plus, plutôt qu'en largeur ; le nombre seul à côté, sans libellé répété ;
