@@ -176,7 +176,10 @@ tient sur deux lignes, coupées net.
 
 Un seul moment orchestré : **l'allumage**. Au premier affichage de la session, toutes les
 fenêtres sont froides, puis les fenêtres résolues s'allument une à une dans l'ordre réel des
-résolutions (110 ms d'intervalle, sans fondu). Rien en `prefers-reduced-motion`. Tout le reste
+résolutions (110 ms d'intervalle, sans fondu). Il se décide une seule fois, à l'arrivée de la
+progression de l'équipe : un rechargement ne le relance ni ne l'interrompt, et une équipe qui
+n'a encore rien résolu ne le voit pas (sa première fenêtre s'allume tout de suite). Rien en
+`prefers-reduced-motion`. Tout le reste
 est instantané (on agit, ça change). Pas de `transition: all`, pas d'animation en boucle.
 
 ## Interdits (en plus des marqueurs de `docs/refonte-ui/recherche.md`)
