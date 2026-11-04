@@ -1,7 +1,8 @@
 <script lang="ts">
   import { tick } from "svelte";
 
-  import { api, errorMessage } from "../lib/api";
+  import Reessayer from "../components/Reessayer.svelte";
+  import { api, ApiError, errorMessage } from "../lib/api";
   import { formatTime, poll } from "../lib/format";
   import { navigate } from "../lib/router.svelte";
   import { session } from "../lib/session.svelte";
@@ -26,6 +27,12 @@
   // Retour d'une action (publier, supprimer, masquer), affiché près de ce qui l'a provoquée.
   let retour = $state<{ ou: "form" | "liste"; sorte: "ok" | "erreur"; texte: string } | null>(null);
   let publication = $state(false);
+  // Champs de l'annonce refusés par une validation du serveur.
+  let champsAnnonce = $state<string[]>([]);
+  const CHAMPS_ANNONCE: Record<string, { id: string; libelle: () => string }> = {
+    title: { id: "annonce-titre", libelle: () => t("admin.announcement.title") },
+    body: { id: "annonce-texte", libelle: () => t("admin.announcement.body") },
+  };
   let aSupprimer = $state<number | null>(null);
 
   function submissionsUrl(beforeId?: number): string {
@@ -85,8 +92,11 @@
 
   async function publish(event: SubmitEvent): Promise<void> {
     event.preventDefault();
+    // Bouton « en cours » par aria-disabled : il garde le focus pendant l'envoi.
+    if (publication) return;
     publication = true;
     retour = null;
+    champsAnnonce = [];
     try {
       await api.post("/api/admin/announcements", { title, body });
       title = "";
@@ -94,12 +104,20 @@
       retour = { ou: "form", sorte: "ok", texte: t("admin.announcement.published") };
       await loadAnnouncements();
     } catch (e) {
-      retour = { ou: "form", sorte: "erreur", texte: errorMessage(e) };
+      const champs = e instanceof ApiError && Array.isArray(e.extra.fields) ? (e.extra.fields as string[]) : [];
+      champsAnnonce = champs.filter((c) => c in CHAMPS_ANNONCE);
+      const texte = champsAnnonce.length
+        ? t("admin.announcement.invalid", { fields: champsAnnonce.map((c) => CHAMPS_ANNONCE[c]?.libelle() ?? c).join(", ") })
+        : errorMessage(e);
+      retour = { ou: "form", sorte: "erreur", texte };
     } finally {
       publication = false;
     }
     await tick();
-    if (retour?.sorte === "erreur") document.getElementById("annonce-titre")?.focus();
+    if (retour?.sorte === "erreur") {
+      const premier = champsAnnonce[0];
+      document.getElementById(premier ? (CHAMPS_ANNONCE[premier]?.id ?? "annonce-titre") : "annonce-titre")?.focus();
+    }
   }
 
   async function demanderSuppression(id: number): Promise<void> {
@@ -186,7 +204,7 @@
         {erreurs[onglet]}
         {#if charges[onglet]}{t("admin.stale")}{/if}
       </p>
-      <p><button type="button" class="btn-ligne" onclick={recharger[onglet]}>{t("action.retry")}</button></p>
+      <p><Reessayer action={recharger[onglet]} cible="panneau-admin" /></p>
     </div>
   {:else if !charges[onglet]}
     <p class="secondaire">{t("loading")}</p>
@@ -198,7 +216,7 @@
     {#if retour.sorte === "ok"}
       <p class="succes" role="status">{retour.texte}</p>
     {:else}
-      <p class="refus" role="alert"><b>{t("error.title")}</b> {retour.texte}</p>
+      <p class="refus" id={ou === "form" ? "retour-annonce" : undefined} role="alert"><b>{t("error.title")}</b> {retour.texte}</p>
     {/if}
   {/if}
 {/snippet}
@@ -222,7 +240,7 @@
     {/each}
   </div>
 
-  <div class="contenu" role="tabpanel" id="panneau-admin" aria-labelledby="onglet-{tab}">
+  <div class="contenu" role="tabpanel" id="panneau-admin" aria-labelledby="onglet-{tab}" tabindex="-1">
     {#if tab === "submissions"}
       <div class="outils">
         <label class="etiquette" for="filtre">{t("admin.filter.label")}</label>
@@ -270,6 +288,7 @@
         <p class="suite"><button type="button" class="btn-ligne" onclick={() => (filter = "all")}>{t("admin.filter.reset")}</button></p>
       {:else if charges.submissions}
         <p class="secondaire">{t("admin.submissions.none")}</p>
+        <p class="suite"><button type="button" class="btn-ligne" onclick={() => choisir("announcements")}>{t("admin.go_announce")}</button></p>
       {/if}
     {:else if tab === "teams"}
       {@render etat("teams")}
@@ -311,10 +330,13 @@
         </div>
       {:else if charges.teams}
         <p class="secondaire">{t("admin.teams.none")}</p>
+        <p class="suite"><button type="button" class="btn-ligne" onclick={() => choisir("announcements")}>{t("admin.go_announce")}</button></p>
       {/if}
     {:else if tab === "stats"}
       {@render etat("stats")}
-      {#if stats}
+      {#if stats && stats.challenges.length === 0}
+        <p class="secondaire">{t("admin.stats.none")}</p>
+      {:else if stats}
         <!-- Région qui défile : atteignable au clavier pour lire les colonnes masquées (WCAG 2.1.1). -->
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <div class="defile" tabindex="0" role="region" aria-label={t("admin.scroll", { name: t("admin.tab.stats") })}>
@@ -369,15 +391,32 @@
       <form class="annonce-form" onsubmit={publish}>
         <div class="champ">
           <label for="annonce-titre">{t("admin.announcement.title")}</label>
-          <input id="annonce-titre" class="saisie" required maxlength="128" bind:value={title} />
+          <input
+            id="annonce-titre"
+            class="saisie"
+            required
+            maxlength="128"
+            bind:value={title}
+            aria-invalid={champsAnnonce.includes("title") ? "true" : undefined}
+            aria-describedby={retour?.ou === "form" && retour.sorte === "erreur" ? "retour-annonce" : undefined}
+          />
         </div>
         <div class="champ">
           <label for="annonce-texte">{t("admin.announcement.body")}</label>
-          <textarea id="annonce-texte" class="saisie zone" required rows="5" maxlength="10000" bind:value={body}></textarea>
+          <textarea
+            id="annonce-texte"
+            class="saisie zone"
+            required
+            rows="5"
+            maxlength="10000"
+            bind:value={body}
+            aria-invalid={champsAnnonce.includes("body") ? "true" : undefined}
+            aria-describedby={retour?.ou === "form" && retour.sorte === "erreur" ? "retour-annonce" : undefined}
+          ></textarea>
         </div>
         {@render message("form")}
         <p>
-          <button type="submit" class="btn-principal" disabled={publication}>
+          <button type="submit" class="btn-principal" aria-disabled={publication ? "true" : undefined}>
             {publication ? t("admin.announcement.publishing") : t("admin.announcement.publish")}
           </button>
         </p>
@@ -529,9 +568,10 @@
   .signaux {
     margin-top: var(--e6);
   }
+  /* Luciole est large : 60ch tient environ 80 caractères réels par ligne. */
   .signaux .aide,
   .signal {
-    max-width: 72ch;
+    max-width: 60ch;
   }
   .signaux .aide {
     margin: var(--e2) 0 var(--e3);

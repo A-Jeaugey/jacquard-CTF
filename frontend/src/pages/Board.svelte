@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Reessayer from "../components/Reessayer.svelte";
   import { tick, untrack } from "svelte";
 
   import Immeuble from "../components/ville/Immeuble.svelte";
@@ -21,6 +22,8 @@
   let flux = $state<FeedItem[]>([]);
   let choisi = $state<string | null>(null);
   let annonce = $state("");
+  // Un lien vers un défi qui ne peut pas s'ouvrir : on dit pourquoi au lieu de rien.
+  let refusLien = $state<string | null>(null);
   let chroniqueFermee = $state<string | null>(null);
   let declencheur: HTMLElement | null = null;
   let ouvertParNous = false;
@@ -89,7 +92,16 @@
 
   // Un défi verrouillé ou inconnu ne s'ouvre pas : on revient au plan.
   $effect(() => {
-    if (ouvert && liste && (!defiOuvert || defiOuvert.locked)) navigate("/challenges", true);
+    if (ouvert && liste && (!defiOuvert || defiOuvert.locked)) {
+      refusLien = defiOuvert
+        ? [t("board.link_locked", { name: defiOuvert.name }), defiOuvert.locked_message ? typo(defiOuvert.locked_message) : ""]
+            .filter(Boolean)
+            .join(" ")
+        : t("board.link_unknown");
+      navigate("/challenges", true);
+    } else if (defiOuvert) {
+      refusLien = null;
+    }
   });
 
   // Panneau ouvert : le reste de la page devient inerte (fenêtre modale à toutes les largeurs).
@@ -205,7 +217,7 @@
 
 <div class="plan">
   <div class="tete">
-    <h1 class="titre-page">{t("board.title")}</h1>
+    <h1 class="titre-page" id="titre-plan" tabindex="-1">{t("board.title")}</h1>
     <p class="indice">
       {#if choisi}
         {t("board.district_selected", { name: sections.find((s) => s.id === choisi)?.nom ?? "" })}
@@ -215,12 +227,20 @@
       {/if}
     </p>
     <p class="sr-only" aria-live="polite">{annonce}</p>
+    <div role="status">
+      {#if refusLien}
+        <p class="refus avis">
+          {refusLien}
+          <button type="button" class="btn-texte" onclick={() => (refusLien = null)}>{t("live.dismiss")}</button>
+        </p>
+      {/if}
+    </div>
   </div>
 
   {#if erreur}
     <div class="volet etat">
       <p class="refus" role="alert"><b>{t("board.error")}</b> {erreur}</p>
-      <button type="button" class="btn-ligne" onclick={charger}>{t("action.retry")}</button>
+      <Reessayer action={charger} cible="titre-plan" />
     </div>
   {:else if besoinEquipe}
     <div class="volet etat">
@@ -337,6 +357,10 @@
   }
   .retour-ville {
     margin-bottom: var(--e2);
+  }
+  .avis {
+    margin-top: var(--e3);
+    max-width: 56ch;
   }
   .ville-zone {
     padding: var(--e4) var(--gouttiere) 0;

@@ -1,9 +1,11 @@
 <script lang="ts">
+  import Reessayer from "../components/Reessayer.svelte";
   import Decor from "../components/ville/Decor.svelte";
   import { api, errorMessage } from "../lib/api";
-  import { formatDateTime, formatPlage, poll } from "../lib/format";
+  import { equipe } from "../lib/equipe.svelte";
+  import { formatDateTime, formatPlage, formatPoints, poll } from "../lib/format";
   import { live } from "../lib/live.svelte";
-  import { session } from "../lib/session.svelte";
+  import { inscriptionsOuvertes, session } from "../lib/session.svelte";
   import { story } from "../lib/story.svelte";
   import { t } from "../lib/strings";
   import { typo, typographie } from "../lib/typo";
@@ -31,19 +33,30 @@
   const evenement = $derived(session.event);
   const prologue = $derived(story.data?.entries.filter((e) => e.public) ?? []);
   const phase = $derived(evenement?.phase ?? "running");
-  const inscriptions = $derived(evenement?.participation.registration !== "closed" && phase !== "ended");
+  const inscriptions = $derived(inscriptionsOuvertes());
 </script>
 
 {#if evenement}
   <div class="accueil">
     <div class="intro">
-      <h1 class="titre-page">{evenement.name}</h1>
-      {#if evenement.tagline}<p class="accroche">{typo(evenement.tagline)}</p>{/if}
+      <!-- Le nom de l'événement est déjà le logotype de l'en-tête : le titre est son accroche. -->
+      <h1 class="titre-page">{evenement.tagline ? typo(evenement.tagline) : evenement.name}</h1>
       <p class="dates">{formatPlage(evenement.schedule.start, evenement.schedule.end, evenement.timezone)}.</p>
       {#if phase === "not_started"}
         <p class="phase">{t("home.phase.not_started")}</p>
       {:else if phase === "ended"}
         <p class="phase">{t("home.phase.ended")}</p>
+      {/if}
+      {#if session.me?.team}
+        <p class="equipe">
+          {#if equipe.data?.rank}
+            {t("home.team_rank_start", { team: session.me.team.name })}
+            {equipe.data.rank}<span class="sup">e</span>
+            {t("home.team_rank_end", { total: equipe.nombreEquipes, points: formatPoints(equipe.data.score) })}
+          {:else}
+            {t("home.team_no_score", { team: session.me.team.name })}
+          {/if}
+        </p>
       {/if}
       <p class="actions">
         {#if phase === "ended"}
@@ -62,7 +75,8 @@
     </div>
 
     <div class="suite">
-      {#each prologue as chapitre (chapitre.id)}
+      <!-- Le prologue pour les visiteurs ; les joueurs le retrouvent dans leurs messages. -->
+      {#each session.me ? [] : prologue as chapitre (chapitre.id)}
         <article class="chapitre" aria-labelledby="ch-{chapitre.id}">
           <h2 class="titre-section" id="ch-{chapitre.id}">{typo(chapitre.title)}</h2>
           <!-- HTML assaini côté serveur. -->
@@ -71,10 +85,10 @@
       {/each}
 
       <section class="annonces" aria-labelledby="h-annonces" id="annonces">
-        <h2 class="titre-section" id="h-annonces">{t("home.announcements")}</h2>
+        <h2 class="titre-section" id="h-annonces" tabindex="-1">{t("home.announcements")}</h2>
         {#if erreurAnnonces && !annoncesChargees}
           <p class="refus" role="alert"><b>{t("error.title")}</b> {erreurAnnonces}</p>
-          <p><button type="button" class="btn-ligne" onclick={charger}>{t("action.retry")}</button></p>
+          <p><Reessayer action={charger} cible="h-annonces" /></p>
         {:else if !annoncesChargees}
           <p class="secondaire">{t("loading")}</p>
         {/if}
@@ -118,7 +132,7 @@
     grid-area: suite;
     max-width: 640px;
   }
-  .accroche {
+  .equipe {
     margin-top: var(--e3);
     font-size: var(--t-nom);
   }
@@ -166,6 +180,9 @@
     grid-area: illustration;
     position: sticky;
     top: var(--e5);
+    justify-self: end;
+    width: 100%;
+    max-width: 640px;
   }
 
   @media (max-width: 900px) {
@@ -177,6 +194,7 @@
     }
     .illustration {
       position: static;
+      justify-self: start;
       max-width: 520px;
     }
   }

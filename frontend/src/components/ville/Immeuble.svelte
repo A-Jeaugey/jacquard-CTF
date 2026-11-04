@@ -25,13 +25,6 @@
 
   const g = $derived(quartier.gabarit);
   const troncons = $derived(avecFil ? fil(quartier) : []);
-  const socle = $derived(
-    quartier.resolus === quartier.defis.length && quartier.defis.length > 0
-      ? "resolu"
-      : quartier.resolus === 0
-        ? "verrouille"
-        : "pierre",
-  );
 </script>
 
 <svg
@@ -65,7 +58,7 @@
       {/if}
     {/if}
   {/each}
-  <rect class="socle" data-etat={socle} x={g.socle.x} y={g.h} width={g.socle.w} height="4" />
+  <rect class="socle" x={g.socle.x} y={g.h} width={g.socle.w} height="4" />
   {#each troncons as troncon (troncon.vers)}
     <path class="fil" data-etat={troncon.etat} d={troncon.d} />
   {/each}
@@ -89,12 +82,6 @@
     fill: var(--eau);
   }
   .couronne {
-    fill: var(--lumen);
-  }
-  .socle[data-etat="resolu"] {
-    fill: var(--lumignon);
-  }
-  .socle[data-etat="verrouille"] {
     fill: var(--lumen);
   }
   .fen {
@@ -136,9 +123,6 @@
   .nuit .fen:not([data-etat="resolu"]) {
     fill: var(--eau);
     stroke: none;
-  }
-  .nuit .socle:not([data-etat="resolu"]) {
-    fill: var(--pierre);
   }
   /* Quartier en retrait : une silhouette, sans couleur d'état (jetons, pas d'opacité). */
   .retrait .facade,

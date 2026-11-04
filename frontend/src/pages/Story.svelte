@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Reessayer from "../components/Reessayer.svelte";
   import { live } from "../lib/live.svelte";
   import { markAllSeen, refreshStory, story } from "../lib/story.svelte";
   import { t, tn } from "../lib/strings";
@@ -8,11 +9,14 @@
   // précédés d'un seul repère, « Depuis ta dernière visite », s'ils ne sont pas tous nouveaux.
   let nouveaux = $state<string[]>([]);
   let charge = $state(false);
+  // Première visite : rien n'a encore été lu, il n'y a pas de « dernière visite ».
+  let premiereVisite = $state(false);
 
   async function charger(): Promise<void> {
     await refreshStory();
     if (!story.data) return;
     const nonLus = story.data.entries.filter((e) => !story.seen.includes(e.id)).map((e) => e.id);
+    if (!charge) premiereVisite = story.seen.length === 0;
     nouveaux = charge ? [...nouveaux, ...nonLus] : nonLus;
     charge = true;
     markAllSeen();
@@ -29,15 +33,15 @@
 </script>
 
 <div class="page page-etroite">
-  <h1 class="titre-page">{t("story.title")}</h1>
+  <h1 class="titre-page" id="titre-messages" tabindex="-1">{t("story.title")}</h1>
   {#if !story.data && story.erreur}
     <p class="refus etat" role="alert"><b>{t("error.title")}</b> {story.erreur}</p>
-    <p><button type="button" class="btn-ligne" onclick={charger}>{t("action.retry")}</button></p>
+    <p><Reessayer action={charger} cible="titre-messages" /></p>
   {:else if !story.data}
     <p class="secondaire etat">{t("loading")}</p>
   {:else}
     {#if nouveaux.length > 0}
-      <p class="etat" role="status">{tn("story.unread_count", nouveaux.length)}</p>
+      <p class="etat" role="status">{tn(premiereVisite ? "story.first_visit" : "story.unread_count", nouveaux.length)}</p>
     {/if}
     {#each entrees as message (message.id)}
       {#if message.id === premierNouveau && !tousNouveaux}

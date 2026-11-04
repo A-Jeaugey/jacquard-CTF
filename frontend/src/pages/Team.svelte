@@ -2,7 +2,9 @@
   import { tick } from "svelte";
 
   import PageAcces from "../components/PageAcces.svelte";
+  import Reessayer from "../components/Reessayer.svelte";
   import FilDeSoie from "../components/ville/FilDeSoie.svelte";
+  import Immeuble from "../components/ville/Immeuble.svelte";
   import Marque from "../components/ville/Marque.svelte";
   import { api, ApiError, errorMessage } from "../lib/api";
   import { refreshEquipe } from "../lib/equipe.svelte";
@@ -12,11 +14,14 @@
   import { refreshMe, session } from "../lib/session.svelte";
   import { t, tn } from "../lib/strings";
   import { typo } from "../lib/typo";
-  import type { TeamDetail } from "../lib/types";
+  import type { ChallengeSummary, TeamDetail } from "../lib/types";
+  import { construireVille } from "../lib/ville";
 
   type Action = "rejoindre" | "creer" | "quitter";
 
   let equipe = $state<TeamDetail | null>(null);
+  // Les défis de l'équipe, pour dessiner l'immeuble de chaque quartier (facultatif).
+  let defis = $state<ChallengeSummary[]>([]);
   let charge = $state(false);
   let nom = $state("");
   let code = $state("");
@@ -38,6 +43,14 @@
       erreurChargement = null;
     } catch (e) {
       erreurChargement = errorMessage(e);
+      return;
+    }
+    if (equipe) {
+      // Sans la liste des défis, la page reste lisible : seuls les immeubles manquent.
+      defis = await api
+        .get<{ challenges: ChallengeSummary[] }>("/api/challenges")
+        .then((r) => r.challenges)
+        .catch(() => defis);
     }
   }
 
@@ -123,18 +136,29 @@
   /** Le motif binaire d'un objet (« motif : ●○●○… »), s'il y en a un. */
   const motif = (description: string | null): string | null => description?.match(/[●○]{4,}/)?.[0] ?? null;
 
-  // Les défis résolus, par quartier, dans l'ordre des quartiers de l'événement.
+  // Les défis résolus, par quartier, dans l'ordre des quartiers de l'événement, chacun avec
+  // l'immeuble de son quartier tel que l'équipe le voit sur le plan.
+  const ville = $derived(
+    defis.length ? construireVille(session.event?.categories ?? [], defis, session.event?.difficulties ?? []) : null,
+  );
   const parQuartier = $derived.by(() => {
     if (!equipe) return [];
     const categories = session.event?.categories ?? [];
     const groupes = categories
-      .map((c) => ({ id: c.id, nom: c.name, defis: equipe?.solves.filter((s) => s.category === c.id) ?? [] }))
+      .map((c) => ({
+        id: c.id,
+        nom: c.name,
+        quartier: ville?.find((q) => q.categorie.id === c.id) ?? null,
+        defis: equipe?.solves.filter((s) => s.category === c.id) ?? [],
+      }))
       .filter((g) => g.defis.length > 0);
     const connus = new Set(categories.map((c) => c.id));
     const autres = equipe.solves.filter((s) => !connus.has(s.category));
-    if (autres.length) groupes.push({ id: "", nom: t("team.solves"), defis: autres });
+    if (autres.length) groupes.push({ id: "", nom: t("team.solves"), quartier: null, defis: autres });
     return groupes;
   });
+
+  const enPhrase = new Intl.ListFormat("fr", { style: "long", type: "conjunction" });
 </script>
 
 <svelte:window onkeydown={clavier} />
@@ -149,7 +173,7 @@
   <div class="page">
     {#if erreurChargement}
       <p class="refus" role="alert"><b>{t("error.title")}</b> {erreurChargement}</p>
-      <p><button type="button" class="btn-ligne" onclick={charger}>{t("action.retry")}</button></p>
+      <p><Reessayer action={charger} cible="titre-equipe" /></p>
     {:else}
       <p class="secondaire">{t("loading")}</p>
     {/if}
@@ -185,9 +209,7 @@
       <div>
         <section class="bloc" aria-labelledby="h-membres">
           <h2 class="titre-bloc" id="h-membres">{t("team.members_title", { n: equipe.members.length, max: equipe.max_size })}</h2>
-          <ul class="membres">
-            {#each equipe.members as membre (membre.id)}<li>{membre.username}</li>{/each}
-          </ul>
+          <p class="membres">{enPhrase.format(equipe.members.map((m) => m.username))}.</p>
         </section>
 
         {#if modeEquipes && equipe.solves.length === 0}
@@ -228,16 +250,25 @@
     <section class="bloc" aria-labelledby="h-resolus">
       <h2 class="titre-section" id="h-resolus">{t("team.solves")}</h2>
       {#each parQuartier as groupe (groupe.id)}
-        <h3 class="titre-bloc quartier">{groupe.nom}</h3>
+        <div class="q-tete">
+          {#if groupe.quartier}
+            <div class="q-dessin">
+              <Immeuble quartier={groupe.quartier} />
+            </div>
+          {/if}
+          <div>
+            <h3 class="titre-bloc">{groupe.nom}</h3>
+            {#if groupe.quartier}
+              <p class="meta">{t("team.district_progress", { n: groupe.quartier.resolus, total: groupe.quartier.defis.length })}</p>
+            {/if}
+          </div>
+        </div>
         <ol class="resolus">
           {#each groupe.defis as r (r.challenge_id)}
             <li>
               <Marque etat="resolu" />
               <span class="r-nom">{typo(r.challenge_name)}</span>
-              <span class="r-qui">
-                <b>{t("board.row.solved")}</b>
-                {t("team.solved_by", { user: r.solved_by ?? "—", time: heure(r.solved_at), points: formatPoints(r.points) })}
-              </span>
+              <span class="r-qui">{t("team.solved_by", { user: r.solved_by ?? "—", time: heure(r.solved_at) })}</span>
             </li>
           {/each}
         </ol>
@@ -343,9 +374,27 @@
   .fil-nom {
     font-weight: 700;
   }
-  .quartier {
-    margin-top: var(--e5);
-    margin-bottom: var(--e2);
+  .q-tete {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--e4);
+    margin-top: var(--e6);
+    margin-bottom: var(--e3);
+  }
+  /* Une case fixe : chaque immeuble y tient par sa hauteur (la tour reste fine, les ateliers
+     larges), et les noms de quartier partent tous du même bord. */
+  .q-dessin {
+    flex: none;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 96px;
+    height: 64px;
+  }
+  .q-dessin :global(.bati) {
+    width: auto;
+    height: 100%;
+    max-width: 100%;
   }
   .resolus {
     border-top: 1px solid var(--pierre);
@@ -375,10 +424,6 @@
     font-size: var(--t-meta);
     color: var(--douce);
   }
-  /* Même rangée que sur le plan : le mot « Résolu » en gras, couleur du résolu. */
-  .r-qui b {
-    color: var(--lumignon);
-  }
   .code {
     display: flex;
     flex-wrap: wrap;
@@ -395,9 +440,7 @@
     font-size: 24px;
     font-weight: 700;
   }
-  .membres li {
-    padding: var(--e2) 0;
-    border-bottom: 1px solid var(--pierre);
+  .membres {
     overflow-wrap: anywhere;
   }
   .depart {

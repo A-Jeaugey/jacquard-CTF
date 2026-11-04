@@ -4,7 +4,7 @@
   import PageAcces from "../components/PageAcces.svelte";
   import { api, ApiError, errorMessage } from "../lib/api";
   import { navigate } from "../lib/router.svelte";
-  import { session } from "../lib/session.svelte";
+  import { inscriptionsOuvertes, session } from "../lib/session.svelte";
   import { t } from "../lib/strings";
   import type { Me } from "../lib/types";
 
@@ -45,6 +45,8 @@
   };
 
   const mode = $derived(session.event?.participation.registration);
+  const terminee = $derived(session.event?.phase === "ended");
+  const ouvertes = $derived(inscriptionsOuvertes());
 
   async function valider(event: SubmitEvent): Promise<void> {
     event.preventDefault();
@@ -74,8 +76,10 @@
 
 <PageAcces>
   <h1 class="titre-page">{t("auth.register_title")}</h1>
-  <p class="intro">{mode === "closed" ? t("auth.registration_closed") : t("auth.register_intro")}</p>
-  {#if mode === "closed"}
+  <p class="intro">
+    {#if ouvertes}{t("auth.register_intro")}{:else if terminee}{t("auth.registration_ended")}{:else}{t("auth.registration_closed")}{/if}
+  </p>
+  {#if !ouvertes}
     <p class="ferme"><a class="btn-principal" href="/login">{t("nav.login")}</a></p>
   {:else}
     <form class="formulaire" onsubmit={valider}>

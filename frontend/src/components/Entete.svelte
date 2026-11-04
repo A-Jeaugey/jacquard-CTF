@@ -3,7 +3,7 @@
   import { equipe } from "../lib/equipe.svelte";
   import { formatPoints } from "../lib/format";
   import { navigate, route } from "../lib/router.svelte";
-  import { refreshMe, session } from "../lib/session.svelte";
+  import { inscriptionsOuvertes, refreshMe, session } from "../lib/session.svelte";
   import { story, unreadCount } from "../lib/story.svelte";
   import { t, tn } from "../lib/strings";
   import Compte from "./Compte.svelte";
@@ -23,7 +23,10 @@
 
 <header class="barre">
   <a class="evitement" href="#contenu">{t("nav.skip")}</a>
-  <a class="logo" href="/">{session.event?.name ?? ""}</a>
+  {#if session.event}
+    <a class="logo" href="/"><span class="logo-texte">{session.event.name}</span></a>
+  {/if}
+  {#if session.event}
   <nav class="nav" aria-label={t("nav.label")}>
     <ul>
       {#if session.me}
@@ -45,6 +48,7 @@
       {/if}
     </ul>
   </nav>
+  {/if}
   <Compte />
   {#if session.me}
     {#if session.me.team}
@@ -64,10 +68,12 @@
       <span class="equipe"><span class="equipe-nom">{session.me.user.username}</span></span>
     {/if}
     <button type="button" class="btn-texte sortie" onclick={seDeconnecter}>{t("nav.logout")}</button>
-  {:else}
+  {:else if session.event}
     <div class="acces">
-      <a class="lien" href="/login" aria-current={courant("/login")}>{t("nav.login")}</a>
-      <a class="lien" href="/register" aria-current={courant("/register")}>{t("nav.register")}</a>
+      <a class="lien" href="/login" aria-current={courant("/login")} data-texte={t("nav.login")}>{t("nav.login")}</a>
+      {#if inscriptionsOuvertes()}
+        <a class="lien" href="/register" aria-current={courant("/register")} data-texte={t("nav.register")}>{t("nav.register")}</a>
+      {/if}
     </div>
   {/if}
 </header>
@@ -94,6 +100,15 @@
     font-size: 36px;
     line-height: 1;
     text-decoration: none;
+  }
+  /* Un nom d'événement très long tient sur deux lignes au plus. */
+  .logo-texte {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    line-height: 1.1;
   }
   .nav ul {
     display: flex;
@@ -172,10 +187,21 @@
   }
   .lien {
     display: inline-flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     min-height: 44px;
     color: var(--douce);
     text-underline-offset: 8px;
+  }
+  /* Réserve la largeur du texte en gras : passer sur la page courante ne décale rien. */
+  .lien::after {
+    content: attr(data-texte) / "";
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    font-weight: 700;
+    pointer-events: none;
   }
   .lien:hover,
   .lien[aria-current="page"] {

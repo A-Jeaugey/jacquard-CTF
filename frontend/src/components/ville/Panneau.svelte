@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Reessayer from "../Reessayer.svelte";
   import { tick } from "svelte";
 
   import { api, ApiError, errorMessage } from "../../lib/api";
@@ -264,7 +265,7 @@
 
     {#if erreurChargement}
       <p class="refus" role="alert"><b>{t("error.title")}</b> {erreurChargement}</p>
-      <button type="button" class="btn-ligne" onclick={charger}>{t("action.retry")}</button>
+      <Reessayer action={charger} cible="titre-defi" />
     {:else if !defi}
       <p class="secondaire">{t("loading")}</p>
     {:else}

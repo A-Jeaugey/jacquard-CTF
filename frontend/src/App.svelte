@@ -1,5 +1,6 @@
 <script lang="ts">
   import Entete from "./components/Entete.svelte";
+  import Reessayer from "./components/Reessayer.svelte";
   import Toasts from "./components/Toasts.svelte";
   import { refreshEquipe } from "./lib/equipe.svelte";
   import { connectLive, live } from "./lib/live.svelte";
@@ -81,8 +82,8 @@
     {:else}
       <div class="page page-etroite">
         <h1 class="titre-page">{t("error.event_title")}</h1>
-        <p class="refus etat" role="alert"><b>{t("error.title")}</b> {erreurEvenement ?? t("error.event_unavailable")}</p>
-        <p><button type="button" class="btn-ligne" onclick={rechargerEvenement}>{t("action.retry")}</button></p>
+        <p class="refus etat" role="alert"><b>{t("error.title")}</b> {erreurEvenement ?? session.erreurEvenement ?? t("error.event_unavailable")}</p>
+        <p><Reessayer action={rechargerEvenement} cible="contenu" /></p>
       </div>
     {/if}
   </main>

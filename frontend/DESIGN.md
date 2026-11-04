@@ -129,7 +129,8 @@ survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau),
   la page équipe, les fils de soie et, pour chaque quartier, son immeuble aux fenêtres de
   l'équipe au-dessus de ses défis résolus. Les messages de l'histoire sont des lettres :
   titre, texte, signature ; la voix de LUMEN y est une citation en `--lumen`.
-- **Grand écran** (vidéoprojecteur, 1920 × 1080, lu à cinq mètres) : rien sous 24 px, aucune
+- **Grand écran** (vidéoprojecteur, 1920 × 1080, lu à cinq mètres) : rien sous 24 px en
+  1920 × 1080 (21 px sur un projecteur de moins de 1001 px de haut), aucune
   interaction, rien ne défile ; la ville s'allume avec la progression de toutes les équipes, à
   côté du compte à rebours et du classement (autant d'équipes que la hauteur en montre, et la
   page le dit) ; sous la ville, la progression en une phrase et le dernier événement (la même

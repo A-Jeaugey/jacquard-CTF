@@ -75,11 +75,26 @@
   const resolutions = $derived(equipes.reduce((total, e) => total + e.solves, 0));
   const dernier = $derived(flux[0] ?? null);
 
-  // Autant de rangées que la hauteur disponible en montre, et on le dit.
+  // Autant de rangées que la hauteur disponible en montre, et on le dit. Sur un petit écran
+  // (repli empilé, la page défile), toutes les équipes sont listées.
   let hauteurListe = $state(0);
   let hauteurRangee = $state(0);
+  let empile = $state(false);
+  $effect(() => {
+    const requete = window.matchMedia("(max-width: 900px)");
+    const suivre = (): void => {
+      empile = requete.matches;
+    };
+    suivre();
+    requete.addEventListener("change", suivre);
+    return () => requete.removeEventListener("change", suivre);
+  });
   const visibles = $derived(
-    hauteurRangee > 0 ? Math.max(1, Math.floor(hauteurListe / hauteurRangee)) : 10,
+    empile
+      ? equipes.length
+      : hauteurRangee > 0
+        ? Math.max(1, Math.floor(hauteurListe / hauteurRangee))
+        : 10,
   );
   function mesurer(noeud: HTMLElement): void {
     hauteurRangee = noeud.getBoundingClientRect().height;
@@ -127,16 +142,18 @@
       </div>
       <p class="progression">{tn("screen.progress", resolutions)}</p>
       {#if dernier}
-        <p class="chronique">
-          <span class="heure tnum">{heure(dernier.at)}</span>
-          <span class="evenement">
-            {#if dernier.kind === "first_blood"}
-              {t("screen.first_blood", { team: dernier.team, challenge: dernier.challenge })}
-            {:else}
-              {t("screen.announcement", { title: dernier.title })}
-            {/if}
-          </span>
-        </p>
+        <!-- La même chronique que sous le plan, sans action : personne ne touche cet écran. -->
+        <div class="chronique">
+          {#if dernier.kind === "first_blood"}
+            <p class="chronique-titre">{t("live.first_blood_title")}</p>
+            <p class="chronique-texte">
+              {t("live.first_blood_text", { team: dernier.team, challenge: dernier.challenge, time: heure(dernier.at) })}
+            </p>
+          {:else}
+            <p class="chronique-titre">{typo(dernier.title)}</p>
+            <p class="chronique-texte">{t("screen.announcement_at", { time: heure(dernier.at) })}</p>
+          {/if}
+        </div>
       {/if}
     </section>
 
@@ -154,7 +171,7 @@
         <h2 class="sous-titre" id="h-classement">{t("screen.top")}</h2>
         <p class="note">
           {tn("screen.active_teams", ecran.active_teams)}{#if equipes.length > visibles}.
-            {t("screen.top_n", { n: visibles, total: equipes.length })}{/if}
+            {tn("screen.top_n", visibles, { total: equipes.length })}{/if}
           {#if ecran.frozen}<br />{t("screen.frozen")}{/if}
         </p>
         {#if equipes.length === 0}
@@ -229,11 +246,12 @@
     flex-direction: column;
     min-height: 0;
   }
+  /* Interligne assez haut pour que la ligne coupée ne dépasse pas sous les deux premières. */
   .titre {
     font-family: var(--display);
     font-weight: 400;
     font-size: var(--t-titre);
-    line-height: 1;
+    line-height: 1.2;
     overflow-wrap: anywhere;
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -293,28 +311,27 @@
   }
   .progression {
     margin-top: var(--e3);
-    font-family: var(--display);
     font-size: var(--t-moyen);
-    line-height: 1.1;
+    line-height: 1.25;
   }
   .chronique {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: var(--e4);
-    margin-top: var(--e3);
+    margin-top: var(--e4);
     padding-top: var(--e3);
     border-top: 1px solid var(--pierre);
   }
-  .evenement {
+  .chronique-titre {
+    font-family: var(--display);
+    font-size: var(--t-moyen);
+    line-height: 1;
+  }
+  .chronique-texte {
+    margin-top: var(--e2);
     overflow-wrap: anywhere;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     line-clamp: 2;
     overflow: hidden;
-  }
-  .heure {
-    color: var(--douce);
   }
   .cote {
     display: flex;
@@ -363,7 +380,7 @@
     grid-template-columns: 2.5em minmax(0, 1fr) auto;
     gap: var(--e4);
     align-items: baseline;
-    padding: var(--e2) 0;
+    padding: var(--e3) 0;
     border-bottom: 1px solid var(--pierre);
   }
   .rang {

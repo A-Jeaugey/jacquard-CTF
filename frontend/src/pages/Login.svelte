@@ -4,7 +4,7 @@
   import PageAcces from "../components/PageAcces.svelte";
   import { api, ApiError, errorMessage } from "../lib/api";
   import { navigate } from "../lib/router.svelte";
-  import { session } from "../lib/session.svelte";
+  import { inscriptionsOuvertes, session } from "../lib/session.svelte";
   import { t } from "../lib/strings";
   import type { Me } from "../lib/types";
 
@@ -39,6 +39,7 @@
 <PageAcces>
   <h1 class="titre-page">{t("auth.login_title")}</h1>
   <p class="intro">{t("auth.login_intro")}</p>
+  {#if session.event?.phase === "ended"}<p class="phase">{t("home.phase.ended")}</p>{/if}
   <form class="formulaire" onsubmit={valider}>
     <div class="champ">
       <label for="pseudo">{t("auth.username")}</label>
@@ -77,7 +78,7 @@
       <button type="submit" class="btn-principal" disabled={envoi} bind:this={bouton}>{envoi ? t("auth.logging_in") : t("auth.login")}</button>
     </p>
   </form>
-  {#if session.event?.participation.registration !== "closed"}
+  {#if inscriptionsOuvertes()}
     <p class="bascule">{t("auth.no_account")} <a href="/register">{t("auth.create_account")}</a>.</p>
   {/if}
 </PageAcces>
@@ -86,6 +87,9 @@
   .intro {
     margin-top: var(--e3);
     font-size: var(--t-nom);
+  }
+  .phase {
+    margin-top: var(--e3);
   }
   .formulaire {
     display: grid;

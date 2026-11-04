@@ -28,7 +28,9 @@
   .illustration {
     position: sticky;
     top: var(--e5);
-    max-width: 600px;
+    justify-self: end;
+    width: 100%;
+    max-width: 640px;
   }
   @media (max-width: 900px) {
     .acces {

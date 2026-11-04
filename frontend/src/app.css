@@ -147,11 +147,17 @@ svg {
 }
 
 /* Titres : Le Murmure, jamais sous 21 px. */
+/* Titres équilibrés : jamais un mot seul sur la dernière ligne. */
+.titre-page,
+.titre-section,
+.titre-bloc {
+  text-wrap: balance;
+}
 .titre-page {
   font-family: var(--display);
   font-weight: 400;
   font-size: 48px;
-  line-height: 1;
+  line-height: 1.05;
 }
 .titre-section {
   font-family: var(--display);
@@ -242,10 +248,14 @@ svg {
   border-color: var(--claire);
   color: var(--nuit);
 }
-.btn-principal:hover,
-.btn-principal:active {
+.btn-principal:hover {
   background: var(--douce);
   border-color: var(--douce);
+}
+.btn-principal:active {
+  background: var(--pierre-sombre);
+  border-color: var(--claire);
+  color: var(--claire);
 }
 .btn-ligne:hover {
   border-color: var(--claire);
@@ -255,7 +265,9 @@ svg {
   background: var(--pierre-sombre);
 }
 .btn-principal:disabled,
-.btn-ligne:disabled {
+.btn-ligne:disabled,
+.btn-principal[aria-disabled="true"],
+.btn-ligne[aria-disabled="true"] {
   cursor: not-allowed;
   background: var(--pierre);
   border-color: var(--pierre);
@@ -354,6 +366,11 @@ svg {
 }
 .prose em {
   color: var(--douce);
+}
+/* Dans les messages, la citation est la voix de LUMEN : sa lumière froide. */
+.prose blockquote {
+  margin: 0;
+  color: var(--lumen);
 }
 .prose code {
   font-family: var(--texte);
