@@ -90,8 +90,11 @@
       .filter((s) => s.defis.length > 0);
   });
   const visibles = $derived(choisi ? sections.filter((s) => s.id === choisi) : sections);
+  // `null` tant que la progression de l'équipe n'est pas chargée : l'allumage attend de la connaître.
   const allumage = $derived(
-    [...(equipe.data?.solves ?? [])].sort((a, b) => a.solved_at.localeCompare(b.solved_at)).map((s) => s.challenge_id),
+    equipe.data
+      ? [...equipe.data.solves].sort((a, b) => a.solved_at.localeCompare(b.solved_at)).map((s) => s.challenge_id)
+      : null,
   );
   const resolutions = $derived(new Map((equipe.data?.solves ?? []).map((s) => [s.challenge_id, s])));
   const heure = (iso: string): string => formatHeure(iso, session.event?.timezone);

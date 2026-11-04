@@ -9,7 +9,8 @@ async function newTeam(page: Page, team: string): Promise<void> {
   await page.getByLabel("Mot de passe").fill("motdepasse-solide");
   await page.getByRole("button", { name: "Créer mon compte" }).click();
   await expect(page).toHaveURL(/\/team$/);
-  await page.getByLabel(/Nom de l.équipe/).fill(team);
+  // Nom unique : la base de test survit d'un passage à l'autre (tests répétés).
+  await page.getByLabel(/Nom de l.équipe/).fill(`${team} ${username.slice(5)}`);
   await page.getByRole("button", { name: "Créer", exact: true }).click();
   await expect(page.locator(".code-valeur")).toBeVisible();
 }

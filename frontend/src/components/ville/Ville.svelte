@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+
   import { t } from "../../lib/strings";
   import { NOMS_RIVIERES, PLAN, PONTS, RIVIERES, type Quartier } from "../../lib/ville";
   import Immeuble from "./Immeuble.svelte";
@@ -8,7 +10,7 @@
     quartiers,
     choisi = null,
     ouvert = null,
-    allumage = [],
+    allumage = null,
     onChoisir,
   }: {
     quartiers: Quartier[];
@@ -16,8 +18,9 @@
     choisi?: string | null;
     /** Défi ouvert dans le panneau : son quartier est mis en avant, sa fenêtre cadrée. */
     ouvert?: string | null;
-    /** Défis résolus dans l'ordre réel des résolutions, pour l'allumage. */
-    allumage?: string[];
+    /** Défis résolus dans l'ordre réel des résolutions, pour l'allumage ; `null` tant que la
+     * progression de l'équipe n'est pas chargée. */
+    allumage?: string[] | null;
     onChoisir: (categorie: string) => void;
   } = $props();
 
@@ -26,34 +29,42 @@
   );
 
   // L'allumage, seul moment orchestré : au premier affichage de la session, tout est froid,
-  // puis les fenêtres résolues s'allument une à une dans l'ordre des résolutions.
+  // puis les fenêtres résolues s'allument une à une dans l'ordre des résolutions. Il se décide
+  // une seule fois, à l'arrivée de la progression de l'équipe : les rechargements suivants (une
+  // résolution, un coéquipier) ne le relancent pas et ne l'interrompent pas, et une équipe qui
+  // n'a encore rien résolu ne le verra pas à sa première résolution.
   const CLE = "jq_allumage";
   let froides = $state<Set<string> | null>(null);
   let lance = false;
+  const minuteurs: ReturnType<typeof setTimeout>[] = [];
   $effect(() => {
-    if (lance || allumage.length === 0) return;
+    const ordre = allumage;
+    if (lance || ordre === null) return;
     lance = true;
-    let dejaVu = false;
-    try {
-      dejaVu = sessionStorage.getItem(CLE) === "1";
-      sessionStorage.setItem(CLE, "1");
-    } catch {
-      // stockage indisponible : l'allumage se rejoue, sans gravité
-    }
-    if (dejaVu || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const toutes = new Set(quartiers.flatMap((q) => q.defis.filter((d) => d.solved).map((d) => d.id)));
-    froides = toutes;
-    const minuteurs = allumage.map((id, i) =>
-      setTimeout(() => {
-        if (!froides) return;
-        const suite = new Set(froides);
-        suite.delete(id);
-        froides = suite;
-      }, 700 + i * 110),
-    );
-    minuteurs.push(setTimeout(() => (froides = null), 700 + allumage.length * 110 + 260));
-    return () => minuteurs.forEach(clearTimeout);
+    untrack(() => {
+      let dejaVu = false;
+      try {
+        dejaVu = sessionStorage.getItem(CLE) === "1";
+        sessionStorage.setItem(CLE, "1");
+      } catch {
+        // stockage indisponible : l'allumage se rejoue, sans gravité
+      }
+      if (dejaVu || ordre.length === 0 || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      froides = new Set(ordre);
+      ordre.forEach((id, i) =>
+        minuteurs.push(
+          setTimeout(() => {
+            if (!froides) return;
+            const suite = new Set(froides);
+            suite.delete(id);
+            froides = suite;
+          }, 700 + i * 110),
+        ),
+      );
+      minuteurs.push(setTimeout(() => (froides = null), 700 + ordre.length * 110 + 260));
+    });
   });
+  $effect(() => () => minuteurs.forEach(clearTimeout));
 
   const pct = (valeur: number, total: number): string => `${(valeur / total) * 100}%`;
 </script>
