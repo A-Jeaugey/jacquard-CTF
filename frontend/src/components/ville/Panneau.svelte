@@ -417,7 +417,10 @@
         {:else if retour?.sorte === "erreur"}
           <b>{t("error.title")}</b> {retour.texte}
         {:else if retour?.sorte === "session"}
-          <b>{t("challenge.session_expired")}</b> <a href="/login">{t("challenge.login_again")}</a>.
+          <span class="session">
+            <b>{t("challenge.session_expired")}</b>
+            <a class="btn-ligne" href="/login">{t("challenge.login_again")}</a>
+          </span>
         {:else if formatFlag}
           {t("challenge.format_hint", { format: formatFlag })}
         {/if}
@@ -489,6 +492,7 @@
     padding-bottom: var(--e1);
   }
   .faits {
+    overflow-wrap: anywhere;
     margin-top: var(--e4);
     padding: var(--e3) 0;
     border-top: 1px solid var(--pierre);
@@ -614,6 +618,12 @@
   #flag-aide {
     margin-top: var(--e2);
     min-height: 1.5em;
+  }
+  .session {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e2) var(--e3);
   }
 
   @media (max-width: 640px) {

@@ -89,6 +89,7 @@ body {
   font: 400 var(--t-texte) / 1.5 var(--texte);
   font-kerning: normal;
   text-wrap: pretty;
+  overflow-wrap: break-word;
 }
 h1,
 h2,
