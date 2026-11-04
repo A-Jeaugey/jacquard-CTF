@@ -335,9 +335,6 @@
     color: var(--douce);
     max-width: 56ch;
   }
-  .indice .btn-texte {
-    margin-left: var(--e1);
-  }
   .retour-ville {
     margin-bottom: var(--e2);
   }
