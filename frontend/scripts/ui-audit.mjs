@@ -4,6 +4,7 @@
 // alignements au pixel près).
 //
 //   node scripts/ui-audit.mjs <url> [--name accueil] [--out dossier] [--click "sélecteur"]
+//                                  [--login pseudo:motdepasse]
 //
 // Pour chaque largeur (1440, 768, 390), relève : débordement horizontal, textes sous le
 // contraste WCAG AA, cibles tactiles trop petites (390 px), familles et tailles de police
@@ -28,6 +29,23 @@ if (!url) {
 const name = opt("name", "page");
 const out = opt("out", "audit");
 const click = opt("click", null);
+const login = opt("login", null);
+
+/** Connexion par l'API de la plateforme (cookie de session et jeton CSRF), avant la mesure. */
+async function seConnecter(page) {
+  const [username, ...rest] = login.split(":");
+  await page.goto(new URL("/?audit", url).href, { waitUntil: "load" });
+  const status = await page.evaluate(async ({ username, password }) => {
+    const csrf = document.cookie.match(/jq_csrf=([^;]+)/)?.[1] ?? "";
+    const r = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
+      body: JSON.stringify({ username, password }),
+    });
+    return r.status;
+  }, { username, password: rest.join(":") });
+  if (status !== 200) throw new Error(`connexion refusée (${status})`);
+}
 const VIEWPORTS = [
   { label: "1440", width: 1440, height: 900, mobile: false },
   { label: "768", width: 768, height: 1024, mobile: false },
@@ -138,6 +156,7 @@ for (const vp of VIEWPORTS) {
   const errors = [];
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   page.on("pageerror", (e) => errors.push(String(e)));
+  if (login) await seConnecter(page);
   await page.goto(url, { waitUntil: "load" });
   await page.waitForTimeout(800);
   if (click) { await page.click(click); await page.waitForTimeout(500); }

@@ -482,6 +482,12 @@
     max-width: 64ch;
   }
 
+  /* Panneau ouvert : ce qu'il recouvre est déjà inerte ; on le cache aussi à l'œil. */
+  :global(body.panneau-ouvert) .plan > .tete,
+  :global(body.panneau-ouvert) .plan > .volet {
+    visibility: hidden;
+  }
+
   /* Les crédits sont en bas de la liste : pas de second pied de page sur le plan. */
   :global(body.cadre-plan .pied) {
     display: none;

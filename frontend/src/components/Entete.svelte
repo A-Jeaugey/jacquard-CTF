@@ -43,9 +43,9 @@
   </nav>
   <Compte />
   {#if session.me}
-    <div class="equipe">
-      {#if session.me.team}
-        <a class="equipe-nom" href="/team" aria-current={courant("/team")}>{session.me.team.name}</a>
+    {#if session.me.team}
+      <a class="equipe" href="/team" aria-current={courant("/team")}>
+        <span class="equipe-nom">{session.me.team.name}</span>
         {#if equipe.data && equipe.data.rank}
           <span class="equipe-score tnum">
             {equipe.data.rank}<span class="sup">e</span>
@@ -53,12 +53,12 @@
             <b class="score">{formatPoints(equipe.data.score)}</b>
           </span>
         {/if}
-      {:else if session.me.user.role !== "admin"}
-        <a class="equipe-nom" href="/team" aria-current={courant("/team")}>{t("nav.team_join")}</a>
-      {:else}
-        <span class="equipe-nom">{session.me.user.username}</span>
-      {/if}
-    </div>
+      </a>
+    {:else if session.me.user.role !== "admin"}
+      <a class="equipe" href="/team" aria-current={courant("/team")}><span class="equipe-nom">{t("nav.team_join")}</span></a>
+    {:else}
+      <span class="equipe"><span class="equipe-nom">{session.me.user.username}</span></span>
+    {/if}
     <button type="button" class="btn-texte sortie" onclick={seDeconnecter}>{t("nav.logout")}</button>
   {:else}
     <div class="acces">
@@ -128,13 +128,13 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    justify-content: center;
+    min-height: 44px;
     line-height: 1.25;
-  }
-  .equipe-nom {
     text-decoration: none;
   }
-  a.equipe-nom:hover,
-  a.equipe-nom[aria-current="page"] {
+  a.equipe:hover .equipe-nom,
+  a.equipe[aria-current="page"] .equipe-nom {
     text-decoration: underline;
     text-underline-offset: 4px;
   }

@@ -1,6 +1,7 @@
 /* Direction artistique « Lumignons » : voir frontend/DESIGN.md.
    Deux lumières seulement (LUMEN froid, lumignon chaud) ; le reste est pierre et nuit.
-   Tailles rendues : 14, 16, 18, 21, 24, 36, 48 px. Espacements : multiples de 4. */
+   Tailles rendues : 14, 16, 18, 21, 24, 36, 48 px. Espacements : multiples de 4.
+   slop-ok: K5 arrondis voulus : 0 pour l'architecture, 2 px pour toutes les commandes (DESIGN.md). */
 
 @font-face {
   font-family: "Le Murmure";
@@ -88,6 +89,12 @@ body {
   font: 400 var(--t-texte) / 1.5 var(--texte);
   font-kerning: normal;
   text-wrap: pretty;
+}
+h1,
+h2,
+h3 {
+  font-size: inherit;
+  font-weight: inherit;
 }
 h1,
 h2,
