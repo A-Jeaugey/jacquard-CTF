@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tick } from "svelte";
+
   import PageAcces from "../components/PageAcces.svelte";
   import { api, ApiError, errorMessage } from "../lib/api";
   import { navigate } from "../lib/router.svelte";
@@ -10,9 +12,37 @@
   let motDePasse = $state("");
   let courriel = $state("");
   let code = $state("");
-  let erreur = $state<{ titre: string; texte: string } | null>(null);
+  type Champ = "pseudo" | "mot-de-passe" | "courriel" | "code";
+  let erreur = $state<{ titre: string; texte: string; champ: Champ | null } | null>(null);
   let envoi = $state(false);
-  let premierChamp = $state<HTMLInputElement>();
+  let bouton = $state<HTMLButtonElement>();
+
+  // Le champ mis en cause par une erreur du serveur, d'après son code ou la validation.
+  const PAR_CODE: Record<string, Champ> = {
+    username_taken: "pseudo",
+    invalid_username: "pseudo",
+    invalid_email: "courriel",
+    bad_registration_code: "code",
+  };
+  const PAR_NOM: Record<string, Champ> = {
+    username: "pseudo",
+    password: "mot-de-passe",
+    email: "courriel",
+    registration_code: "code",
+  };
+  function champDe(e: unknown): Champ | null {
+    if (!(e instanceof ApiError)) return null;
+    const direct = PAR_CODE[e.code];
+    if (direct) return direct;
+    const champs = Array.isArray(e.extra.fields) ? (e.extra.fields as string[]) : [];
+    return champs.map((f) => PAR_NOM[f]).find((c) => c !== undefined) ?? null;
+  }
+  const enCause = (champ: Champ): "true" | undefined => (erreur?.champ === champ ? "true" : undefined);
+  const decrit = (champ: Champ, aide?: string): string | undefined =>
+    [aide, erreur?.champ === champ ? "erreur-inscription" : undefined].filter(Boolean).join(" ") || undefined;
+  const effacer = (champ: Champ) => (): void => {
+    if (erreur?.champ === champ) erreur = null;
+  };
 
   const mode = $derived(session.event?.participation.registration);
 
@@ -29,20 +59,24 @@
       });
       navigate(session.me.team ? "/challenges" : "/team");
     } catch (e) {
-      const refus = e instanceof ApiError && e.status < 500;
-      erreur = { titre: refus ? t("auth.register_refused") : t("error.title"), texte: errorMessage(e) };
-      premierChamp?.focus();
+      const refus = e instanceof ApiError && e.status >= 400 && e.status < 500;
+      erreur = { titre: refus ? t("auth.register_refused") : t("error.title"), texte: errorMessage(e), champ: champDe(e) };
     } finally {
       envoi = false;
+    }
+    if (erreur) {
+      await tick();
+      if (erreur.champ) document.getElementById(erreur.champ)?.focus();
+      else bouton?.focus();
     }
   }
 </script>
 
 <PageAcces>
   <h1 class="titre-page">{t("auth.register_title")}</h1>
+  <p class="intro">{mode === "closed" ? t("auth.registration_closed") : t("auth.register_intro")}</p>
   {#if mode === "closed"}
-    <p class="ferme">{t("auth.registration_closed")}</p>
-    <p><a class="btn-ligne" href="/login">{t("nav.login")}</a></p>
+    <p class="ferme"><a class="btn-principal" href="/login">{t("nav.login")}</a></p>
   {:else}
     <form class="formulaire" onsubmit={valider}>
       <div class="champ">
@@ -50,13 +84,14 @@
         <input
           id="pseudo"
           class="saisie"
-          bind:this={premierChamp}
           bind:value={pseudo}
           autocomplete="username"
           required
           minlength="3"
           maxlength="32"
-          aria-describedby="aide-pseudo"
+          aria-invalid={enCause("pseudo")}
+          aria-describedby={decrit("pseudo", "aide-pseudo")}
+          oninput={effacer("pseudo")}
         />
         <p class="aide" id="aide-pseudo">{t("auth.username_hint")}</p>
       </div>
@@ -71,26 +106,47 @@
           required
           minlength="8"
           maxlength="128"
-          aria-describedby="aide-mdp"
+          aria-invalid={enCause("mot-de-passe")}
+          aria-describedby={decrit("mot-de-passe", "aide-mdp")}
+          oninput={effacer("mot-de-passe")}
         />
         <p class="aide" id="aide-mdp">{t("auth.password_hint")}</p>
       </div>
       <div class="champ">
         <label for="courriel">{t("auth.email")}</label>
-        <input id="courriel" class="saisie" type="email" bind:value={courriel} autocomplete="email" maxlength="254" />
+        <input
+          id="courriel"
+          class="saisie"
+          type="email"
+          bind:value={courriel}
+          autocomplete="email"
+          maxlength="254"
+          aria-invalid={enCause("courriel")}
+          aria-describedby={decrit("courriel")}
+          oninput={effacer("courriel")}
+        />
       </div>
       {#if mode === "invite_code"}
         <div class="champ">
           <label for="code">{t("auth.registration_code")}</label>
-          <input id="code" class="saisie" bind:value={code} required autocomplete="off" aria-describedby="aide-code" />
+          <input
+            id="code"
+            class="saisie"
+            bind:value={code}
+            required
+            autocomplete="off"
+            aria-invalid={enCause("code")}
+            aria-describedby={decrit("code", "aide-code")}
+            oninput={effacer("code")}
+          />
           <p class="aide" id="aide-code">{t("auth.registration_code_hint")}</p>
         </div>
       {/if}
       {#if erreur}
-        <p class="refus" role="alert"><b>{erreur.titre}</b> {erreur.texte}</p>
+        <p class="refus" id="erreur-inscription" role="alert"><b>{erreur.titre}</b> {erreur.texte}</p>
       {/if}
       <p>
-        <button type="submit" class="btn-principal" disabled={envoi}>{envoi ? t("auth.registering") : t("auth.register")}</button>
+        <button type="submit" class="btn-principal" disabled={envoi} bind:this={bouton}>{envoi ? t("auth.registering") : t("auth.register")}</button>
       </p>
     </form>
     <p class="bascule">{t("auth.has_account")} <a href="/login">{t("auth.login_link")}</a>.</p>
@@ -98,6 +154,10 @@
 </PageAcces>
 
 <style>
+  .intro {
+    margin-top: var(--e3);
+    font-size: var(--t-nom);
+  }
   .formulaire {
     display: grid;
     gap: var(--e5);

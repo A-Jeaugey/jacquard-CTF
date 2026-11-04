@@ -1,6 +1,6 @@
 <script lang="ts">
   import Decor from "../components/ville/Decor.svelte";
-  import { api } from "../lib/api";
+  import { api, errorMessage } from "../lib/api";
   import { formatDateTime, formatPlage, poll } from "../lib/format";
   import { live } from "../lib/live.svelte";
   import { session } from "../lib/session.svelte";
@@ -10,9 +10,17 @@
   import type { Announcement } from "../lib/types";
 
   let annonces = $state<Announcement[]>([]);
+  let annoncesChargees = $state(false);
+  let erreurAnnonces = $state<string | null>(null);
 
   async function charger(): Promise<void> {
-    annonces = await api.get<Announcement[]>("/api/announcements").catch(() => annonces);
+    try {
+      annonces = await api.get<Announcement[]>("/api/announcements");
+      annoncesChargees = true;
+      erreurAnnonces = null;
+    } catch (e) {
+      erreurAnnonces = errorMessage(e);
+    }
   }
 
   $effect(() => poll(charger, 120_000));
@@ -22,7 +30,8 @@
 
   const evenement = $derived(session.event);
   const prologue = $derived(story.data?.entries.filter((e) => e.public) ?? []);
-  const inscriptions = $derived(evenement?.participation.registration !== "closed");
+  const phase = $derived(evenement?.phase ?? "running");
+  const inscriptions = $derived(evenement?.participation.registration !== "closed" && phase !== "ended");
 </script>
 
 {#if evenement}
@@ -31,12 +40,21 @@
       <h1 class="titre-page">{evenement.name}</h1>
       {#if evenement.tagline}<p class="accroche">{typo(evenement.tagline)}</p>{/if}
       <p class="dates">{formatPlage(evenement.schedule.start, evenement.schedule.end, evenement.timezone)}.</p>
+      {#if phase === "not_started"}
+        <p class="phase">{t("home.phase.not_started")}</p>
+      {:else if phase === "ended"}
+        <p class="phase">{t("home.phase.ended")}</p>
+      {/if}
       <p class="actions">
-        {#if !session.me}
-          {#if inscriptions}<a class="btn-principal" href="/register">{t("home.cta.register")}</a>{/if}
-          <a class={inscriptions ? "btn-ligne" : "btn-principal"} href="/login">{t("nav.login")}</a>
+        {#if phase === "ended"}
+          <a class="btn-principal" href="/scoreboard">{t("home.cta.scoreboard")}</a>
+        {:else if !session.me}
+          <!-- La connexion est dans l'en-tête : une seule action ici. -->
+          <a class="btn-principal" href={inscriptions ? "/register" : "/login"}>{inscriptions ? t("nav.register") : t("nav.login")}</a>
         {:else if !session.me.team && session.me.user.role !== "admin"}
           <a class="btn-principal" href="/team">{t("home.cta.team")}</a>
+        {:else if phase === "not_started"}
+          <a class="btn-principal" href="/team">{t("home.cta.my_team")}</a>
         {:else}
           <a class="btn-principal" href="/challenges">{t("home.cta.board")}</a>
         {/if}
@@ -54,6 +72,12 @@
 
       <section class="annonces" aria-labelledby="h-annonces" id="annonces">
         <h2 class="titre-section" id="h-annonces">{t("home.announcements")}</h2>
+        {#if erreurAnnonces && !annoncesChargees}
+          <p class="refus" role="alert"><b>{t("error.title")}</b> {erreurAnnonces}</p>
+          <p><button type="button" class="btn-ligne" onclick={charger}>{t("action.retry")}</button></p>
+        {:else if !annoncesChargees}
+          <p class="secondaire">{t("loading")}</p>
+        {/if}
         {#each annonces as annonce (annonce.id)}
           <article class="annonce">
             <h3 class="titre-bloc">{typo(annonce.title)}</h3>
@@ -62,7 +86,7 @@
             <div class="prose" use:typographie>{@html annonce.body_html}</div>
           </article>
         {:else}
-          <p class="secondaire">{t("home.no_announcements")}</p>
+          {#if annoncesChargees}<p class="secondaire">{t("home.no_announcements")}</p>{/if}
         {/each}
       </section>
     </div>
@@ -74,6 +98,9 @@
 {/if}
 
 <style>
+  .titre-page {
+    overflow-wrap: anywhere;
+  }
   .accueil {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -98,6 +125,10 @@
   .dates {
     margin-top: var(--e2);
     color: var(--douce);
+  }
+  .phase {
+    margin-top: var(--e3);
+    max-width: 48ch;
   }
   .actions {
     display: flex;

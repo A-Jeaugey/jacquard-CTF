@@ -186,6 +186,10 @@
       text-underline-offset: 4px;
     }
   }
+  .quartier:active .nom {
+    background: var(--pierre);
+    text-decoration: none;
+  }
   .quartier[aria-pressed="true"] .nom {
     background: var(--claire);
     color: var(--nuit);

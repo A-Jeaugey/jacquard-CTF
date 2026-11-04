@@ -1,6 +1,6 @@
 // Chapitres du journal et suivi des chapitres déjà lus (stocké dans le navigateur).
 
-import { api } from "./api";
+import { api, errorMessage } from "./api";
 import type { Story } from "./types";
 
 const SEEN_KEY = "jq_story_seen";
@@ -17,6 +17,8 @@ function readSeen(): string[] {
 export const story = $state({
   data: null as Story | null,
   seen: readSeen(),
+  /** Dernière erreur de chargement, tant qu'aucune donnée n'a pu être lue. */
+  erreur: null as string | null,
 });
 
 export function unreadCount(): number {
@@ -26,8 +28,11 @@ export function unreadCount(): number {
 export async function refreshStory(): Promise<void> {
   try {
     story.data = await api.get<Story>("/api/story");
-  } catch {
-    // Le journal est secondaire : une erreur ici ne doit rien bloquer.
+    story.erreur = null;
+  } catch (e) {
+    // Le journal est secondaire : une erreur ici ne bloque rien ailleurs, mais la page
+    // des messages doit pouvoir la montrer.
+    story.erreur = errorMessage(e);
   }
 }
 

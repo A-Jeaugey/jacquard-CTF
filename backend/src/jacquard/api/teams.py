@@ -56,7 +56,7 @@ def create_team(
         db.flush()
     except IntegrityError:
         db.rollback()
-        api_error(409, "team_name_taken", "Ce nom d'équipe est déjà pris.")
+        api_error(409, "team_name_taken", "Ce nom d'équipe est déjà pris : choisis-en un autre.")
     user.team_id = team.id
     db.flush()
     return team_detail(db, event, team)
@@ -72,10 +72,16 @@ def join_team(
     # Verrou sur l'équipe : deux arrivées simultanées ne peuvent pas dépasser la limite.
     team = db.scalar(select(Team).where(Team.invite_code == code).with_for_update())
     if team is None:
-        api_error(404, "invalid_invite_code", "Code d'invitation invalide.")
+        api_error(
+            404,
+            "invalid_invite_code",
+            "Code d'invitation invalide : vérifie-le auprès de ton équipe, ou crée la tienne.",
+        )
     members = db.scalar(select(func.count()).where(User.team_id == team.id)) or 0
     if members >= event.participation.team_size.max:
-        api_error(409, "team_full", "Cette équipe est complète.")
+        api_error(
+            409, "team_full", "Cette équipe est complète : rejoins-en une autre ou crée la tienne."
+        )
     user.team_id = team.id
     db.flush()
     return team_detail(db, event, team)
@@ -112,7 +118,9 @@ def team_detail(db: DbSession, event: Event, team: Team) -> dict[str, object]:
     score = snapshot.team(team.id)
     members = db.scalars(select(User).where(User.team_id == team.id).order_by(User.id))
     solves = db.execute(
-        select(Solve.challenge_id, Challenge.name, Solve.created_at, User.username)
+        select(
+            Solve.challenge_id, Challenge.name, Challenge.category, Solve.created_at, User.username
+        )
         .join(Challenge, Challenge.id == Solve.challenge_id)
         .outerjoin(User, User.id == Solve.user_id)
         .where(Solve.team_id == team.id, Challenge.active)
@@ -142,10 +150,11 @@ def team_detail(db: DbSession, event: Event, team: Team) -> dict[str, object]:
             {
                 "challenge_id": cid,
                 "challenge_name": name,
+                "category": category,
                 "solved_at": at.isoformat(),
                 "solved_by": username,
                 "points": score.solved.get(cid, 0) if score else 0,
             }
-            for cid, name, at, username in solves
+            for cid, name, category, at, username in solves
         ],
     }

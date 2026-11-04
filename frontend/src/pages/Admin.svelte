@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tick } from "svelte";
+
   import { api, errorMessage } from "../lib/api";
   import { formatTime, poll } from "../lib/format";
   import { navigate } from "../lib/router.svelte";
@@ -7,8 +9,8 @@
   import type { AdminStats, AdminSubmission, AdminTeam, Announcement } from "../lib/types";
 
   type Tab = "submissions" | "teams" | "announcements" | "stats";
+  const ONGLETS: Tab[] = ["submissions", "teams", "announcements", "stats"];
   let tab = $state<Tab>("submissions");
-  let error = $state<string | null>(null);
 
   let submissions = $state<AdminSubmission[]>([]);
   let filter = $state<"all" | "correct" | "incorrect">("all");
@@ -18,6 +20,14 @@
   let title = $state("");
   let body = $state("");
 
+  // Par onglet : données reçues au moins une fois, et dernière erreur de chargement.
+  let charges = $state<Record<Tab, boolean>>({ submissions: false, teams: false, announcements: false, stats: false });
+  let erreurs = $state<Record<Tab, string | null>>({ submissions: null, teams: null, announcements: null, stats: null });
+  // Retour d'une action (publier, supprimer, masquer), affiché près de ce qui l'a provoquée.
+  let retour = $state<{ ou: "form" | "liste"; sorte: "ok" | "erreur"; texte: string } | null>(null);
+  let publication = $state(false);
+  let aSupprimer = $state<number | null>(null);
+
   function submissionsUrl(beforeId?: number): string {
     const params = new URLSearchParams({ limit: "100" });
     if (filter !== "all") params.set("correct", String(filter === "correct"));
@@ -25,59 +35,130 @@
     return `/api/admin/submissions?${params}`;
   }
 
-  async function guard(action: () => Promise<void>): Promise<void> {
+  async function charger(onglet: Tab, action: () => Promise<void>): Promise<void> {
     try {
       await action();
-      error = null;
+      charges[onglet] = true;
+      erreurs[onglet] = null;
     } catch (e) {
-      error = errorMessage(e);
+      erreurs[onglet] = errorMessage(e);
     }
   }
 
   const loadSubmissions = () =>
-    guard(async () => {
+    charger("submissions", async () => {
       submissions = await api.get<AdminSubmission[]>(submissionsUrl());
     });
   const loadMore = () =>
-    guard(async () => {
+    charger("submissions", async () => {
       const last = submissions.at(-1);
       if (last) submissions = [...submissions, ...(await api.get<AdminSubmission[]>(submissionsUrl(last.id)))];
     });
   const loadTeams = () =>
-    guard(async () => {
+    charger("teams", async () => {
       teams = await api.get<AdminTeam[]>("/api/admin/teams");
     });
   const loadAnnouncements = () =>
-    guard(async () => {
+    charger("announcements", async () => {
       announcements = await api.get<Announcement[]>("/api/announcements");
     });
-
   const loadStats = () =>
-    guard(async () => {
+    charger("stats", async () => {
       stats = await api.get<AdminStats>("/api/admin/stats");
     });
+  const recharger: Record<Tab, () => Promise<void>> = {
+    submissions: loadSubmissions,
+    teams: loadTeams,
+    announcements: loadAnnouncements,
+    stats: loadStats,
+  };
 
-  const toggleHidden = (team: AdminTeam) =>
-    guard(async () => {
+  async function toggleHidden(team: AdminTeam): Promise<void> {
+    try {
       await api.patch(`/api/admin/teams/${team.id}`, { hidden: !team.hidden });
+      retour = { ou: "liste", sorte: "ok", texte: t(team.hidden ? "admin.team.shown_done" : "admin.team.hidden_done", { team: team.name }) };
       await loadTeams();
-    });
+    } catch (e) {
+      retour = { ou: "liste", sorte: "erreur", texte: errorMessage(e) };
+    }
+  }
 
-  function publish(event: SubmitEvent): void {
+  async function publish(event: SubmitEvent): Promise<void> {
     event.preventDefault();
-    void guard(async () => {
+    publication = true;
+    retour = null;
+    try {
       await api.post("/api/admin/announcements", { title, body });
       title = "";
       body = "";
+      retour = { ou: "form", sorte: "ok", texte: t("admin.announcement.published") };
       await loadAnnouncements();
-    });
+    } catch (e) {
+      retour = { ou: "form", sorte: "erreur", texte: errorMessage(e) };
+    } finally {
+      publication = false;
+    }
+    await tick();
+    if (retour?.sorte === "erreur") document.getElementById("annonce-titre")?.focus();
   }
 
-  const remove = (id: number) =>
-    guard(async () => {
+  async function demanderSuppression(id: number): Promise<void> {
+    aSupprimer = id;
+    await tick();
+    document.getElementById(`confirmer-${id}`)?.focus();
+  }
+
+  async function annulerSuppression(id: number): Promise<void> {
+    aSupprimer = null;
+    await tick();
+    document.getElementById(`supprimer-${id}`)?.focus();
+  }
+
+  async function supprimer(id: number): Promise<void> {
+    aSupprimer = null;
+    try {
       await api.delete(`/api/admin/announcements/${id}`);
+      retour = { ou: "liste", sorte: "ok", texte: t("admin.announcement.deleted") };
       await loadAnnouncements();
-    });
+    } catch (e) {
+      retour = { ou: "liste", sorte: "erreur", texte: errorMessage(e) };
+    }
+    await tick();
+    document.getElementById("h-annonces-publiees")?.focus();
+  }
+
+  function clavier(event: KeyboardEvent): void {
+    if (event.key === "Escape" && aSupprimer !== null) {
+      event.preventDefault();
+      void annulerSuppression(aSupprimer);
+    }
+  }
+
+  // Onglets : flèches, Début et Fin déplacent la sélection ; un seul onglet est tabulable.
+  async function clavierOnglets(event: KeyboardEvent): Promise<void> {
+    const i = ONGLETS.indexOf(tab);
+    const cible =
+      event.key === "ArrowRight"
+        ? ONGLETS[(i + 1) % ONGLETS.length]
+        : event.key === "ArrowLeft"
+          ? ONGLETS[(i - 1 + ONGLETS.length) % ONGLETS.length]
+          : event.key === "Home"
+            ? ONGLETS[0]
+            : event.key === "End"
+              ? ONGLETS[ONGLETS.length - 1]
+              : null;
+    if (!cible) return;
+    event.preventDefault();
+    choisir(cible);
+    await tick();
+    document.getElementById(`onglet-${cible}`)?.focus();
+  }
+
+  function choisir(onglet: Tab): void {
+    tab = onglet;
+    retour = null;
+    aSupprimer = null;
+  }
 
   $effect(() => {
     if (session.me?.user.role !== "admin") {
@@ -95,22 +176,53 @@
   const minutes = (valeur: number | null): string => (valeur === null ? "—" : unChiffre.format(valeur));
 </script>
 
+<svelte:window onkeydown={clavier} />
+
+{#snippet etat(onglet: Tab)}
+  {#if erreurs[onglet]}
+    <div class="etat" role="alert">
+      <p class="refus">
+        <b>{t("error.title")}</b>
+        {erreurs[onglet]}
+        {#if charges[onglet]}{t("admin.stale")}{/if}
+      </p>
+      <p><button type="button" class="btn-ligne" onclick={recharger[onglet]}>{t("action.retry")}</button></p>
+    </div>
+  {:else if !charges[onglet]}
+    <p class="secondaire">{t("loading")}</p>
+  {/if}
+{/snippet}
+
+{#snippet message(ou: "form" | "liste")}
+  {#if retour?.ou === ou}
+    {#if retour.sorte === "ok"}
+      <p class="succes" role="status">{retour.texte}</p>
+    {:else}
+      <p class="refus" role="alert"><b>{t("error.title")}</b> {retour.texte}</p>
+    {/if}
+  {/if}
+{/snippet}
+
 <div class="page">
   <h1 class="titre-page">{t("admin.title")}</h1>
 
-  <div class="onglets" role="tablist" aria-label={t("admin.title")}>
-    {#each ["submissions", "teams", "announcements", "stats"] as const as id (id)}
-      <button type="button" role="tab" aria-selected={tab === id} onclick={() => (tab = id)}>
+  <div class="onglets" role="tablist" aria-label={t("admin.title")} tabindex="-1" onkeydown={clavierOnglets}>
+    {#each ONGLETS as id (id)}
+      <button
+        type="button"
+        role="tab"
+        id="onglet-{id}"
+        aria-selected={tab === id}
+        aria-controls="panneau-admin"
+        tabindex={tab === id ? 0 : -1}
+        onclick={() => choisir(id)}
+      >
         {t(`admin.tab.${id}`)}
       </button>
     {/each}
   </div>
 
-  {#if error}
-    <p class="refus" role="alert"><b>{t("error.title")}</b> {error}</p>
-  {/if}
-
-  <div class="contenu" role="tabpanel">
+  <div class="contenu" role="tabpanel" id="panneau-admin" aria-labelledby="onglet-{tab}">
     {#if tab === "submissions"}
       <div class="outils">
         <label class="etiquette" for="filtre">{t("admin.filter.label")}</label>
@@ -120,8 +232,11 @@
           <option value="incorrect">{t("admin.filter.incorrect")}</option>
         </select>
       </div>
+      {@render etat("submissions")}
       {#if submissions.length}
-        <div class="defile">
+        <!-- Région qui défile : atteignable au clavier pour lire les colonnes masquées (WCAG 2.1.1). -->
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <div class="defile" tabindex="0" role="region" aria-label={t("admin.scroll", { name: t("admin.tab.submissions") })}>
           <table>
             <thead>
               <tr>
@@ -148,14 +263,21 @@
           </table>
         </div>
         {#if submissions.length >= 100}
-          <p><button type="button" class="btn-ligne" onclick={loadMore}>{t("admin.load_more")}</button></p>
+          <p class="suite"><button type="button" class="btn-ligne" onclick={loadMore}>{t("admin.load_more")}</button></p>
         {/if}
-      {:else}
+      {:else if charges.submissions && filter !== "all"}
+        <p class="secondaire">{t("admin.submissions.none_filtered")}</p>
+        <p class="suite"><button type="button" class="btn-ligne" onclick={() => (filter = "all")}>{t("admin.filter.reset")}</button></p>
+      {:else if charges.submissions}
         <p class="secondaire">{t("admin.submissions.none")}</p>
       {/if}
     {:else if tab === "teams"}
+      {@render etat("teams")}
+      {@render message("liste")}
       {#if teams.length}
-        <div class="defile">
+        <!-- Région qui défile : atteignable au clavier pour lire les colonnes masquées (WCAG 2.1.1). -->
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <div class="defile" tabindex="0" role="region" aria-label={t("admin.scroll", { name: t("admin.tab.teams") })}>
           <table>
             <thead>
               <tr>
@@ -177,7 +299,7 @@
                   </td>
                   <td class="nombre tnum">{team.solves}</td>
                   <td class="nombre tnum">{team.score}</td>
-                  <td>
+                  <td class="nombre">
                     <button type="button" class="btn-ligne" onclick={() => toggleHidden(team)}>
                       {team.hidden ? t("admin.show") : t("admin.hide")}
                     </button>
@@ -187,12 +309,15 @@
             </tbody>
           </table>
         </div>
-      {:else}
-        <p class="secondaire">{t("scoreboard.empty")}</p>
+      {:else if charges.teams}
+        <p class="secondaire">{t("admin.teams.none")}</p>
       {/if}
     {:else if tab === "stats"}
+      {@render etat("stats")}
       {#if stats}
-        <div class="defile">
+        <!-- Région qui défile : atteignable au clavier pour lire les colonnes masquées (WCAG 2.1.1). -->
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <div class="defile" tabindex="0" role="region" aria-label={t("admin.scroll", { name: t("admin.tab.stats") })}>
           <table>
             <thead>
               <tr>
@@ -208,7 +333,9 @@
             <tbody>
               {#each stats.challenges as c (c.id)}
                 <tr class:inactif={c.attempts === 0}>
-                  <td>{c.name}<br /><span class="meta">{c.category}</span></td>
+                  <td>
+                    {c.name}<br /><span class="meta">{c.category}{#if c.attempts === 0}, {t("admin.no_attempts")}{/if}</span>
+                  </td>
                   <td class="nombre tnum">{c.solves}</td>
                   <td class="nombre tnum">{c.wrong}</td>
                   <td class="nombre tnum">{c.hints}</td>
@@ -237,8 +364,6 @@
             <p class="secondaire">{t("admin.signals.none")}</p>
           {/each}
         </section>
-      {:else}
-        <p class="secondaire">{t("loading")}</p>
       {/if}
     {:else}
       <form class="annonce-form" onsubmit={publish}>
@@ -250,19 +375,42 @@
           <label for="annonce-texte">{t("admin.announcement.body")}</label>
           <textarea id="annonce-texte" class="saisie zone" required rows="5" maxlength="10000" bind:value={body}></textarea>
         </div>
-        <p><button type="submit" class="btn-principal">{t("admin.announcement.publish")}</button></p>
+        {@render message("form")}
+        <p>
+          <button type="submit" class="btn-principal" disabled={publication}>
+            {publication ? t("admin.announcement.publishing") : t("admin.announcement.publish")}
+          </button>
+        </p>
       </form>
+      <h2 class="titre-bloc publiees" id="h-annonces-publiees" tabindex="-1">{t("admin.tab.announcements")}</h2>
+      {@render etat("announcements")}
+      {@render message("liste")}
       {#each announcements as a (a.id)}
         <article class="annonce">
           <div class="annonce-tete">
-            <h2 class="titre-bloc">{a.title}</h2>
-            <button type="button" class="btn-texte" onclick={() => remove(a.id)}>{t("admin.announcement.delete")}</button>
+            <h3 class="titre-bloc">{a.title}</h3>
+            {#if aSupprimer !== a.id}
+              <button type="button" class="btn-texte" id="supprimer-{a.id}" onclick={() => demanderSuppression(a.id)}>
+                {t("admin.announcement.delete")}
+              </button>
+            {/if}
           </div>
+          {#if aSupprimer === a.id}
+            <div class="confirmation">
+              <p>{t("admin.announcement.confirm_delete", { title: a.title })}</p>
+              <p class="choix-actions">
+                <button type="button" class="btn-ligne" id="confirmer-{a.id}" onclick={() => supprimer(a.id)}>
+                  {t("admin.announcement.delete")}
+                </button>
+                <button type="button" class="btn-texte" onclick={() => annulerSuppression(a.id)}>{t("action.cancel")}</button>
+              </p>
+            </div>
+          {/if}
           <!-- HTML assaini côté serveur. -->
           <div class="prose">{@html a.body_html}</div>
         </article>
       {:else}
-        <p class="secondaire">{t("home.no_announcements")}</p>
+        {#if charges.announcements}<p class="secondaire">{t("admin.announcements.none")}</p>{/if}
       {/each}
     {/if}
   </div>
@@ -272,16 +420,28 @@
   .onglets {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--e1);
+    gap: var(--e4);
     margin-top: var(--e5);
     border-bottom: 1px solid var(--pierre);
   }
+  .onglets:focus {
+    outline: none;
+  }
+  /* Le texte des onglets part du même bord que le titre. */
   .onglets button {
     min-height: 44px;
-    padding: 0 var(--e3);
+    padding: 0;
     border: 0;
     background: none;
     color: var(--douce);
+  }
+  .onglets button:hover {
+    color: var(--claire);
+  }
+  .onglets button:active {
+    color: var(--claire);
+    text-decoration: underline;
+    text-underline-offset: 8px;
   }
   .onglets button[aria-selected="true"] {
     color: var(--claire);
@@ -304,7 +464,19 @@
     width: auto;
     min-width: 12rem;
   }
+  .etat {
+    margin-bottom: var(--e4);
+  }
+  .etat .refus {
+    max-width: 72ch;
+    margin-bottom: var(--e2);
+  }
+  .succes {
+    margin-bottom: var(--e4);
+    font-weight: 700;
+  }
   .defile {
+    position: relative;
     overflow-x: auto;
   }
   table {
@@ -324,6 +496,15 @@
     border-bottom: 1px solid var(--pierre);
     vertical-align: top;
   }
+  /* Un seul bord gauche et un seul bord droit : ceux du titre de la page. */
+  th:first-child,
+  td:first-child {
+    padding-left: 0;
+  }
+  th:last-child,
+  td:last-child {
+    padding-right: 0;
+  }
   .nombre {
     text-align: right;
   }
@@ -342,12 +523,18 @@
   .inactif td {
     color: var(--voile);
   }
+  .suite {
+    margin-top: var(--e5);
+  }
   .signaux {
     margin-top: var(--e6);
   }
+  .signaux .aide,
+  .signal {
+    max-width: 72ch;
+  }
   .signaux .aide {
     margin: var(--e2) 0 var(--e3);
-    max-width: 72ch;
   }
   .signal {
     padding: var(--e3) 0;
@@ -363,6 +550,9 @@
     padding: var(--e3);
     font-size: var(--t-texte);
   }
+  .publiees {
+    margin: var(--e7) 0 var(--e3);
+  }
   .annonce {
     margin-top: var(--e5);
     padding-top: var(--e4);
@@ -373,6 +563,16 @@
     align-items: baseline;
     justify-content: space-between;
     gap: var(--e4);
+  }
+  .confirmation {
+    margin-top: var(--e2);
+  }
+  .choix-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e3);
+    align-items: center;
+    margin-top: var(--e2);
   }
   .annonce .prose {
     margin-top: var(--e2);

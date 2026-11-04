@@ -59,6 +59,8 @@ export interface TeamDetail {
   solves: {
     challenge_id: string;
     challenge_name: string;
+    /** Catégorie (quartier) du défi. */
+    category: string;
     solved_at: string;
     solved_by: string | null;
     points: number;

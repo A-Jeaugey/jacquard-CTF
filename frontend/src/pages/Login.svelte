@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tick } from "svelte";
+
   import PageAcces from "../components/PageAcces.svelte";
   import { api, ApiError, errorMessage } from "../lib/api";
   import { navigate } from "../lib/router.svelte";
@@ -8,9 +10,10 @@
 
   let pseudo = $state("");
   let motDePasse = $state("");
-  let erreur = $state<{ titre: string; texte: string } | null>(null);
+  let erreur = $state<{ titre: string; texte: string; champs: boolean } | null>(null);
   let envoi = $state(false);
   let champPseudo = $state<HTMLInputElement>();
+  let bouton = $state<HTMLButtonElement>();
 
   async function valider(event: SubmitEvent): Promise<void> {
     event.preventDefault();
@@ -21,16 +24,21 @@
       navigate(session.me.team || session.me.user.role === "admin" ? "/challenges" : "/team");
     } catch (e) {
       const refus = e instanceof ApiError && (e.status === 401 || e.status === 429);
-      erreur = { titre: refus ? t("auth.refused") : t("error.title"), texte: errorMessage(e) };
-      champPseudo?.focus();
+      // Seul un identifiant refusé met les champs en cause ; une panne n'est pas leur faute.
+      erreur = { titre: refus ? t("auth.refused") : t("error.title"), texte: errorMessage(e), champs: e instanceof ApiError && e.status === 401 };
     } finally {
       envoi = false;
+    }
+    if (erreur) {
+      await tick();
+      (erreur.champs ? champPseudo : bouton)?.focus();
     }
   }
 </script>
 
 <PageAcces>
   <h1 class="titre-page">{t("auth.login_title")}</h1>
+  <p class="intro">{t("auth.login_intro")}</p>
   <form class="formulaire" onsubmit={valider}>
     <div class="champ">
       <label for="pseudo">{t("auth.username")}</label>
@@ -42,8 +50,9 @@
         autocomplete="username"
         required
         maxlength="32"
-        aria-invalid={erreur ? "true" : undefined}
+        aria-invalid={erreur?.champs ? "true" : undefined}
         aria-describedby={erreur ? "erreur-connexion" : undefined}
+        oninput={() => erreur?.champs && (erreur = null)}
       />
     </div>
     <div class="champ">
@@ -56,14 +65,16 @@
         autocomplete="current-password"
         required
         maxlength="128"
-        aria-invalid={erreur ? "true" : undefined}
+        aria-invalid={erreur?.champs ? "true" : undefined}
+        aria-describedby={erreur ? "erreur-connexion" : undefined}
+        oninput={() => erreur?.champs && (erreur = null)}
       />
     </div>
     {#if erreur}
       <p class="refus" id="erreur-connexion" role="alert"><b>{erreur.titre}</b> {erreur.texte}</p>
     {/if}
     <p>
-      <button type="submit" class="btn-principal" disabled={envoi}>{envoi ? t("auth.logging_in") : t("auth.login")}</button>
+      <button type="submit" class="btn-principal" disabled={envoi} bind:this={bouton}>{envoi ? t("auth.logging_in") : t("auth.login")}</button>
     </p>
   </form>
   {#if session.event?.participation.registration !== "closed"}
@@ -72,6 +83,10 @@
 </PageAcces>
 
 <style>
+  .intro {
+    margin-top: var(--e3);
+    font-size: var(--t-nom);
+  }
   .formulaire {
     display: grid;
     gap: var(--e5);

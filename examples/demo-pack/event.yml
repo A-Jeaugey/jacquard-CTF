@@ -37,7 +37,7 @@ board:
   layout: carte
 
 screens:
-  - { id: projecteur, title: "Démo — grand écran", layout: carte }
+  - { id: projecteur, title: "Démo : grand écran", layout: carte }
 
 items:
   - id: cle-crypto

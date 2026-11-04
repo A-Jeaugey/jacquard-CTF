@@ -173,7 +173,7 @@ def test_screen_progress(new_client, sync, admin) -> None:  # type: ignore[no-un
     orga_team.submit("ville", "DEMO{lyon}")  # équipe masquée : ne compte pas
 
     screen = new_client().get("/api/screens/projecteur").json()
-    assert screen["title"] == "Démo — grand écran"
+    assert screen["title"] == "Démo : grand écran"
     assert screen["layout"] == "carte"
     assert screen["active_teams"] == 2
     progress = {c["id"]: c["progress"] for c in screen["categories"]}

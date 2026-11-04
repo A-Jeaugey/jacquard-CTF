@@ -9,7 +9,9 @@
   import Compte from "./Compte.svelte";
 
   const nonLus = $derived(story.data ? unreadCount() : 0);
-  const avecJournal = $derived(Boolean(story.data && (story.data.entries.length > 0 || story.data.locked > 0)));
+  const avecJournal = $derived(
+    Boolean(session.me && story.data && (story.data.entries.length > 0 || story.data.locked > 0)),
+  );
   const courant = (chemin: string): "page" | undefined => (route.path === chemin ? "page" : undefined);
 
   async function seDeconnecter(): Promise<void> {
@@ -24,7 +26,9 @@
   <a class="logo" href="/">{session.event?.name ?? ""}</a>
   <nav class="nav" aria-label={t("nav.label")}>
     <ul>
-      <li><a href="/challenges" aria-current={courant("/challenges")}>{t("nav.board")}</a></li>
+      {#if session.me}
+        <li><a href="/challenges" aria-current={courant("/challenges")}>{t("nav.board")}</a></li>
+      {/if}
       <li><a href="/scoreboard" aria-current={courant("/scoreboard")}>{t("nav.scoreboard")}</a></li>
       {#if avecJournal}
         <li>
@@ -63,7 +67,7 @@
   {:else}
     <div class="acces">
       <a class="lien" href="/login" aria-current={courant("/login")}>{t("nav.login")}</a>
-      <a class="btn-ligne" href="/register">{t("nav.register")}</a>
+      <a class="lien" href="/register" aria-current={courant("/register")}>{t("nav.register")}</a>
     </div>
   {/if}
 </header>
@@ -80,6 +84,10 @@
   .logo {
     display: inline-flex;
     align-items: center;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 16em;
+    overflow-wrap: anywhere;
     min-height: 44px;
     padding-top: var(--e1);
     font-family: var(--display);
@@ -138,6 +146,12 @@
     text-decoration: underline;
     text-underline-offset: 4px;
   }
+  .equipe-nom {
+    max-width: 24ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .equipe-score {
     font-size: var(--t-meta);
     color: var(--douce);
@@ -161,6 +175,15 @@
     align-items: center;
     min-height: 44px;
     color: var(--douce);
+    text-underline-offset: 8px;
+  }
+  .lien:hover,
+  .lien[aria-current="page"] {
+    color: var(--claire);
+  }
+  .lien[aria-current="page"] {
+    font-weight: 700;
+    text-decoration-thickness: 2px;
   }
 
   @media (max-width: 1099px) {
@@ -168,7 +191,7 @@
       display: grid;
       align-items: stretch;
       gap: 0;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: minmax(0, 1fr) auto;
       grid-template-areas: "logo compte" "nav nav" "equipe sortie";
       padding: var(--e2) var(--gouttiere);
     }

@@ -33,6 +33,7 @@
 
 <div class="page">
   <h1 class="titre-page">{t("scoreboard.title")}</h1>
+  <p class="intro">{t("scoreboard.intro")}</p>
 
   {#if erreur}
     <p class="refus" role="alert"><b>{t("error.title")}</b> {erreur}</p>
@@ -71,6 +72,11 @@
 <style>
   .page {
     max-width: 880px;
+  }
+  .intro {
+    margin-top: var(--e3);
+    font-size: var(--t-nom);
+    max-width: 56ch;
   }
   .etat {
     margin-top: var(--e3);

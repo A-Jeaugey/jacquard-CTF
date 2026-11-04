@@ -1,4 +1,5 @@
 import { t } from "./strings";
+import { typo } from "./typo";
 
 export class ApiError extends Error {
   constructor(
@@ -29,8 +30,15 @@ function parseError(status: number, body: unknown): ApiError {
     return new ApiError(status, String(code ?? "error"), String(message ?? t("error.generic")), extra);
   }
   if (Array.isArray(detail)) {
-    // Erreur de validation FastAPI.
-    return new ApiError(status, "validation", t("error.validation"));
+    // Erreur de validation FastAPI : le dernier élément de `loc` nomme le champ en cause.
+    const fields = detail
+      .map((d) => (d as { loc?: unknown[] } | null)?.loc?.at(-1))
+      .filter((f): f is string => typeof f === "string");
+    return new ApiError(status, "validation", t("error.validation"), { fields });
+  }
+  // Une validation refusée avec un texte simple : ce texte dit quoi corriger.
+  if ((status === 400 || status === 422) && typeof detail === "string" && detail.length > 0 && detail.length <= 300) {
+    return new ApiError(status, "error", detail);
   }
   return new ApiError(status, "error", t("error.generic"));
 }
@@ -69,5 +77,5 @@ export const api = {
 };
 
 export function errorMessage(error: unknown): string {
-  return error instanceof ApiError ? error.message : t("error.generic");
+  return error instanceof ApiError ? typo(error.message) : t("error.generic");
 }

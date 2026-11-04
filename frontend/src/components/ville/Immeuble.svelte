@@ -8,6 +8,7 @@
     cadre = null,
     froides = null,
     retrait = false,
+    nuit = false,
   }: {
     quartier: Quartier;
     /** Montrer le fil de soie (quartier choisi, panneau). */
@@ -18,6 +19,8 @@
     froides?: Set<string> | null;
     /** Quartier mis en retrait : silhouette sans couleur d'état. */
     retrait?: boolean;
+    /** Grand écran : les fenêtres non résolues sont éteintes (sombres), pas verrouillées. */
+    nuit?: boolean;
   } = $props();
 
   const g = $derived(quartier.gabarit);
@@ -34,6 +37,7 @@
 <svg
   class="bati"
   class:retrait
+  class:nuit
   viewBox="0 0 {g.w} {g.h + 4}"
   aria-hidden="true"
   focusable="false"
@@ -127,6 +131,14 @@
     stroke: var(--lumen);
     stroke-dasharray: 4 4;
     stroke-linecap: butt;
+  }
+  /* Nuit (grand écran) : seules les fenêtres rallumées brillent. */
+  .nuit .fen:not([data-etat="resolu"]) {
+    fill: var(--eau);
+    stroke: none;
+  }
+  .nuit .socle:not([data-etat="resolu"]) {
+    fill: var(--pierre);
   }
   /* Quartier en retrait : une silhouette, sans couleur d'état (jetons, pas d'opacité). */
   .retrait .facade,

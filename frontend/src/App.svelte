@@ -5,7 +5,8 @@
   import { connectLive, live } from "./lib/live.svelte";
   import { refreshStory } from "./lib/story.svelte";
   import { interceptLinks, route } from "./lib/router.svelte";
-  import { bootstrap, session } from "./lib/session.svelte";
+  import { errorMessage } from "./lib/api";
+  import { bootstrap, refreshEvent, session } from "./lib/session.svelte";
   import { t } from "./lib/strings";
   import Admin from "./pages/Admin.svelte";
   import Board from "./pages/Board.svelte";
@@ -34,6 +35,16 @@
   const screenId = $derived(route.path.match(/^\/ecran\/([a-z0-9-]+)$/)?.[1] ?? null);
 
   void bootstrap();
+
+  let erreurEvenement = $state<string | null>(null);
+  async function rechargerEvenement(): Promise<void> {
+    try {
+      await refreshEvent();
+      erreurEvenement = null;
+    } catch (e) {
+      erreurEvenement = errorMessage(e);
+    }
+  }
 
   // Le flux temps réel, le journal et l'équipe dépendent de l'utilisateur et de son équipe.
   const identity = $derived(`${session.me?.user.id ?? "-"}:${session.me?.team?.id ?? "-"}`);
@@ -65,7 +76,15 @@
 {:else}
   <Entete />
   <main id="contenu" tabindex="-1">
-    <Page />
+    {#if session.event}
+      <Page />
+    {:else}
+      <div class="page page-etroite">
+        <h1 class="titre-page">{t("error.event_title")}</h1>
+        <p class="refus etat" role="alert"><b>{t("error.title")}</b> {erreurEvenement ?? t("error.event_unavailable")}</p>
+        <p><button type="button" class="btn-ligne" onclick={rechargerEvenement}>{t("action.retry")}</button></p>
+      </div>
+    {/if}
   </main>
   <footer class="pied">
     <p>{t("credits.fonts")}</p>
@@ -76,6 +95,10 @@
 <style>
   .attente {
     padding: var(--e7) var(--gouttiere);
+  }
+  .etat {
+    margin: var(--e4) 0;
+    max-width: 64ch;
   }
   .pied {
     padding: var(--e5) var(--gouttiere) var(--e7);

@@ -384,6 +384,7 @@
   .volet.etat {
     display: grid;
     gap: var(--e4);
+    align-content: start;
     justify-items: start;
     padding-top: var(--e4);
   }
@@ -482,6 +483,9 @@
     a.defi:hover .d-nom {
       text-decoration: underline;
     }
+  }
+  a.defi:active {
+    background: var(--pierre);
   }
   a.defi:focus-visible {
     outline-offset: -2px;

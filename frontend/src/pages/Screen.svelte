@@ -1,11 +1,12 @@
 <script lang="ts">
   // Grand écran public (vidéoprojecteur) : Lyon s'illumine avec la progression de toutes les
-  // équipes, le classement, le fil en direct et le compte à rebours. Rien sur le contenu des
-  // défis. Lisible à cinq mètres : rien sous 24 px.
+  // équipes ; à côté, le compte à rebours, le classement et le dernier événement. Rien sur le
+  // contenu des défis. Lisible à cinq mètres : rien sous 24 px en 1920 × 1080. Aucune
+  // interaction : une coupure réseau garde la dernière image et réessaie seule.
   import { untrack } from "svelte";
 
   import Immeuble from "../components/ville/Immeuble.svelte";
-  import { api, errorMessage } from "../lib/api";
+  import { api, ApiError } from "../lib/api";
   import { formatDuration, formatHeure, formatPoints, poll } from "../lib/format";
   import { live } from "../lib/live.svelte";
   import { serverNow, session } from "../lib/session.svelte";
@@ -19,7 +20,8 @@
   let ecran = $state<ScreenData | null>(null);
   let classement = $state<Scoreboard | null>(null);
   let flux = $state<FeedItem[]>([]);
-  let erreur = $state<string | null>(null);
+  // Erreur de premier chargement seulement : ensuite, la dernière image valide reste affichée.
+  let erreur = $state<"introuvable" | "injoignable" | null>(null);
   let maintenant = $state(serverNow());
 
   async function charger(): Promise<void> {
@@ -31,7 +33,7 @@
       ]);
       erreur = null;
     } catch (e) {
-      erreur = errorMessage(e);
+      if (!untrack(() => ecran)) erreur = e instanceof ApiError && e.status === 404 ? "introuvable" : "injoignable";
     }
   }
 
@@ -53,7 +55,8 @@
     return new Date(echeance).getTime() - maintenant;
   });
 
-  // La ville : chaque quartier allume une part de ses fenêtres égale à sa progression globale.
+  // La ville : chaque quartier allume une part de ses fenêtres égale à sa progression globale ;
+  // les autres restent éteintes (sombres), pas verrouillées.
   const quartiers = $derived.by((): Quartier[] | null => {
     if (!ecran) return null;
     const ville = villeEteinte(session.event?.categories ?? []);
@@ -67,112 +70,184 @@
   });
   const pct = (valeur: number, total: number): string => `${(valeur / total) * 100}%`;
   const heure = (iso: string): string => formatHeure(iso, session.event?.timezone);
+
+  const equipes = $derived(classement?.teams ?? []);
+  const resolutions = $derived(equipes.reduce((total, e) => total + e.solves, 0));
+  const dernier = $derived(flux[0] ?? null);
+
+  // Autant de rangées que la hauteur disponible en montre, et on le dit.
+  let hauteurListe = $state(0);
+  let hauteurRangee = $state(0);
+  const visibles = $derived(
+    hauteurRangee > 0 ? Math.max(1, Math.floor(hauteurListe / hauteurRangee)) : 10,
+  );
+  function mesurer(noeud: HTMLElement): void {
+    hauteurRangee = noeud.getBoundingClientRect().height;
+  }
 </script>
 
 <main class="ecran">
   {#if erreur}
-    <p class="message">{t("screen.not_found")} {erreur}</p>
-  {:else if !ecran}
-    <p class="message">{t("loading")}</p>
-  {:else}
-    <div class="ville" aria-hidden="true">
-      {#if quartiers}
-        <div class="carte">
-          <svg class="fond" viewBox="0 0 {PLAN.w} {PLAN.h}" preserveAspectRatio="none" focusable="false">
-            {#each RIVIERES as riviere (riviere.points)}
-              <polyline class="quai" points={riviere.points} stroke-width={riviere.largeur + 4} />
-            {/each}
-            {#each RIVIERES as riviere (riviere.points)}
-              <polyline class="eau" points={riviere.points} stroke-width={riviere.largeur} />
-            {/each}
-            {#each PONTS as [x, y, w] (`${x}-${y}`)}
-              <rect class="pont" {x} {y} width={w} height="4" />
-            {/each}
-          </svg>
-          {#each NOMS_RIVIERES as riviere (riviere.nom)}
-            <span class="riviere" style:left={pct(riviere.x, PLAN.w)} style:top={pct(riviere.y, PLAN.h)} style:--angle="{riviere.angle}deg"
-              >{riviere.nom}</span
-            >
-          {/each}
-          {#each quartiers as q (q.categorie.id)}
-            <div class="immeuble" style:left={pct(q.x, PLAN.w)} style:top={pct(q.y, PLAN.h)} style:width={pct(q.w, PLAN.w)}>
-              <Immeuble quartier={q} />
-              <span class="nom">{q.categorie.name}</span>
-            </div>
-          {/each}
-        </div>
-      {/if}
+    <div class="panne">
+      <h1 class="titre">{erreur === "introuvable" ? t("screen.not_found") : t("screen.unreachable")}</h1>
+      <p>{erreur === "introuvable" ? t("screen.not_found_hint") : t("screen.unreachable_hint")}</p>
     </div>
+  {:else if !ecran}
+    <p class="attente">{t("loading")}</p>
+  {:else}
+    <section class="ville" aria-labelledby="titre-ecran">
+      <h1 class="titre" id="titre-ecran">{typo(ecran.title)}</h1>
+      <div class="cadre-carte" aria-hidden="true">
+        {#if quartiers}
+          <div class="carte">
+            <svg class="fond" viewBox="0 0 {PLAN.w} {PLAN.h}" preserveAspectRatio="none" focusable="false">
+              {#each RIVIERES as riviere (riviere.points)}
+                <polyline class="quai" points={riviere.points} stroke-width={riviere.largeur + 4} />
+              {/each}
+              {#each RIVIERES as riviere (riviere.points)}
+                <polyline class="eau" points={riviere.points} stroke-width={riviere.largeur} />
+              {/each}
+              {#each PONTS as [x, y, w] (`${x}-${y}`)}
+                <rect class="pont" {x} {y} width={w} height="4" />
+              {/each}
+            </svg>
+            {#each NOMS_RIVIERES as riviere (riviere.nom)}
+              <span class="riviere" style:left={pct(riviere.x, PLAN.w)} style:top={pct(riviere.y, PLAN.h)} style:--angle="{riviere.angle}deg"
+                >{riviere.nom}</span
+              >
+            {/each}
+            {#each quartiers as q (q.categorie.id)}
+              <div class="immeuble" style:left={pct(q.x, PLAN.w)} style:top={pct(q.y, PLAN.h)} style:width={pct(q.w, PLAN.w)}>
+                <Immeuble quartier={q} nuit />
+                <span class="nom">{q.categorie.name}</span>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+      <p class="progression">{tn("screen.progress", resolutions)}</p>
+      {#if dernier}
+        <p class="chronique">
+          <span class="heure tnum">{heure(dernier.at)}</span>
+          <span class="evenement">
+            {#if dernier.kind === "first_blood"}
+              {t("screen.first_blood", { team: dernier.team, challenge: dernier.challenge })}
+            {:else}
+              {t("screen.announcement", { title: dernier.title })}
+            {/if}
+          </span>
+        </p>
+      {/if}
+    </section>
 
     <div class="cote">
-      <h1 class="titre">{typo(ecran.title)}</h1>
       {#if reste !== null}
         <p class="compte">
-          <span class="valeur tnum">{formatDuration(reste)}</span>
-          <span class="libelle">{t(`phase.${session.event?.phase ?? "running"}`)}</span>
+          <b class="valeur tnum">{formatDuration(reste)}</b>
+          {t(`phase.${session.event?.phase ?? "running"}`)}
         </p>
       {:else}
-        <p class="compte"><span class="libelle">{t("phase.ended")}</span></p>
+        <p class="compte">{t("phase.ended")}</p>
       {/if}
 
-      <section aria-labelledby="h-classement">
+      <section class="classement-zone" aria-labelledby="h-classement">
         <h2 class="sous-titre" id="h-classement">{t("screen.top")}</h2>
-        <p class="equipes">{tn("screen.active_teams", ecran.active_teams)}</p>
-        {#if ecran.frozen}<p class="gel">{t("screen.frozen")}</p>{/if}
-        <ol class="classement">
-          {#each (classement?.teams ?? []).slice(0, 10) as ligne (ligne.team_id)}
-            <li>
-              <span class="rang tnum">{ligne.rank}</span>
-              <span class="equipe">{typo(ligne.name)}</span>
-              <span class="points tnum">{formatPoints(ligne.score)}</span>
-            </li>
-          {/each}
-        </ol>
-      </section>
-
-      <section aria-labelledby="h-direct">
-        <h2 class="sous-titre" id="h-direct">{t("screen.feed")}</h2>
-        <ul class="direct">
-          {#each flux.slice(0, 2) as evenement (`${evenement.kind}-${evenement.at}`)}
-            <li>
-              <span class="heure tnum">{heure(evenement.at)}</span>
-              <span>
-                {#if evenement.kind === "first_blood"}
-                  {t("screen.first_blood", { team: evenement.team, challenge: evenement.challenge })}
+        <p class="note">
+          {tn("screen.active_teams", ecran.active_teams)}{#if equipes.length > visibles}.
+            {t("screen.top_n", { n: visibles, total: equipes.length })}{/if}
+          {#if ecran.frozen}<br />{t("screen.frozen")}{/if}
+        </p>
+        {#if equipes.length === 0}
+          <p class="vide">{t("screen.empty")}</p>
+        {:else}
+          <div class="liste" bind:clientHeight={hauteurListe}>
+            <ol class="classement">
+              {#each equipes.slice(0, visibles) as ligne, i (ligne.team_id)}
+                {#if i === 0}
+                  <li use:mesurer>
+                    <span class="rang tnum">{ligne.rank}</span>
+                    <span class="equipe">{typo(ligne.name)}</span>
+                    <span class="points tnum">{formatPoints(ligne.score)}</span>
+                  </li>
                 {:else}
-                  {t("screen.announcement", { title: evenement.title })}
+                  <li>
+                    <span class="rang tnum">{ligne.rank}</span>
+                    <span class="equipe">{typo(ligne.name)}</span>
+                    <span class="points tnum">{formatPoints(ligne.score)}</span>
+                  </li>
                 {/if}
-              </span>
-            </li>
-          {/each}
-        </ul>
+              {/each}
+            </ol>
+          </div>
+        {/if}
       </section>
-
     </div>
   {/if}
 </main>
 
 <style>
+  /* Les tailles suivent la hauteur de l'écran par paliers de l'échelle : 72/48/36/24 en
+     1080 px et plus, 48/36/24/21 en dessous (projecteurs 1280 × 720 et 1366 × 768). */
   .ecran {
+    --t-titre: 72px;
+    --t-grand: 48px;
+    --t-moyen: 36px;
+    --t-base: 24px;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     grid-template-rows: minmax(0, 1fr);
     gap: var(--e7);
     padding: var(--e6) var(--e7);
-    font-size: 24px;
+    font-size: var(--t-base);
     line-height: 1.35;
   }
-  .message {
+  @media (max-height: 1000px) {
+    .ecran {
+      --t-titre: 48px;
+      --t-grand: 36px;
+      --t-moyen: 24px;
+      --t-base: 21px;
+      gap: var(--e6);
+      padding: var(--e5) var(--e6);
+    }
+  }
+  .panne,
+  .attente {
     grid-column: 1 / -1;
+    align-self: center;
+    max-width: 40ch;
+  }
+  .panne p {
+    margin-top: var(--e4);
+    color: var(--douce);
   }
   .ville {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .titre {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: var(--t-titre);
+    line-height: 1;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+  .cadre-carte {
+    flex: 1;
+    min-height: 0;
     container-type: size;
     display: grid;
     place-items: center;
-    min-height: 0;
-    height: 100%;
+    margin-top: var(--e4);
   }
   .carte {
     position: relative;
@@ -187,7 +262,7 @@
   }
   .quai {
     fill: none;
-    stroke: var(--lumen);
+    stroke: var(--pierre);
   }
   .eau {
     fill: none;
@@ -212,56 +287,80 @@
   .nom {
     margin-top: var(--e1);
     font-family: var(--display);
-    font-size: 36px;
+    font-size: var(--t-moyen);
     line-height: 1;
     white-space: nowrap;
+  }
+  .progression {
+    margin-top: var(--e3);
+    font-family: var(--display);
+    font-size: var(--t-moyen);
+    line-height: 1.1;
+  }
+  .chronique {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--e4);
+    margin-top: var(--e3);
+    padding-top: var(--e3);
+    border-top: 1px solid var(--pierre);
+  }
+  .evenement {
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+  .heure {
+    color: var(--douce);
   }
   .cote {
     display: flex;
     flex-direction: column;
-    gap: var(--e5);
     min-width: 0;
     min-height: 0;
-    overflow: hidden;
-  }
-  .titre {
-    font-family: var(--display);
-    font-weight: 400;
-    font-size: 72px;
-    line-height: 1;
   }
   .compte {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: var(--e3);
-    margin-top: calc(-1 * var(--e4));
+    font-size: var(--t-moyen);
+    line-height: 1.2;
+    color: var(--douce);
   }
   .valeur {
-    font-size: 72px;
-    font-weight: 700;
-    line-height: 1;
     color: var(--lumen);
   }
-  .libelle {
-    color: var(--douce);
+  .classement-zone {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin-top: var(--e6);
   }
   .sous-titre {
     font-family: var(--display);
-    font-size: 48px;
+    font-size: var(--t-grand);
     line-height: 1;
-    margin-bottom: var(--e3);
   }
-  .gel {
-    color: var(--lumen);
-    margin-bottom: var(--e2);
+  .note {
+    margin: var(--e2) 0 var(--e4);
+    color: var(--douce);
+  }
+  .vide {
+    padding-top: var(--e4);
+    border-top: 1px solid var(--pierre);
+  }
+  .liste {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
   .classement {
     border-top: 1px solid var(--pierre);
   }
   .classement li {
     display: grid;
-    grid-template-columns: 3rem minmax(0, 1fr) auto;
+    grid-template-columns: 2.5em minmax(0, 1fr) auto;
     gap: var(--e4);
     align-items: baseline;
     padding: var(--e2) 0;
@@ -282,49 +381,29 @@
   .points {
     font-weight: 700;
   }
-  .direct li {
-    display: grid;
-    grid-template-columns: 5rem minmax(0, 1fr);
-    gap: var(--e4);
-    padding: var(--e2) 0;
-    border-bottom: 1px solid var(--pierre);
-  }
-  .heure {
-    color: var(--douce);
-  }
-  .equipes {
-    margin: calc(-1 * var(--e2)) 0 var(--e3);
-    color: var(--douce);
-  }
 
   /* Ouvert sur un petit écran (ce n'est pas son usage) : tout s'empile, rien ne déborde. */
   @media (max-width: 900px) {
     .ecran {
+      --t-titre: 48px;
+      --t-grand: 36px;
+      --t-moyen: 21px;
+      --t-base: var(--t-texte);
       height: auto;
       overflow: visible;
       grid-template-columns: minmax(0, 1fr);
       grid-template-rows: none;
+      gap: var(--e6);
       padding: var(--e4);
-      font-size: var(--t-texte);
     }
-    .ville {
-      height: auto;
+    .cadre-carte {
+      flex: none;
       container-type: inline-size;
     }
     .carte {
       width: 100%;
     }
-    .nom {
-      font-size: 21px;
-    }
-    .titre,
-    .valeur {
-      font-size: 48px;
-    }
-    .sous-titre {
-      font-size: 36px;
-    }
-    .cote {
+    .liste {
       overflow: visible;
     }
   }

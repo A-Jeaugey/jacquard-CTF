@@ -184,4 +184,7 @@ def test_removed_challenge_is_deactivated_but_solves_kept(player, sync, make_pac
     assert player.get("/api/teams/me").json()["score"] == 0
 
     sync()  # le défi revient : la résolution compte de nouveau
-    assert player.get("/api/teams/me").json()["score"] == 530
+    team = player.get("/api/teams/me").json()
+    assert team["score"] == 530
+    # Chaque résolution dit son quartier (catégorie), pour la page de l'équipe.
+    assert [(s["challenge_id"], s["category"]) for s in team["solves"]] == [("cesar", "crypto")]

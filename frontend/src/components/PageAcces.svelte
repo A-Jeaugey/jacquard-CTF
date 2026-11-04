@@ -3,8 +3,9 @@
 
   import Decor from "./ville/Decor.svelte";
 
-  // Mise en page des pages d'accès (connexion, inscription, équipe sans équipe) : le contenu
-  // à gauche, la ville éteinte à droite (masquée sur petit écran).
+  // Mise en page des pages d'accès (connexion, inscription, page introuvable, équipe sans
+  // équipe) : le contenu à gauche sur 480 px au plus, la ville éteinte à droite (masquée
+  // sur petit écran).
   let { children }: { children: Snippet } = $props();
 </script>
 
@@ -20,6 +21,9 @@
     gap: var(--e8);
     align-items: start;
     padding: var(--e6) var(--gouttiere) var(--e8);
+  }
+  .contenu {
+    max-width: 480px;
   }
   .illustration {
     position: sticky;

@@ -91,7 +91,11 @@ def register(
         if not body.registration_code or not constant_time_equals(
             body.registration_code.strip(), expected.get_secret_value()
         ):
-            api_error(403, "bad_registration_code", "Code d'inscription invalide.")
+            api_error(
+                403,
+                "bad_registration_code",
+                "Code d'inscription invalide : vérifie-le auprès des organisateurs.",
+            )
 
     username = body.username.strip()
     if not USERNAME_RE.fullmatch(username):
@@ -123,7 +127,7 @@ def register(
         db.flush()
     except IntegrityError:
         db.rollback()
-        api_error(409, "username_taken", "Ce pseudo est déjà pris.")
+        api_error(409, "username_taken", "Ce pseudo est déjà pris : choisis-en un autre.")
     _open_session(db, response, user, settings, now)
     return me_view(db, user)
 

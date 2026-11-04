@@ -9,57 +9,57 @@ async function newTeam(page: Page, team: string): Promise<void> {
   await page.getByLabel("Mot de passe").fill("motdepasse-solide");
   await page.getByRole("button", { name: "Créer mon compte" }).click();
   await expect(page).toHaveURL(/\/team$/);
-  await page.getByLabel("Nom de l'équipe").fill(team);
+  await page.getByLabel(/Nom de l.équipe/).fill(team);
   await page.getByRole("button", { name: "Créer", exact: true }).click();
-  await expect(page.locator(".invite")).toBeVisible();
+  await expect(page.locator(".code-valeur")).toBeVisible();
 }
 
-test("le thème du pack s'applique : libellés et couleurs", async ({ page }) => {
+test("le thème du pack change les libellés, pas la direction artistique", async ({ page }) => {
   await newTeam(page, `Thème ${counter}`);
   await page.goto("/challenges");
   await expect(page.getByRole("heading", { name: "Le plan du coffre" })).toBeVisible();
-  const accent = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--color-accent").trim());
-  expect(accent).toBe("#38bdf8");
-  await expect(page.locator("link[data-theme-css]")).toHaveCount(1);
+  // Les couleurs et les polices sont celles de DESIGN.md, quel que soit le pack.
+  const lumignon = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--lumignon").trim());
+  expect(lumignon.toLowerCase()).toBe("#f5a23d");
+  await expect(page.locator("link[data-theme-css]")).toHaveCount(0);
 });
 
-test("la carte reflète la progression et filtre les défis", async ({ page }) => {
+test("la ville reflète la progression et filtre les défis", async ({ page }) => {
   await newTeam(page, `Cartographes ${counter}`);
   await page.goto("/challenges");
-  const crypto = page.locator("#zone-crypto");
-  await expect(crypto).toHaveClass(/is-available/);
+  const crypto = page.locator('.carte .quartier[data-categorie="crypto"]');
+  await expect(crypto).toHaveAttribute("aria-label", /Cryptographie\s*:\s*0 sur 3/);
+  await expect(crypto.locator('.fen[data-etat="resolu"]')).toHaveCount(0);
 
-  await page.getByRole("button", { name: /Ave César/ }).click();
+  await page.getByRole("link", { name: /Ave César/ }).click();
   await page.locator("#flag").fill("DEMO{jules_serait_fier}");
   await page.getByRole("button", { name: "Valider" }).click();
-  await expect(page.getByRole("dialog").getByRole("status")).toHaveText("Bravo, flag correct !");
+  await expect(page.getByRole("dialog").getByRole("heading", { name: "Défi résolu" })).toBeVisible();
   await page.keyboard.press("Escape");
 
-  await expect(crypto).toHaveClass(/is-in-progress/);
-  await expect(page.locator(".zone-chip", { hasText: "La salle des chiffres : 1/3" })).toBeVisible();
+  await expect(crypto).toHaveAttribute("aria-label", /Cryptographie\s*:\s*1 sur 3/);
+  await expect(crypto.locator('.fen[data-etat="resolu"]')).toHaveCount(1);
 
-  // Filtre : clic sur la zone, puis clavier sur la pastille pour tout réafficher.
+  // Choisir un quartier n'affiche que ses défis ; « Revoir toute la ville » rend tout.
+  const sections = page.locator("section.quartier-liste");
+  const total = await sections.count();
+  expect(total).toBeGreaterThan(1);
   await crypto.click();
-  await expect(page.locator(".column-title")).toHaveText([/Cryptographie/]);
-  await page.locator(".zone-chip", { hasText: "La salle des chiffres : 1/3" }).press("Enter");
-  await expect(page.locator(".column-title")).toHaveCount(3);
-
-  // Vue grille : la carte disparaît, le choix est mémorisé.
-  await page.getByRole("button", { name: "Vue grille" }).click();
-  await expect(page.locator(".map-canvas")).toHaveCount(0);
-  await page.reload();
-  await expect(page.locator(".map-canvas")).toHaveCount(0);
-  await page.getByRole("button", { name: "Vue carte" }).click();
-  await expect(page.locator(".map-canvas svg")).toBeVisible();
+  await expect(crypto).toHaveAttribute("aria-pressed", "true");
+  await expect(sections).toHaveCount(1);
+  await expect(sections.getByRole("heading", { level: 2 })).toHaveText("Cryptographie");
+  await page.getByRole("button", { name: "Revoir toute la ville" }).first().click();
+  await expect(sections).toHaveCount(total);
+  await expect(crypto).toBeFocused();
 });
 
 test("le grand écran est public et ne révèle pas les défis", async ({ page }) => {
   await page.goto("/ecran/projecteur");
-  await expect(page.getByRole("heading", { name: "Démo — grand écran" })).toBeVisible();
-  await expect(page.locator(".map-canvas svg")).toBeVisible();
-  await expect(page.locator(".screen-top li").first()).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/Démo/);
+  await expect(page.locator(".carte")).toBeVisible();
+  await expect(page.locator(".classement li").first()).toBeVisible();
   await expect(page.locator("nav")).toHaveCount(0);
-  const text = await page.locator(".screen").textContent();
+  const text = await page.locator(".ecran").textContent();
   expect(text).not.toContain("Le coffre");
   expect(text).not.toContain("DEMO{");
 });
