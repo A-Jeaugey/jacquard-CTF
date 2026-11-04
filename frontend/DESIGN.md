@@ -112,6 +112,25 @@ survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau),
 6. **États** : chargement (texte simple, pas de squelette animé), erreur d'API (message avec
    action), vide (phrase et action suivante), session expirée.
 
+## Les autres pages
+
+- **Accueil** (connecté ou non) : le prologue et l'action suivante à gauche, la ville éteinte en
+  décor à droite (sous le texte d'introduction en dessous de 900 px), puis les annonces.
+- **Accès** (connexion, inscription, page introuvable) : contenu à gauche sur 480 px au plus,
+  la ville éteinte en décor à droite (masquée sous 900 px). Le décor ne porte aucune
+  information.
+- **Joueur** (équipe, classement, messages) : une colonne de lecture de 880 px au plus,
+  alignée à gauche, sans illustration ; l'univers passe par les mots, la
+  couleur `--lumignon` réservée à ce qui est gagné (score, défis résolus, fils de soie) et les
+  fils de soie dessinés sur la page équipe. Les messages de l'histoire sont des lettres : titre,
+  texte, signature.
+- **Grand écran** (vidéoprojecteur, 1920 × 1080, lu à cinq mètres) : rien sous 24 px, aucune
+  interaction, rien ne défile ; la ville s'allume avec la progression de toutes les équipes, à
+  côté du compte à rebours, du classement (10 premiers) et des deux derniers événements. Ouvert
+  sur un petit écran (ce n'est pas son usage), tout s'empile sans débordement.
+- **Administration** : outil des organisateurs, pas une page du jeu. Tableaux, onglets et
+  formulaires sont attendus ici ; mêmes jetons, mêmes composants, aucune illustration.
+
 ## Mouvement
 
 Un seul moment orchestré : **l'allumage**. Au premier affichage de la session, toutes les
