@@ -46,3 +46,14 @@ export function formatPoints(points: number): string {
 export function formatHeure(iso: string, timeZone?: string): string {
   return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone }).format(new Date(iso));
 }
+
+/** Plage horaire en phrase : « Le 13 mars 2027, de 14:00 à 20:00 » ou, sur plusieurs jours,
+ * « Du 3 nov. 2026 à 12:07 au 4 nov. 2026 à 18:07 ». */
+export function formatPlage(debut: string, fin: string, timeZone?: string): string {
+  const jour = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone });
+  const heure = (iso: string): string => formatHeure(iso, timeZone);
+  const j1 = jour.format(new Date(debut));
+  const j2 = jour.format(new Date(fin));
+  if (j1 === j2) return `Le ${j1}, de ${heure(debut)} à ${heure(fin)}`;
+  return `Du ${j1} à ${heure(debut)} au ${j2} à ${heure(fin)}`;
+}

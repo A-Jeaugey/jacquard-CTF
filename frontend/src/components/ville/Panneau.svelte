@@ -57,6 +57,7 @@
   const formatFlag = $derived(session.event?.flag_format ?? null);
   const prefixe = $derived(formatFlag?.split("{")[0] ?? "");
   const resolution = $derived(equipe.data?.solves.find((s) => s.challenge_id === id) ?? null);
+  const majuscule = (texte: string): string => texte.charAt(0).toUpperCase() + texte.slice(1);
 
   async function charger(): Promise<void> {
     defi = null;
@@ -267,14 +268,13 @@
     {:else if !defi}
       <p class="secondaire">{t("loading")}</p>
     {:else}
-      <dl class="faits">
-        <div><dt>{t("challenge.difficulty")}</dt><dd>{defi.difficulty ?? "—"}</dd></div>
-        <div><dt>{t("challenge.points")}</dt><dd class="tnum">{formatPoints(defi.value)}</dd></div>
-        <div><dt>{t("challenge.solved_by")}</dt><dd class="tnum">{tn("challenge.teams", defi.solves)}</dd></div>
-      </dl>
-      {#if defi.authors.length}
-        <p class="meta auteurs">{t("challenge.authors", { names: defi.authors.join(", ") })}</p>
-      {/if}
+      <p class="faits">
+        {defi.difficulty
+          ? t("challenge.facts", { difficulty: majuscule(defi.difficulty), points: formatPoints(defi.value) })
+          : t("challenge.facts_no_difficulty", { points: formatPoints(defi.value) })}
+        {majuscule(tn("board.solves", defi.solves))}.
+        {#if defi.authors.length}{t("challenge.by", { names: defi.authors.join(", ") })}{/if}
+      </p>
 
       <!-- HTML produit et assaini par le serveur (jacquard/markdown.py). -->
       <div class="prose enonce" use:typographie>{@html defi.description_html}</div>
@@ -489,25 +489,10 @@
     padding-bottom: var(--e1);
   }
   .faits {
-    display: grid;
-    grid-template-columns: repeat(3, auto);
-    justify-content: start;
-    gap: var(--e2) var(--e6);
     margin-top: var(--e4);
     padding: var(--e3) 0;
     border-top: 1px solid var(--pierre);
     border-bottom: 1px solid var(--pierre);
-  }
-  .faits dt {
-    font-size: var(--t-meta);
-    color: var(--douce);
-  }
-  .faits dd {
-    font-size: var(--t-nom);
-    font-weight: 700;
-  }
-  .auteurs {
-    margin-top: var(--e2);
   }
   .enonce {
     margin-top: var(--e5);
@@ -653,9 +638,6 @@
     .dessin {
       height: 104px;
       max-width: 144px;
-    }
-    .faits {
-      grid-template-columns: repeat(2, auto);
     }
     .enonce {
       font-size: var(--t-texte);

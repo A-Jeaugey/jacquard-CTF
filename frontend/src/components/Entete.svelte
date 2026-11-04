@@ -166,6 +166,7 @@
   @media (max-width: 1099px) {
     .barre {
       display: grid;
+      align-items: stretch;
       gap: 0;
       grid-template-columns: 1fr auto;
       grid-template-areas: "logo compte" "nav nav" "equipe sortie";

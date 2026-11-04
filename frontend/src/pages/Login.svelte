@@ -1,43 +1,92 @@
 <script lang="ts">
-  import { api, errorMessage } from "../lib/api";
+  import PageAcces from "../components/PageAcces.svelte";
+  import { api, ApiError, errorMessage } from "../lib/api";
   import { navigate } from "../lib/router.svelte";
   import { session } from "../lib/session.svelte";
   import { t } from "../lib/strings";
   import type { Me } from "../lib/types";
 
-  let username = $state("");
-  let password = $state("");
-  let error = $state<string | null>(null);
-  let busy = $state(false);
+  let pseudo = $state("");
+  let motDePasse = $state("");
+  let erreur = $state<{ titre: string; texte: string } | null>(null);
+  let envoi = $state(false);
+  let champPseudo = $state<HTMLInputElement>();
 
-  async function submit(event: SubmitEvent): Promise<void> {
+  async function valider(event: SubmitEvent): Promise<void> {
     event.preventDefault();
-    busy = true;
-    error = null;
+    envoi = true;
+    erreur = null;
     try {
-      session.me = await api.post<Me>("/api/auth/login", { username, password });
+      session.me = await api.post<Me>("/api/auth/login", { username: pseudo, password: motDePasse });
       navigate(session.me.team || session.me.user.role === "admin" ? "/challenges" : "/team");
     } catch (e) {
-      error = errorMessage(e);
+      const refus = e instanceof ApiError && (e.status === 401 || e.status === 429);
+      erreur = { titre: refus ? t("auth.refused") : t("error.title"), texte: errorMessage(e) };
+      champPseudo?.focus();
     } finally {
-      busy = false;
+      envoi = false;
     }
   }
 </script>
 
-<form class="card form narrow" onsubmit={submit}>
-  <h1>{t("nav.login")}</h1>
-  <label>
-    {t("auth.username")}
-    <input autocomplete="username" required bind:value={username} />
-  </label>
-  <label>
-    {t("auth.password")}
-    <input type="password" autocomplete="current-password" required bind:value={password} />
-  </label>
-  {#if error}<p class="error" role="alert">{error}</p>{/if}
-  <button type="submit" disabled={busy}>{t("auth.login")}</button>
+<PageAcces>
+  <h1 class="titre-page">{t("auth.login_title")}</h1>
+  <form class="formulaire" onsubmit={valider}>
+    <div class="champ">
+      <label for="pseudo">{t("auth.username")}</label>
+      <input
+        id="pseudo"
+        class="saisie"
+        bind:this={champPseudo}
+        bind:value={pseudo}
+        autocomplete="username"
+        required
+        maxlength="32"
+        aria-invalid={erreur ? "true" : undefined}
+        aria-describedby={erreur ? "erreur-connexion" : undefined}
+      />
+    </div>
+    <div class="champ">
+      <label for="mot-de-passe">{t("auth.password")}</label>
+      <input
+        id="mot-de-passe"
+        class="saisie"
+        type="password"
+        bind:value={motDePasse}
+        autocomplete="current-password"
+        required
+        maxlength="128"
+        aria-invalid={erreur ? "true" : undefined}
+      />
+    </div>
+    {#if erreur}
+      <p class="refus" id="erreur-connexion" role="alert"><b>{erreur.titre}</b> {erreur.texte}</p>
+    {/if}
+    <p>
+      <button type="submit" class="btn-principal" disabled={envoi}>{envoi ? t("auth.logging_in") : t("auth.login")}</button>
+    </p>
+  </form>
   {#if session.event?.participation.registration !== "closed"}
-    <p class="muted small">{t("auth.no_account")} <a href="/register">{t("nav.register")}</a></p>
+    <p class="bascule">{t("auth.no_account")} <a href="/register">{t("auth.create_account")}</a>.</p>
   {/if}
-</form>
+</PageAcces>
+
+<style>
+  .formulaire {
+    display: grid;
+    gap: var(--e5);
+    margin-top: var(--e6);
+  }
+  .bascule {
+    margin-top: var(--e6);
+    padding-top: var(--e4);
+    border-top: 1px solid var(--pierre);
+    color: var(--douce);
+  }
+  .bascule a {
+    color: var(--claire);
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+</style>

@@ -289,7 +289,7 @@
               <h2 class="titre-section" id="h-{section.id}">{section.nom}</h2>
               <p class="q-desc">
                 {#if section.description}{typo(section.description)}{/if}
-                <span class="q-avance tnum">{tn("board.done", resolus, { total: section.defis.length })}</span>
+                {tn("board.done", resolus, { total: section.defis.length })}
               </p>
             </div>
             {#if quartier}
@@ -409,9 +409,6 @@
     color: var(--douce);
     margin: var(--e1) 0 var(--e3);
     max-width: 60ch;
-  }
-  .q-avance {
-    color: var(--claire);
   }
   /* Le quartier choisi : son immeuble en grand, avec le fil de soie lisible. */
   .q-elevation {

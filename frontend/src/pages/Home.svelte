@@ -1,70 +1,157 @@
 <script lang="ts">
+  import Decor from "../components/ville/Decor.svelte";
   import { api } from "../lib/api";
-  import { formatDateTime, poll } from "../lib/format";
+  import { formatDateTime, formatPlage, poll } from "../lib/format";
   import { live } from "../lib/live.svelte";
-  import { story } from "../lib/story.svelte";
   import { session } from "../lib/session.svelte";
+  import { story } from "../lib/story.svelte";
   import { t } from "../lib/strings";
+  import { typo, typographie } from "../lib/typo";
   import type { Announcement } from "../lib/types";
 
-  let announcements = $state<Announcement[]>([]);
+  let annonces = $state<Announcement[]>([]);
 
-  async function load(): Promise<void> {
-    announcements = await api.get<Announcement[]>("/api/announcements").catch(() => announcements);
+  async function charger(): Promise<void> {
+    annonces = await api.get<Announcement[]>("/api/announcements").catch(() => annonces);
   }
 
-  $effect(() => poll(load, 120_000));
+  $effect(() => poll(charger, 120_000));
   $effect(() => {
-    if (live.ticks.announcement > 0) void load();
+    if (live.ticks.announcement > 0) void charger();
   });
 
+  const evenement = $derived(session.event);
   const prologue = $derived(story.data?.entries.filter((e) => e.public) ?? []);
-
-  const event = $derived(session.event);
+  const inscriptions = $derived(evenement?.participation.registration !== "closed");
 </script>
 
-{#if event}
-  <section class="hero">
-    <h1>{event.name}</h1>
-    {#if event.tagline}<p class="tagline">{event.tagline}</p>{/if}
-    <p class="muted">
-      {formatDateTime(event.schedule.start, event.timezone)} → {formatDateTime(event.schedule.end, event.timezone)}
-    </p>
-    <div class="actions">
-      {#if !session.me}
-        {#if event.participation.registration !== "closed"}
-          <a class="button" href="/register">{t("home.cta.register")}</a>
+{#if evenement}
+  <div class="accueil">
+    <div class="intro">
+      <h1 class="titre-page">{evenement.name}</h1>
+      {#if evenement.tagline}<p class="accroche">{typo(evenement.tagline)}</p>{/if}
+      <p class="dates">{formatPlage(evenement.schedule.start, evenement.schedule.end, evenement.timezone)}.</p>
+      <p class="actions">
+        {#if !session.me}
+          {#if inscriptions}<a class="btn-principal" href="/register">{t("home.cta.register")}</a>{/if}
+          <a class={inscriptions ? "btn-ligne" : "btn-principal"} href="/login">{t("nav.login")}</a>
+        {:else if !session.me.team && session.me.user.role !== "admin"}
+          <a class="btn-principal" href="/team">{t("home.cta.team")}</a>
+        {:else}
+          <a class="btn-principal" href="/challenges">{t("home.cta.board")}</a>
         {/if}
-        <a class="button secondary" href="/login">{t("nav.login")}</a>
-      {:else if !session.me.team && session.me.user.role !== "admin"}
-        <a class="button" href="/team">{t("home.cta.team")}</a>
-      {:else}
-        <a class="button" href="/challenges">{t("home.cta.board")}</a>
-      {/if}
+      </p>
     </div>
-  </section>
+
+    <div class="suite">
+      {#each prologue as chapitre (chapitre.id)}
+        <article class="chapitre" aria-labelledby="ch-{chapitre.id}">
+          <h2 class="titre-section" id="ch-{chapitre.id}">{typo(chapitre.title)}</h2>
+          <!-- HTML assaini côté serveur. -->
+          <div class="prose" use:typographie>{@html chapitre.body_html}</div>
+        </article>
+      {/each}
+
+      <section class="annonces" aria-labelledby="h-annonces" id="annonces">
+        <h2 class="titre-section" id="h-annonces">{t("home.announcements")}</h2>
+        {#each annonces as annonce (annonce.id)}
+          <article class="annonce">
+            <h3 class="titre-bloc">{typo(annonce.title)}</h3>
+            <p class="meta">{formatDateTime(annonce.created_at, evenement.timezone)}</p>
+            <!-- HTML assaini côté serveur. -->
+            <div class="prose" use:typographie>{@html annonce.body_html}</div>
+          </article>
+        {:else}
+          <p class="secondaire">{t("home.no_announcements")}</p>
+        {/each}
+      </section>
+    </div>
+
+    <div class="illustration">
+      <Decor />
+    </div>
+  </div>
 {/if}
 
-{#each prologue as chapter (chapter.id)}
-  <section class="card chapter">
-    <h2>{chapter.title}</h2>
-    <!-- HTML assaini côté serveur. -->
-    <div class="prose">{@html chapter.body_html}</div>
-  </section>
-{/each}
+<style>
+  .accueil {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "intro illustration" "suite illustration";
+    grid-template-rows: auto 1fr;
+    column-gap: var(--e7);
+    align-items: start;
+    padding: var(--e6) var(--gouttiere) var(--e8);
+  }
+  .intro {
+    grid-area: intro;
+    max-width: 640px;
+  }
+  .suite {
+    grid-area: suite;
+    max-width: 640px;
+  }
+  .accroche {
+    margin-top: var(--e3);
+    font-size: var(--t-nom);
+  }
+  .dates {
+    margin-top: var(--e2);
+    color: var(--douce);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e3);
+    margin-top: var(--e5);
+  }
+  .chapitre {
+    margin-top: var(--e7);
+    padding-top: var(--e5);
+    border-top: 1px solid var(--pierre);
+  }
+  .chapitre .prose {
+    margin-top: var(--e4);
+  }
+  .annonces {
+    margin-top: var(--e7);
+    padding-top: var(--e5);
+    border-top: 1px solid var(--pierre);
+  }
+  .annonces > p {
+    margin-top: var(--e3);
+  }
+  .annonce {
+    padding: var(--e4) 0;
+    border-bottom: 1px solid var(--pierre);
+  }
+  .annonce .meta {
+    margin-top: var(--e1);
+  }
+  .annonce .prose {
+    margin-top: var(--e3);
+  }
+  .illustration {
+    grid-area: illustration;
+    position: sticky;
+    top: var(--e5);
+  }
 
-<section>
-  <h2>{t("home.announcements")}</h2>
-  {#each announcements as announcement (announcement.id)}
-    <article class="card announcement">
-      <header>
-        <strong>{announcement.title}</strong>
-        <span class="muted small">{formatDateTime(announcement.created_at, event?.timezone)}</span>
-      </header>
-      <!-- HTML assaini côté serveur. -->
-      <div class="prose">{@html announcement.body_html}</div>
-    </article>
-  {:else}
-    <p class="muted">{t("home.no_announcements")}</p>
-  {/each}
-</section>
+  @media (max-width: 900px) {
+    .accueil {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "intro" "illustration" "suite";
+      grid-template-rows: none;
+      row-gap: var(--e6);
+    }
+    .illustration {
+      position: static;
+      max-width: 520px;
+    }
+  }
+  @media (max-width: 640px) {
+    .accueil {
+      padding-top: var(--e5);
+    }
+  }
+</style>
