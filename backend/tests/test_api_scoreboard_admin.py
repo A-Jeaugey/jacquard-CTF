@@ -35,6 +35,13 @@ def test_scoreboard_ranks_teams(new_client, sync) -> None:  # type: ignore[no-un
     # Le nombre de défis publics (pour dessiner les façades) ne compte pas « Le coffre », caché
     # tant qu'il est verrouillé ; « Niveau supérieur », montré verrouillé, est compté.
     assert board["challenges"] == 5
+    # Même silhouette pour toutes les équipes : quartiers dans l'ordre de l'événement, une
+    # fenêtre par défi public ; chaque équipe dit lesquelles sont allumées.
+    assert [d["category"] for d in board["districts"]] == ["misc", "crypto", "osint"]
+    assert sum(d["count"] for d in board["districts"]) == 5
+    lit = {t["name"]: t["lit"] for t in board["teams"]}
+    assert len(lit["Bravo"]) == 1 and len(lit["Alpha"]) == 1
+    assert lit["Bravo"] != lit["Alpha"]
 
 
 def test_freeze_hides_late_solves(new_client, sync, make_pack, clock, admin) -> None:  # type: ignore[no-untyped-def]

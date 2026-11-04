@@ -44,16 +44,27 @@ def scoreboard(db: DbSession, event: Event, now: Now, user: OptionalUser) -> dic
     cutoff = public_cutoff(event, now, user)
     snapshot = compute_snapshot(db, event, cutoff)
     # Défis dont l'existence est publique : ouverts d'emblée ou montrés verrouillés. Les défis
-    # cachés tant qu'ils sont verrouillés ne sont pas comptés (ils restent un secret).
-    public_challenges = sum(
-        1
-        for c in db.scalars(select(Challenge).where(Challenge.active))
-        if not c.unlock or c.when_locked == "teaser"
+    # cachés tant qu'ils sont verrouillés ne sont pas comptés (ils restent un secret). Rangés
+    # par quartier (ordre de l'événement) puis par ordre du pack, ils donnent à chaque équipe
+    # la même silhouette de ville : une fenêtre par défi, toujours à la même place.
+    order = {c.id: i for i, c in enumerate(event.categories)}
+    public = sorted(
+        (
+            c
+            for c in db.scalars(select(Challenge).where(Challenge.active))
+            if not c.unlock or c.when_locked == "teaser"
+        ),
+        key=lambda c: (order.get(c.category, len(order)), c.position, c.id),
     )
+    window = {c.id: i for i, c in enumerate(public)}
+    counts: dict[str, int] = {}
+    for c in public:
+        counts[c.category] = counts.get(c.category, 0) + 1
     return {
         "frozen": cutoff is not None,
         "frozen_at": cutoff.isoformat() if cutoff else None,
-        "challenges": public_challenges,
+        "challenges": len(public),
+        "districts": [{"category": k, "count": n} for k, n in counts.items()],
         "teams": [
             {
                 "rank": t.rank,
@@ -61,6 +72,7 @@ def scoreboard(db: DbSession, event: Event, now: Now, user: OptionalUser) -> dic
                 "name": t.name,
                 "score": t.score,
                 "solves": t.solves,
+                "lit": sorted(window[cid] for cid in t.solved if cid in window),
                 "last_solve_at": t.last_solve_at.isoformat() if t.last_solve_at else None,
             }
             for t in snapshot.teams
