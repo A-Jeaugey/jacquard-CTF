@@ -92,134 +92,286 @@
   });
 </script>
 
-<h1>{t("admin.title")}</h1>
+<div class="page">
+  <h1 class="titre-page">{t("admin.title")}</h1>
 
-<div class="tabs" role="tablist">
-  {#each ["submissions", "teams", "announcements", "stats"] as const as id (id)}
-    <button role="tab" class:active={tab === id} aria-selected={tab === id} onclick={() => (tab = id)}>
-      {t(`admin.tab.${id}`)}
-    </button>
-  {/each}
+  <div class="onglets" role="tablist" aria-label={t("admin.title")}>
+    {#each ["submissions", "teams", "announcements", "stats"] as const as id (id)}
+      <button type="button" role="tab" aria-selected={tab === id} onclick={() => (tab = id)}>
+        {t(`admin.tab.${id}`)}
+      </button>
+    {/each}
+  </div>
+
+  {#if error}
+    <p class="refus" role="alert"><b>{t("error.title")}</b> {error}</p>
+  {/if}
+
+  <div class="contenu" role="tabpanel">
+    {#if tab === "submissions"}
+      <div class="outils">
+        <label class="etiquette" for="filtre">{t("admin.filter.label")}</label>
+        <select id="filtre" class="saisie choix" bind:value={filter}>
+          <option value="all">{t("admin.filter.all")}</option>
+          <option value="correct">{t("admin.filter.correct")}</option>
+          <option value="incorrect">{t("admin.filter.incorrect")}</option>
+        </select>
+      </div>
+      {#if submissions.length}
+        <div class="defile">
+          <table>
+            <thead>
+              <tr>
+                <th>{t("admin.col.time")}</th>
+                <th>{t("admin.col.team")}</th>
+                <th>{t("admin.col.challenge")}</th>
+                <th>{t("admin.col.flag")}</th>
+                <th>{t("admin.col.result")}</th>
+                <th>{t("admin.col.ip")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each submissions as s (s.id)}
+                <tr>
+                  <td class="tnum secondaire">{formatTime(s.created_at, session.event?.timezone)}</td>
+                  <td>{s.team}<br /><span class="meta">{s.user ?? "—"}</span></td>
+                  <td>{s.challenge}</td>
+                  <td><code class="valeur">{s.provided}</code></td>
+                  <td class:correct={s.correct}>{s.correct ? t("admin.result.correct") : t("admin.result.wrong")}</td>
+                  <td class="tnum meta">{s.ip}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+        {#if submissions.length >= 100}
+          <p><button type="button" class="btn-ligne" onclick={loadMore}>{t("admin.load_more")}</button></p>
+        {/if}
+      {:else}
+        <p class="secondaire">{t("admin.submissions.none")}</p>
+      {/if}
+    {:else if tab === "teams"}
+      {#if teams.length}
+        <div class="defile">
+          <table>
+            <thead>
+              <tr>
+                <th>{t("admin.col.rank")}</th>
+                <th>{t("admin.col.team")}</th>
+                <th class="nombre">{t("admin.col.solves")}</th>
+                <th class="nombre">{t("admin.col.score")}</th>
+                <th><span class="sr-only">{t("admin.col.actions")}</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each teams as team (team.id)}
+                <tr class:masquee={team.hidden}>
+                  <td class="tnum">{team.rank ?? "—"}</td>
+                  <td>
+                    {team.name}
+                    {#if team.hidden}<span class="meta">{t("admin.hidden")}</span>{/if}
+                    <br /><span class="meta">{team.members.join(", ")}</span>
+                  </td>
+                  <td class="nombre tnum">{team.solves}</td>
+                  <td class="nombre tnum">{team.score}</td>
+                  <td>
+                    <button type="button" class="btn-ligne" onclick={() => toggleHidden(team)}>
+                      {team.hidden ? t("admin.show") : t("admin.hide")}
+                    </button>
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      {:else}
+        <p class="secondaire">{t("scoreboard.empty")}</p>
+      {/if}
+    {:else if tab === "stats"}
+      {#if stats}
+        <div class="defile">
+          <table>
+            <thead>
+              <tr>
+                <th>{t("admin.stats.challenge")}</th>
+                <th class="nombre">{t("admin.stats.solves")}</th>
+                <th class="nombre">{t("admin.stats.wrong")}</th>
+                <th class="nombre">{t("admin.stats.hints")}</th>
+                <th class="nombre">{t("admin.stats.first")}</th>
+                <th class="nombre">{t("admin.stats.median")}</th>
+                <th>{t("admin.stats.top_wrong")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each stats.challenges as c (c.id)}
+                <tr class:inactif={c.attempts === 0}>
+                  <td>{c.name}<br /><span class="meta">{c.category}</span></td>
+                  <td class="nombre tnum">{c.solves}</td>
+                  <td class="nombre tnum">{c.wrong}</td>
+                  <td class="nombre tnum">{c.hints}</td>
+                  <td class="nombre tnum">{c.first_solve_minutes ?? "—"}</td>
+                  <td class="nombre tnum">{c.median_solve_minutes ?? "—"}</td>
+                  <td>
+                    {#each c.top_wrong as w (w.value)}
+                      <div><code class="valeur">{w.value}</code> <span class="meta">{t("admin.times", { n: w.count })}</span></div>
+                    {/each}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+        <section class="signaux" aria-labelledby="h-signaux">
+          <h2 class="titre-bloc" id="h-signaux">{t("admin.signals")}</h2>
+          <p class="aide">{t("admin.signals.note")}</p>
+          {#each stats.signals as signal, i (i)}
+            <p class="signal">
+              {#if signal.kind === "shared_ip"}{t("admin.signal.shared_ip", { ip: signal.ip, teams: signal.teams.join(", ") })}
+              {:else if signal.kind === "burst"}{t("admin.signal.burst", { team: signal.team, at: signal.at_minutes })}
+              {:else}{t("admin.signal.same_wrong", { challenge: signal.challenge, value: signal.value, teams: signal.teams.join(", ") })}{/if}
+            </p>
+          {:else}
+            <p class="secondaire">{t("admin.signals.none")}</p>
+          {/each}
+        </section>
+      {:else}
+        <p class="secondaire">{t("loading")}</p>
+      {/if}
+    {:else}
+      <form class="annonce-form" onsubmit={publish}>
+        <div class="champ">
+          <label for="annonce-titre">{t("admin.announcement.title")}</label>
+          <input id="annonce-titre" class="saisie" required maxlength="128" bind:value={title} />
+        </div>
+        <div class="champ">
+          <label for="annonce-texte">{t("admin.announcement.body")}</label>
+          <textarea id="annonce-texte" class="saisie zone" required rows="5" maxlength="10000" bind:value={body}></textarea>
+        </div>
+        <p><button type="submit" class="btn-principal">{t("admin.announcement.publish")}</button></p>
+      </form>
+      {#each announcements as a (a.id)}
+        <article class="annonce">
+          <div class="annonce-tete">
+            <h2 class="titre-bloc">{a.title}</h2>
+            <button type="button" class="btn-texte" onclick={() => remove(a.id)}>{t("admin.announcement.delete")}</button>
+          </div>
+          <!-- HTML assaini côté serveur. -->
+          <div class="prose">{@html a.body_html}</div>
+        </article>
+      {:else}
+        <p class="secondaire">{t("home.no_announcements")}</p>
+      {/each}
+    {/if}
+  </div>
 </div>
 
-{#if error}<p class="error">{error}</p>{/if}
-
-{#if tab === "submissions"}
-  <div class="toolbar">
-    <select bind:value={filter}>
-      <option value="all">{t("admin.filter.all")}</option>
-      <option value="correct">{t("admin.filter.correct")}</option>
-      <option value="incorrect">{t("admin.filter.incorrect")}</option>
-    </select>
-  </div>
-  <div class="table-wrap">
-    <table>
-      <tbody>
-        {#each submissions as s (s.id)}
-          <tr class:ok={s.correct}>
-            <td class="muted mono">{formatTime(s.created_at, session.event?.timezone)}</td>
-            <td>{s.team}<span class="muted small"> · {s.user ?? "?"}</span></td>
-            <td>{s.challenge}</td>
-            <td class="mono break">{s.provided}</td>
-            <td>{s.correct ? "✓" : "✗"}</td>
-            <td class="muted mono small">{s.ip}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  </div>
-  {#if submissions.length >= 100}
-    <button class="secondary" onclick={loadMore}>{t("admin.load_more")}</button>
-  {/if}
-{:else if tab === "teams"}
-  <div class="table-wrap">
-    <table>
-      <tbody>
-        {#each teams as team (team.id)}
-          <tr class:muted={team.hidden}>
-            <td class="num">{team.rank ?? "—"}</td>
-            <td>
-              {team.name}
-              {#if team.hidden}<span class="badge">{t("admin.hidden")}</span>{/if}
-              <br /><span class="muted small">{team.members.join(", ")}</span>
-            </td>
-            <td class="num">{team.solves}</td>
-            <td class="num"><strong>{team.score}</strong></td>
-            <td>
-              <button class="small secondary" onclick={() => toggleHidden(team)}>
-                {team.hidden ? t("admin.show") : t("admin.hide")}
-              </button>
-            </td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  </div>
-{:else if tab === "stats"}
-  {#if stats}
-    <div class="table-wrap">
-      <table class="stats-table">
-        <thead>
-          <tr>
-            <th>{t("admin.stats.challenge")}</th>
-            <th class="num">{t("admin.stats.solves")}</th>
-            <th class="num">{t("admin.stats.wrong")}</th>
-            <th class="num">{t("admin.stats.hints")}</th>
-            <th class="num">{t("admin.stats.first")}</th>
-            <th class="num">{t("admin.stats.median")}</th>
-            <th>{t("admin.stats.top_wrong")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each stats.challenges as c (c.id)}
-            <tr class:muted={c.attempts === 0}>
-              <td>{c.name}<br /><span class="muted small">{c.category}</span></td>
-              <td class="num">{c.solves}</td>
-              <td class="num">{c.wrong}</td>
-              <td class="num">{c.hints}</td>
-              <td class="num">{c.first_solve_minutes ?? "—"}</td>
-              <td class="num">{c.median_solve_minutes ?? "—"}</td>
-              <td class="mono small break">
-                {#each c.top_wrong as w (w.value)}<div>{w.value} <span class="muted">×{w.count}</span></div>{/each}
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-    <h2>{t("admin.signals")}</h2>
-    <p class="muted small">{t("admin.signals.note")}</p>
-    {#each stats.signals as signal, i (i)}
-      <p class="card small">
-        {#if signal.kind === "shared_ip"}{t("admin.signal.shared_ip", { ip: signal.ip, teams: signal.teams.join(", ") })}
-        {:else if signal.kind === "burst"}{t("admin.signal.burst", { team: signal.team, at: signal.at_minutes })}
-        {:else}{t("admin.signal.same_wrong", { challenge: signal.challenge, value: signal.value, teams: signal.teams.join(", ") })}{/if}
-      </p>
-    {:else}
-      <p class="muted">{t("admin.signals.none")}</p>
-    {/each}
-  {:else}
-    <p class="muted">{t("loading")}</p>
-  {/if}
-{:else}
-  <form class="card form" onsubmit={publish}>
-    <label>
-      {t("admin.announcement.title")}
-      <input required maxlength="128" bind:value={title} />
-    </label>
-    <label>
-      {t("admin.announcement.body")}
-      <textarea required rows="4" maxlength="10000" bind:value={body}></textarea>
-    </label>
-    <button type="submit">{t("admin.announcement.publish")}</button>
-  </form>
-  {#each announcements as a (a.id)}
-    <article class="card announcement">
-      <header>
-        <strong>{a.title}</strong>
-        <button class="small secondary" onclick={() => remove(a.id)}>{t("admin.announcement.delete")}</button>
-      </header>
-      <div class="prose">{@html a.body_html}</div>
-    </article>
-  {/each}
-{/if}
+<style>
+  .onglets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e1);
+    margin-top: var(--e5);
+    border-bottom: 1px solid var(--pierre);
+  }
+  .onglets button {
+    min-height: 44px;
+    padding: 0 var(--e3);
+    border: 0;
+    background: none;
+    color: var(--douce);
+  }
+  .onglets button[aria-selected="true"] {
+    color: var(--claire);
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 8px;
+  }
+  .contenu {
+    margin-top: var(--e5);
+  }
+  .outils {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e3);
+    margin-bottom: var(--e4);
+  }
+  .choix {
+    width: auto;
+    min-width: 12rem;
+  }
+  .defile {
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th {
+    text-align: left;
+    font-size: var(--t-meta);
+    font-weight: 700;
+    color: var(--douce);
+    padding: var(--e2) var(--e3);
+    border-bottom: 1px solid var(--pierre);
+  }
+  td {
+    padding: var(--e3);
+    border-bottom: 1px solid var(--pierre);
+    vertical-align: top;
+  }
+  .nombre {
+    text-align: right;
+  }
+  .valeur {
+    font-family: var(--texte);
+    background: var(--eau);
+    padding: 0 var(--e1);
+    border-radius: 2px;
+    overflow-wrap: anywhere;
+  }
+  .correct {
+    color: var(--lumignon);
+    font-weight: 700;
+  }
+  .masquee td,
+  .inactif td {
+    color: var(--voile);
+  }
+  .signaux {
+    margin-top: var(--e6);
+  }
+  .signaux .aide {
+    margin: var(--e2) 0 var(--e3);
+    max-width: 72ch;
+  }
+  .signal {
+    padding: var(--e3) 0;
+    border-bottom: 1px solid var(--pierre);
+  }
+  .annonce-form {
+    display: grid;
+    gap: var(--e4);
+    max-width: 640px;
+  }
+  .zone {
+    min-height: 120px;
+    padding: var(--e3);
+    font-size: var(--t-texte);
+  }
+  .annonce {
+    margin-top: var(--e5);
+    padding-top: var(--e4);
+    border-top: 1px solid var(--pierre);
+  }
+  .annonce-tete {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--e4);
+  }
+  .annonce .prose {
+    margin-top: var(--e2);
+  }
+</style>
