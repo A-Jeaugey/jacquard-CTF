@@ -134,10 +134,14 @@ lui, prend toute la largeur du projecteur.
 
 ## Les autres pages
 
-- **Accueil** : une scène d'ouverture. En haut, l'accroche de l'événement en grand (son nom
-  est déjà le logotype de l'en-tête ; 72 px dès 1280 px de large), les dates, la soirée en
-  deux lignes (équipes en jeu, défis résolus) et l'action suivante ; pour un joueur, la
-  situation de son équipe. Puis **le panorama** sur toute la largeur de l'écran : les huit
+- **Accueil** : une scène d'ouverture, qui tient dans le premier écran. En haut, l'accroche
+  de l'événement en grand (son nom est déjà le logotype de l'en-tête ; 72 px dès 1280 × 760,
+  96 px dès 1800 × 1100) ; à sa droite dès 900 px de large, les dates, la soirée en deux
+  lignes (équipes en jeu, défis résolus) et l'action suivante ; pour un joueur, la
+  situation de son équipe. Puis **le panorama** sur toute la largeur de l'écran, posé au
+  bas de l'écran dès que l'en-tête tient sur une ligne (1100 px) ; sa taille suit la
+  largeur et la hauteur qui restent sous le titre, si bien que la ville est entière à
+  l'écran de 1280 × 720 à 2560 × 1300 ; sur téléphone, elle passe sous le contenu. Les huit
   quartiers en ligne d'horizon, gravés, devant des toits lointains en silhouette ; le quai
   (`--lumen`) et la Saône (`--eau`), où chaque fenêtre allumée se reflète. Une fenêtre s'y
   allume dès qu'une équipe a résolu son défi (classement public) : avant le départ, la ville
@@ -145,7 +149,8 @@ lui, prend toute la largeur du projecteur.
   dans leurs messages) et les annonces, côte à côte.
 - **Accès** (connexion, inscription, page introuvable) : contenu en haut à gauche sur 480 px
   au plus, titre et phrase d'accueil dans la voix de l'événement, et le même panorama au
-  pied de l'écran, un peu plus petit. Le panorama est décoratif (aria-hidden) : l'état des
+  pied de l'écran, plus petit : le formulaire passe avant, la ville prend la hauteur qui
+  reste (sur un écran bas, elle passe sous le formulaire). Le panorama est décoratif (aria-hidden) : l'état des
   défis est dit sur le plan et au classement.
 - **Joueur** (équipe, classement, messages) : une colonne de lecture de 880 px au plus,
   alignée à gauche ; l'univers passe par les mots, la couleur `--lumignon` réservée à ce qui

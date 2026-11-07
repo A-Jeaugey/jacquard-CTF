@@ -156,10 +156,12 @@
 </div>
 
 <style>
-  /* Une unité du plan en pixels : la ligne d'horizon grandit avec l'écran, dans des bornes ;
-     sur un petit écran, elle reste lisible et ses bords sont rognés. */
+  /* Une unité du plan en pixels : la ligne d'horizon grandit avec la largeur de l'écran et
+     prend la hauteur que lui laissent l'en-tête et le titre (environ 420 px ; le panorama
+     mesure 298 unités de haut) ; sur un petit écran, elle reste lisible et ses bords sont
+     rognés. */
   .panorama {
-    --u: clamp(0.78px, 0.06vw + 0.5px, 1.5px);
+    --u: clamp(0.78px, min(0.06vw + 0.5px, (100svh - 420px) / 298), 2.1px);
     position: relative;
     overflow: hidden;
     padding-top: calc(var(--u) * 24);

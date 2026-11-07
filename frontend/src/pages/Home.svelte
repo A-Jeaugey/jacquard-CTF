@@ -56,9 +56,11 @@
 
 {#if evenement}
   <div class="accueil">
+    <div class="scene">
     <div class="intro">
       <!-- Le nom de l'événement est déjà le logotype de l'en-tête : le titre est son accroche. -->
       <h1 class="titre-page">{evenement.tagline ? typo(evenement.tagline) : evenement.name}</h1>
+      <div class="details">
       <p class="dates">{formatPlage(evenement.schedule.start, evenement.schedule.end, evenement.timezone)}.</p>
       {#if classement && phase !== "not_started"}
         <p class="ce-soir">
@@ -96,10 +98,12 @@
           <a class="btn-principal" href="/challenges">{t("home.cta.board")}</a>
         {/if}
       </p>
+      </div>
     </div>
 
     <div class="panorama-zone">
       <Panorama {quartiers} />
+    </div>
     </div>
 
     <div class="suite">
@@ -142,14 +146,17 @@
     overflow-wrap: anywhere;
   }
   .accueil {
-    padding: var(--e7) var(--gouttiere) var(--e8);
+    padding: 0 var(--gouttiere) var(--e8);
   }
-  /* La scène d'ouverture : le titre en grand, puis Lyon la nuit sur toute la largeur. */
-  .intro {
-    max-width: 880px;
+  /* La scène d'ouverture tient dans le premier écran : le titre en haut, Lyon la nuit posée au
+     bas de l'écran, quelle que soit sa hauteur (la taille du panorama suit aussi la hauteur). */
+  .scene {
+    display: flex;
+    flex-direction: column;
+    padding-top: var(--e6);
   }
   .intro .titre-page {
-    max-width: 18ch;
+    max-width: 22ch;
   }
   .equipe {
     margin-top: var(--e3);
@@ -180,7 +187,8 @@
   .panorama-zone {
     width: 100vw;
     margin-left: calc(50% - 50vw);
-    margin-top: var(--e6);
+    margin-top: auto;
+    padding-top: var(--e5);
   }
   .suite {
     display: grid;
@@ -212,9 +220,32 @@
     margin-top: var(--e3);
   }
 
-  @media (min-width: 1280px) {
+  @media (min-width: 1100px) {
+    /* L'écran moins l'en-tête, sur une ligne à partir de 1100 px (64 px et son filet). */
+    .scene {
+      min-height: calc(100svh - 65px);
+    }
+  }
+  /* Écran large : le titre à gauche, les dates, la soirée et l'action à sa droite. */
+  @media (min-width: 900px) {
+    .intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 380px);
+      column-gap: var(--e7);
+      align-items: end;
+    }
+    .details > :first-child {
+      margin-top: 0;
+    }
+  }
+  @media (min-width: 1280px) and (min-height: 760px) {
     .intro .titre-page {
       font-size: 72px;
+    }
+  }
+  @media (min-width: 1800px) and (min-height: 1100px) {
+    .intro .titre-page {
+      font-size: 96px;
     }
   }
   @media (max-width: 900px) {
