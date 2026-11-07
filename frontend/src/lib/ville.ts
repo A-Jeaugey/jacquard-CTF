@@ -339,10 +339,12 @@ export function cheminFenetre(f: Fen): string {
 // ---------------------------------------------------------------- le plan de la ville
 
 export const PLAN = { w: 600, h: 650 };
+// À la confluence, la Saône se jette dans le Rhône, qui continue seul vers le sud : les deux
+// tracés se prolongent dans le même lit (coudes et bouts arrondis), sans tronçon à part dont
+// les quais couperaient l'eau.
 export const RIVIERES = [
-  { points: "190,-10 190,88 160,148 160,330 180,400 214,520 254,600", largeur: 22 },
-  { points: "566,-10 470,130 420,260 386,400 344,520 254,600", largeur: 34 },
-  { points: "254,600 254,660", largeur: 44 },
+  { points: "190,-10 190,88 160,148 160,330 180,400 214,520 254,600 254,660", largeur: 22 },
+  { points: "566,-10 470,130 420,260 386,400 344,520 254,600 254,660", largeur: 34 },
 ];
 export const PONTS = [
   [156, 58, 54],
@@ -350,7 +352,7 @@ export const PONTS = [
   [138, 352, 58],
   [406, 186, 70],
   [374, 326, 64],
-  [218, 628, 72],
+  [221, 628, 66],
 ] as const;
 export const NOMS_RIVIERES = [
   { nom: "Saône", x: 196, y: 165, angle: -90 },

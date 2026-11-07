@@ -84,7 +84,7 @@
     align-items: center;
     gap: var(--e6);
     min-height: 64px;
-    padding: 0 var(--gouttiere);
+    padding: 0 var(--bord);
     border-bottom: 1px solid var(--pierre);
   }
   .logo {
@@ -231,7 +231,7 @@
       gap: 0 var(--e4);
       grid-template-columns: minmax(0, 1fr) auto;
       grid-template-areas: "logo compte" "nav nav" "equipe sortie";
-      padding: var(--e2) var(--gouttiere);
+      padding: var(--e2) var(--bord);
     }
     .logo {
       grid-area: logo;

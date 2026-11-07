@@ -135,12 +135,14 @@
   .quai {
     fill: none;
     stroke: var(--lumen);
-    stroke-linejoin: miter;
+    stroke-linejoin: round;
+    stroke-linecap: round;
   }
   .eau {
     fill: none;
     stroke: var(--eau);
-    stroke-linejoin: miter;
+    stroke-linejoin: round;
+    stroke-linecap: round;
   }
   .pont {
     fill: var(--pierre);

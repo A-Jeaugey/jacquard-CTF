@@ -65,6 +65,11 @@
   --t-nom: 18px;
 
   --gouttiere: var(--e6);
+  /* Au-delà de 1440 px, le site tient dans un cadre centré : le contenu est borné à --cadre,
+     et les éléments pleine largeur (en-tête, pied) prennent --bord comme marge intérieure,
+     pour que leurs bords tombent sur ceux du cadre. Le grand écran garde toute la largeur. */
+  --cadre: 1440px;
+  --bord: max(var(--gouttiere), calc((100% - var(--cadre)) / 2 + var(--gouttiere)));
 }
 
 @media (max-width: 640px) {
@@ -92,6 +97,9 @@ html {
 }
 #contenu {
   flex: 1 0 auto;
+  width: 100%;
+  max-width: var(--cadre);
+  margin-inline: auto;
 }
 
 body {

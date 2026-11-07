@@ -127,7 +127,7 @@
     max-width: 64ch;
   }
   .pied {
-    padding: var(--e5) var(--gouttiere) var(--e7);
+    padding: var(--e5) var(--bord) var(--e7);
     border-top: 1px solid var(--pierre);
     font-size: var(--t-meta);
     color: var(--douce);

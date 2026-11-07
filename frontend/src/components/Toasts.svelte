@@ -18,7 +18,7 @@
 <style>
   .chroniques {
     position: fixed;
-    left: var(--gouttiere);
+    left: var(--bord);
     bottom: var(--e4);
     z-index: 60;
     display: grid;

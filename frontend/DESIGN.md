@@ -76,6 +76,11 @@ grand écran). À 640 px et moins, rien sous 16 px.
 Multiples de 4 : 4, 8, 12, 16, 24, 32, 48, 64. Aucune autre valeur. Rangées ≥ 56 px. Dans
 une colonne, un seul bord gauche et un seul bord droit pour tout le contenu (les fonds de
 survol débordent de 8 px, pas le contenu). Gouttière de page : 32 px (bureau), 16 px (mobile).
+**Cadre** : au-delà de 1440 px de large, le site tient dans un cadre centré de 1440 px
+(`--cadre`) ; l'en-tête et le pied gardent leur filet sur toute la largeur, mais leurs bords
+(`--bord`) tombent sur ceux du cadre. Sans lui, sur un écran de 1880 ou 2560 px, le texte
+restait au bord gauche et la ville au bord droit, avec un trou au milieu. Le grand écran,
+lui, prend toute la largeur du projecteur.
 
 ## Formes
 
