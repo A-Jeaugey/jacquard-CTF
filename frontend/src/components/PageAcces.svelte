@@ -1,48 +1,43 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import Decor from "./ville/Decor.svelte";
+  import Panorama from "./ville/Panorama.svelte";
 
   // Mise en page des pages d'accès (connexion, inscription, page introuvable, équipe sans
-  // équipe) : le contenu à gauche sur 480 px au plus, la ville éteinte à droite (dessous sur
-  // petit écran).
+  // équipe) : le contenu en haut à gauche sur 480 px au plus, Lyon la nuit au pied de l'écran,
+  // sur toute la largeur, comme sur l'accueil.
   let { children }: { children: Snippet } = $props();
 </script>
 
 <div class="acces">
   <div class="contenu">{@render children()}</div>
-  <div class="illustration"><Decor /></div>
+  <div class="panorama-zone"><Panorama /></div>
 </div>
 
 <style>
   .acces {
-    display: grid;
-    grid-template-columns: minmax(0, 480px) minmax(0, 1fr);
-    gap: var(--e8);
-    align-items: start;
-    padding: var(--e6) var(--gouttiere) var(--e8);
+    display: flex;
+    flex-direction: column;
+    /* L'écran moins l'en-tête : la ville se pose au bas de l'écran, sous le contenu. */
+    min-height: calc(100svh - 65px);
+    padding: var(--e6) var(--gouttiere) 0;
   }
   .contenu {
     max-width: 480px;
   }
-  .illustration {
-    position: sticky;
-    top: var(--e5);
-    justify-self: end;
-    width: 100%;
-    max-width: 640px;
+  /* Le formulaire passe avant : une ville un peu plus petite que sur l'accueil. */
+  .acces .panorama-zone :global(.panorama) {
+    --u: clamp(0.78px, 0.03vw + 0.55px, 1.05px);
   }
-  /* Sous 900 px, la ville passe sous le contenu, comme sur l'accueil. */
-  @media (max-width: 900px) {
+  .panorama-zone {
+    margin-top: auto;
+    padding-top: var(--e7);
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+  }
+  @media (max-width: 640px) {
     .acces {
-      grid-template-columns: minmax(0, 1fr);
-      row-gap: var(--e7);
       padding-top: var(--e5);
-    }
-    .illustration {
-      position: static;
-      justify-self: start;
-      max-width: 520px;
     }
   }
 </style>

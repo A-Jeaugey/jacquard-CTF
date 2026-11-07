@@ -134,15 +134,19 @@ lui, prend toute la largeur du projecteur.
 
 ## Les autres pages
 
-- **Accueil** : le titre est l'accroche de l'événement (son nom est déjà le logotype de
-  l'en-tête), puis les dates, la phase, l'action suivante et, pour un joueur, la situation de
-  son équipe ; la ville éteinte en décor à droite (sous l'introduction en dessous de 900 px),
-  calée sur le bord droit comme sur les pages d'accès ; puis le prologue (visiteurs seulement :
-  les joueurs le retrouvent dans leurs messages) et les annonces.
-- **Accès** (connexion, inscription, page introuvable) : contenu à gauche sur 480 px au plus,
-  titre et phrase d'accueil dans la voix de l'événement, la ville éteinte en décor calée sur
-  le bord droit (sous le contenu en dessous de 900 px, comme sur l'accueil). Le décor ne porte
-  aucune information.
+- **Accueil** : une scène d'ouverture. En haut, l'accroche de l'événement en grand (son nom
+  est déjà le logotype de l'en-tête ; 72 px dès 1280 px de large), les dates, la soirée en
+  deux lignes (équipes en jeu, défis résolus) et l'action suivante ; pour un joueur, la
+  situation de son équipe. Puis **le panorama** sur toute la largeur de l'écran : les huit
+  quartiers en ligne d'horizon, gravés, devant des toits lointains en silhouette ; le quai
+  (`--lumen`) et la Saône (`--eau`), où chaque fenêtre allumée se reflète. Une fenêtre s'y
+  allume dès qu'une équipe a résolu son défi (classement public) : avant le départ, la ville
+  froide de LUMEN. Dessous, le prologue (visiteurs seulement : les joueurs le retrouvent
+  dans leurs messages) et les annonces, côte à côte.
+- **Accès** (connexion, inscription, page introuvable) : contenu en haut à gauche sur 480 px
+  au plus, titre et phrase d'accueil dans la voix de l'événement, et le même panorama au
+  pied de l'écran, un peu plus petit. Le panorama est décoratif (aria-hidden) : l'état des
+  défis est dit sur le plan et au classement.
 - **Joueur** (équipe, classement, messages) : une colonne de lecture de 880 px au plus,
   alignée à gauche ; l'univers passe par les mots, la couleur `--lumignon` réservée à ce qui
   est gagné et les dessins de la ville : sur le classement, chaque équipe a sa ville (la même
@@ -194,7 +198,8 @@ tient sur deux lignes, coupées net.
 
 ## Mouvement
 
-Un seul moment orchestré : **l'allumage**. Au premier affichage de la session, toutes les
+Un seul moment orchestré : **l'allumage**, sur le plan comme sur le panorama de l'accueil et
+des pages d'accès. Au premier affichage de la session, toutes les
 fenêtres sont froides, puis les fenêtres résolues s'allument une à une dans l'ordre réel des
 résolutions (110 ms d'intervalle, sans fondu). Il se décide une seule fois, à l'arrivée de la
 progression de l'équipe : un rechargement ne le relance ni ne l'interrompt, et une équipe qui

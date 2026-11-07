@@ -2,7 +2,7 @@
 // rangées dans l'ordre où les défis s'ouvrent. Le plan est dessiné pour Lyon et les huit
 // quartiers de Traboules ; une autre catégorie prend le premier emplacement libre.
 
-import type { Category, ChallengeSummary } from "./types";
+import type { Category, ChallengeSummary, Scoreboard } from "./types";
 
 export type Etat = "resolu" | "disponible" | "verrouille";
 
@@ -603,4 +603,32 @@ export function villeEteinte(categories: Category[]): Quartier[] | null {
     }));
   });
   return construireVille(categories, factices, []);
+}
+
+/** La ville telle que le classement public la montre : une fenêtre par défi public, allumée
+ * dès qu'une équipe a résolu ce défi. Sans classement, la ville éteinte de LUMEN. */
+export function villeDuClassement(categories: Category[], classement: Scoreboard | null): Quartier[] {
+  const districts = classement?.districts;
+  if (!districts?.length) return villeEteinte(categories) ?? [];
+  const allumees = new Set((classement?.teams ?? []).flatMap((e) => e.lit ?? []));
+  let i = 0;
+  const defis: ChallengeSummary[] = districts.flatMap(({ category, count }) =>
+    Array.from({ length: count }, (_, k): ChallengeSummary => {
+      const allume = allumees.has(i++);
+      return {
+        id: `${category}-${k}`,
+        name: "",
+        category,
+        difficulty: null,
+        tags: [],
+        value: 0,
+        solves: 0,
+        solved: allume,
+        locked: !allume,
+        locked_message: null,
+        after: [],
+      };
+    }),
+  );
+  return construireVille(categories, defis, []) ?? [];
 }

@@ -1,15 +1,16 @@
 <script lang="ts">
   import Reessayer from "../components/Reessayer.svelte";
-  import Decor from "../components/ville/Decor.svelte";
+  import Panorama from "../components/ville/Panorama.svelte";
   import { api, errorMessage } from "../lib/api";
   import { equipe } from "../lib/equipe.svelte";
   import { formatDateTime, formatPlage, formatPoints, poll } from "../lib/format";
   import { live } from "../lib/live.svelte";
   import { inscriptionsOuvertes, session } from "../lib/session.svelte";
   import { story } from "../lib/story.svelte";
-  import { t } from "../lib/strings";
+  import { t, tn } from "../lib/strings";
   import { typo, typographie } from "../lib/typo";
-  import type { Announcement } from "../lib/types";
+  import type { Announcement, Scoreboard } from "../lib/types";
+  import { villeDuClassement } from "../lib/ville";
 
   let annonces = $state<Announcement[]>([]);
   let annoncesChargees = $state(false);
@@ -26,6 +27,23 @@
   }
 
   $effect(() => poll(charger, 120_000));
+
+  // Le classement public dit quelles fenêtres de la ville sont allumées : une fenêtre s'allume
+  // dès qu'une équipe a résolu son défi. Sans lui, le panorama reste la ville froide de LUMEN.
+  let classement = $state<Scoreboard | null>(null);
+  async function chargerClassement(): Promise<void> {
+    try {
+      classement = await api.get<Scoreboard>("/api/scoreboard");
+    } catch {
+      // décor : en cas d'échec, la ville reste éteinte
+    }
+  }
+  $effect(() => poll(chargerClassement, 60_000));
+  $effect(() => {
+    if (live.ticks.solve > 0) void chargerClassement();
+  });
+  const quartiers = $derived(villeDuClassement(session.event?.categories ?? [], classement));
+  const resolus = $derived((classement?.teams ?? []).reduce((total, e) => total + e.solves, 0));
   $effect(() => {
     if (live.ticks.announcement > 0) void charger();
   });
@@ -42,6 +60,12 @@
       <!-- Le nom de l'événement est déjà le logotype de l'en-tête : le titre est son accroche. -->
       <h1 class="titre-page">{evenement.tagline ? typo(evenement.tagline) : evenement.name}</h1>
       <p class="dates">{formatPlage(evenement.schedule.start, evenement.schedule.end, evenement.timezone)}.</p>
+      {#if classement && phase !== "not_started"}
+        <p class="ce-soir">
+          <span>{tn("screen.active_teams", classement.teams.length)}</span>
+          <span>{tn("screen.progress", resolus)}</span>
+        </p>
+      {/if}
       {#if phase === "not_started"}
         <p class="phase">{t("home.phase.not_started")}</p>
       {:else if phase === "ended"}
@@ -72,6 +96,10 @@
           <a class="btn-principal" href="/challenges">{t("home.cta.board")}</a>
         {/if}
       </p>
+    </div>
+
+    <div class="panorama-zone">
+      <Panorama {quartiers} />
     </div>
 
     <div class="suite">
@@ -105,9 +133,7 @@
       </section>
     </div>
 
-    <div class="illustration">
-      <Decor />
-    </div>
+
   </div>
 {/if}
 
@@ -116,29 +142,29 @@
     overflow-wrap: anywhere;
   }
   .accueil {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: "intro illustration" "suite illustration";
-    grid-template-rows: auto 1fr;
-    column-gap: var(--e7);
-    align-items: start;
-    padding: var(--e6) var(--gouttiere) var(--e8);
+    padding: var(--e7) var(--gouttiere) var(--e8);
   }
+  /* La scène d'ouverture : le titre en grand, puis Lyon la nuit sur toute la largeur. */
   .intro {
-    grid-area: intro;
-    max-width: 640px;
+    max-width: 880px;
   }
-  .suite {
-    grid-area: suite;
-    max-width: 640px;
+  .intro .titre-page {
+    max-width: 18ch;
   }
   .equipe {
     margin-top: var(--e3);
     font-size: var(--t-nom);
   }
   .dates {
-    margin-top: var(--e2);
+    margin-top: var(--e3);
     color: var(--douce);
+    font-size: var(--t-nom);
+  }
+  .ce-soir {
+    display: grid;
+    gap: var(--e1);
+    margin-top: var(--e2);
+    font-size: var(--t-nom);
   }
   .phase {
     margin-top: var(--e3);
@@ -150,18 +176,27 @@
     gap: var(--e3);
     margin-top: var(--e5);
   }
-  .chapitre {
-    margin-top: var(--e7);
-    padding-top: var(--e5);
-    border-top: 1px solid var(--pierre);
+  /* Pleine largeur de l'écran, au-delà du cadre : la ville déborde des bords. */
+  .panorama-zone {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-top: var(--e6);
   }
-  .chapitre .prose {
-    margin-top: var(--e4);
+  .suite {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--e7);
+    align-items: start;
   }
+  .chapitre,
   .annonces {
     margin-top: var(--e7);
     padding-top: var(--e5);
     border-top: 1px solid var(--pierre);
+    max-width: 640px;
+  }
+  .chapitre .prose {
+    margin-top: var(--e4);
   }
   .annonces > p {
     margin-top: var(--e3);
@@ -176,26 +211,15 @@
   .annonce .prose {
     margin-top: var(--e3);
   }
-  .illustration {
-    grid-area: illustration;
-    position: sticky;
-    top: var(--e5);
-    justify-self: end;
-    width: 100%;
-    max-width: 640px;
-  }
 
-  @media (max-width: 900px) {
-    .accueil {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas: "intro" "illustration" "suite";
-      grid-template-rows: none;
-      row-gap: var(--e6);
+  @media (min-width: 1280px) {
+    .intro .titre-page {
+      font-size: 72px;
     }
-    .illustration {
-      position: static;
-      justify-self: start;
-      max-width: 520px;
+  }
+  @media (max-width: 900px) {
+    .suite {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
   @media (max-width: 640px) {

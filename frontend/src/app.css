@@ -104,6 +104,8 @@ html {
 
 body {
   margin: 0;
+  /* Les éléments pleine largeur (100vw) ne créent pas de défilement horizontal. */
+  overflow-x: clip;
   min-height: 100vh;
   background: var(--nuit);
   color: var(--claire);
