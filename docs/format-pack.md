@@ -46,7 +46,7 @@ Les identifiants (`id`) sont en minuscules, chiffres et tirets, 64 caractères m
 | `participation.mode` | `teams` \| `solo` | `teams` | En solo, chaque joueur a son équipe à son nom |
 | `participation.team_size` | `{min, max}` | `{1, 4}` | Taille des équipes (`max` appliqué) |
 | `participation.registration` | `open` \| `invite_code` \| `closed` | `open` | `invite_code` : code défini par `JACQUARD_REGISTRATION_CODE` |
-| `challenge_host` | nom d'hôte | — | Adresse des services de défis, substituée à `{challenge_host}` dans les `connection` |
+| `challenge_host` | nom d'hôte | — | Adresse des services de défis, substituée à `{challenge_host}` dans les `connection`, les descriptions et les indices |
 | `flag_format` | texte | — | Ex. `CTF{...}` ; affiché aux joueurs, avertissement si un flag statique ne le respecte pas |
 | `difficulties` | liste | `[]` | Difficultés autorisées dans les défis |
 | `categories` | liste | requis | `{id, name, description?, color?}` ; `color` au format `#rrggbb` |
@@ -80,7 +80,7 @@ En dynamique, la valeur descend de `initial` à `minimum` (atteint quand `decay`
 | `scoring` | barème | celui de l'événement | Voir ci-dessus |
 | `flags` | liste | requis | Au moins un flag accepté (voir ci-dessous) |
 | `files` | liste de chemins | `[]` | Relatifs au dossier du défi, dans le pack, hors `solution/` |
-| `connection` | texte | — | Adresse du service, ex. `nc {challenge_host} 4000` ; `{challenge_host}` est remplacé par la valeur de `event.yml` |
+| `connection` | texte | — | Adresse du service, ex. `nc {challenge_host} 4000` ; `{challenge_host}` est remplacé par la valeur de `event.yml` (aussi dans `description.md` et le texte des indices, pour un squelette de script prêt à lancer) |
 | `position` | entier | `0` | Ordre dans sa catégorie (puis ordre alphabétique) |
 | `unlock` | règle | toujours débloqué | Voir §4 |
 | `when_locked` | `hidden` \| `teaser` | `hidden` | `teaser` : titre visible avec un cadenas |

@@ -208,6 +208,23 @@ def test_challenge_host_placeholder(make_pack, db, sync) -> None:  # type: ignor
     assert db.get(Challenge, "nouveau").connection == "nc defis.example.org 4000"
 
 
+def test_challenge_host_in_description_and_hints(make_pack, db, sync) -> None:  # type: ignore[no-untyped-def]
+    from jacquard.models import Challenge, Hint
+
+    avec_hote = {**BASE, "hints": [{"id": "nouveau-1", "text": 'HOTE = "{challenge_host}"'}]}
+    pack = make_pack()
+    write_challenge(pack, avec_hote, description="Connecte-toi à {challenge_host}.")
+    errors = errors_of(pack)
+    assert any("description" in e for e in errors)
+    assert any("indice" in e for e in errors)
+
+    pack = make_pack(challenge_host="defis.example.org")
+    write_challenge(pack, avec_hote, description="Connecte-toi à {challenge_host}.")
+    sync(pack)
+    assert "defis.example.org" in db.get(Challenge, "nouveau").description_html
+    assert "defis.example.org" in db.get(Hint, "nouveau-1").text_html
+
+
 def test_rehearsal_shifts_schedule() -> None:
     from datetime import UTC, datetime, timedelta
 

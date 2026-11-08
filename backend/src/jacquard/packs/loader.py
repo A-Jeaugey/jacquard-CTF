@@ -328,17 +328,20 @@ def _check_consistency(
                         )
                     )
                 granted.add(action.grant_item)
-        if (
-            config.connection
-            and "{challenge_host}" in config.connection
-            and not event.challenge_host
-        ):
-            errors.append(
-                PackIssue(
-                    location,
-                    "`connection` utilise {challenge_host} mais event.yml ne le définit pas",
-                )
-            )
+        if not event.challenge_host:
+            textes = {
+                "`connection`": config.connection or "",
+                "la description": challenge.description_md,
+                "un indice": " ".join(h.text for h in config.hints),
+            }
+            for nom, texte in textes.items():
+                if "{challenge_host}" in texte:
+                    errors.append(
+                        PackIssue(
+                            location,
+                            f"{nom} utilise {{challenge_host}} mais event.yml ne le définit pas",
+                        )
+                    )
         if config.locked_message and config.when_locked == "hidden":
             warnings.append(
                 PackIssue(location, "locked_message n'est affiché qu'avec when_locked: teaser")

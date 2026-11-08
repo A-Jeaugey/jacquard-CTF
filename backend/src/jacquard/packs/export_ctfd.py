@@ -35,7 +35,9 @@ def _challenge(
         "name": config.name,
         "author": ", ".join(config.authors) or "orga",
         "category": category,
-        "description": loaded.description_md,
+        "description": loaded.description_md.replace(
+            "{challenge_host}", pack.event.challenge_host or ""
+        ),
         "type": "dynamic" if isinstance(scoring, DynamicScoring) else "standard",
         "state": "visible",
         "version": "0.1",
@@ -66,7 +68,13 @@ def _challenge(
     if loaded.files:
         data["files"] = [f"files/{f.name}" for f in loaded.files]
     if config.hints:
-        data["hints"] = [{"content": h.text, "cost": h.cost} for h in config.hints]
+        data["hints"] = [
+            {
+                "content": h.text.replace("{challenge_host}", pack.event.challenge_host or ""),
+                "cost": h.cost,
+            }
+            for h in config.hints
+        ]
         if any(h.available is not None for h in config.hints):
             issues.append(
                 f"{config.id} : indices à disponibilité différée, "

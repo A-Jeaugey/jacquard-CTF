@@ -130,6 +130,11 @@ def sync_pack(
     hints = {h.id: h for h in session.scalars(select(Hint))}
     seen_hints: set[str] = set()
 
+    # `{challenge_host}` désigne la machine des services de défis : remplacé dans l'adresse,
+    # l'énoncé et les indices (un squelette de script peut ainsi donner l'adresse exacte).
+    def hote(texte: str) -> str:
+        return texte.replace("{challenge_host}", pack.event.challenge_host or "")
+
     for loaded in pack.challenges:
         config = loaded.config
         challenge = existing.pop(config.id, None)
@@ -144,13 +149,9 @@ def sync_pack(
         challenge.difficulty = config.difficulty
         challenge.authors = list(config.authors)
         challenge.tags = list(config.tags)
-        challenge.description_html = render_markdown(loaded.description_md)
+        challenge.description_html = render_markdown(hote(loaded.description_md))
         challenge.scoring = (config.scoring or default_scoring).model_dump(mode="json")
-        challenge.connection = (
-            config.connection.replace("{challenge_host}", pack.event.challenge_host or "")
-            if config.connection
-            else None
-        )
+        challenge.connection = hote(config.connection) if config.connection else None
         challenge.position = config.position
         challenge.active = True
         challenge.unlock = dump_rule(config.unlock)
@@ -167,7 +168,7 @@ def sync_pack(
                 hints[spec.id] = hint
             hint.challenge_id = config.id
             hint.position = position
-            hint.text_html = render_markdown(spec.text)
+            hint.text_html = render_markdown(hote(spec.text))
             hint.cost = spec.cost
             hint.available = dump_rule(spec.available)
             hint.active = True
