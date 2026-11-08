@@ -108,7 +108,7 @@ lui, prend toute la largeur du projecteur.
   (« Croix-Rousse, défi 2 sur 4 », Précédent, Suivant, Fermer), puis le titre 48 px,
   l'élévation de l'immeuble avec la fenêtre du défi cadrée et une phrase d'ordre (« Deuxième
   des trois défis… Après « X ». Ouvre ensuite « Y ». »), faits (difficulté, points,
-  résolutions), énoncé, adresse, fichiers, indices, formulaire du flag fixé en bas. Après un
+  résolutions), énoncé, adresse, fichiers, indices, formulaire du flag à la suite. Après un
   flag correct, le défi suivant du quartier est proposé (bouton principal).
 
 ## Comportement (exigences issues des passes du juge)
@@ -118,15 +118,19 @@ lui, prend toute la largeur du projecteur.
    focal. Le choix est annoncé (`aria-live` : « Fourvière : 3 défis ») ; sur mobile, la liste
    défile jusqu'au quartier (instantané en mouvement réduit). Retirer le choix rend le focus au
    bouton du quartier.
-2. **Formulaire du flag fixé en bas du panneau** : le contenu défilant a une marge basse au
-   moins égale à sa hauteur (`scroll-padding-bottom`) ; aucun élément focalisé ni aucun texte
+2. **Formulaire du flag** : il suit l'énoncé (jamais de vide entre les deux) et ne se colle
+   au bas du panneau que si l'énoncé dépasse l'écran ; le défilement garde une marge basse au
+   moins égale à sa hauteur (`scroll-padding-bottom`) : aucun élément focalisé ni aucun texte
    n'est jamais masqué par lui.
 3. **Indices** : l'indice débloqué affiche son texte, le focus va sur ce texte, le score de
    l'équipe se met à jour. Un indice payant demande confirmation ; Échap annule la
    confirmation seule (la couche la plus interne).
 4. **Panneau** : jamais modal, rien n'est recouvert ni inerte (l'en-tête, la carte et la liste
-   restent utilisables). Sur bureau (1100 × 700 et plus), il s'ajoute en troisième colonne :
-   la carte se réduit, la liste se resserre (26 %, 300 à 380 px) sur le quartier du défi, où
+   restent utilisables). Sur bureau (1100 × 700 et plus), le plan est une application : il
+   prend toute la largeur de l'écran (pas le cadre de 1440 px, l'en-tête suit) et la carte est
+   centrée dans sa colonne, aussi grande que celle-ci le permet. Le panneau s'y ajoute en
+   troisième colonne (40 %, 520 à 760 px) : la carte se réduit, la liste se resserre (22 %,
+   300 à 400 px ; 38 %, 460 à 640 px sans panneau) sur le quartier du défi, où
    la ligne du défi ouvert est repérée (fond `--pierre-sombre`, filet `--claire` de 3 px à
    gauche) ; la grille glisse en 320 ms, le panneau entre de 32 px, rien en mouvement réduit.
    Sur téléphone et tablette, le panneau devient la page sous l'en-tête. Passer d'un défi à

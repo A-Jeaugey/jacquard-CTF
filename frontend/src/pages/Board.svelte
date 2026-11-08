@@ -618,10 +618,16 @@
       display: flex;
       flex-direction: column;
     }
-    /* « #contenu » pour l'emporter sur la règle générale de app.css (pied en bas de page). */
+    /* « #contenu » pour l'emporter sur la règle générale de app.css (pied en bas de page).
+       Le plan est une application : il prend toute la largeur de l'écran, au-delà du cadre de
+       lecture de 1440 px, et l'en-tête le suit. */
     :global(body.cadre-plan #contenu) {
       flex: 1 1 0;
       min-height: 0;
+      max-width: none;
+    }
+    :global(body.cadre-plan .barre) {
+      padding-inline: var(--gouttiere);
     }
     /* Trois colonnes : la carte, la liste, le défi ouvert. Sans défi ouvert, la dernière est
        nulle ; à l'ouverture, elle s'élargit, la liste se resserre sur le quartier et la carte
@@ -629,13 +635,13 @@
     .plan {
       height: 100%;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) clamp(460px, 44%, 640px) 0px;
+      grid-template-columns: minmax(0, 1fr) clamp(460px, 38%, 640px) 0px;
       grid-template-rows: auto minmax(0, 1fr);
       grid-template-areas: "ville tete panneau" "ville volet panneau";
       transition: grid-template-columns 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
     }
     .plan.avec-panneau {
-      grid-template-columns: minmax(0, 1fr) clamp(300px, 26%, 380px) clamp(520px, 44%, 660px);
+      grid-template-columns: minmax(0, 1fr) clamp(300px, 22%, 400px) clamp(520px, 40%, 760px);
     }
     .plan.avec-panneau .tete,
     .plan.avec-panneau .volet {
@@ -654,12 +660,14 @@
       padding: var(--e4) var(--gouttiere);
       border-right: 1px solid var(--pierre);
     }
+    /* La carte prend toute la place de sa colonne, centrée : jamais un dessin minuscule en
+       haut d'une colonne vide. */
     .carte-cadre {
       flex: 1;
       min-height: 0;
       container-type: size;
       display: grid;
-      place-items: start center;
+      place-items: center;
     }
     .carte-cadre :global(.carte) {
       width: min(100cqw, 100cqh * 600 / 650);

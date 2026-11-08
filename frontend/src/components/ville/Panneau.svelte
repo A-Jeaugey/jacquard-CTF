@@ -415,48 +415,48 @@
       {/if}
       {#if retour?.sorte === "info"}<p class="secondaire bloc" role="status">{retour.texte}</p>{/if}
     {/if}
-  </div>
 
-  {#if defi && !defi.solved && !termine && joueur}
-    <form class="flag" bind:this={formulaire} onsubmit={valider} novalidate>
-      <label class="etiquette" for="flag">{t("challenge.flag")}</label>
-      <div class="ligne-flag">
-        <input
-          id="flag"
-          class="saisie"
-          bind:this={champ}
-          bind:value={flag}
-          oninput={() => {
-            if (retour?.sorte === "refus") retour = null;
-          }}
-          autocomplete="off"
-          autocapitalize="off"
-          spellcheck="false"
-          maxlength="512"
-          placeholder={formatFlag ?? ""}
-          aria-invalid={retour?.sorte === "refus" ? "true" : undefined}
-          aria-describedby="flag-aide"
-        />
-        <button type="submit" class="btn-principal" disabled={envoi}>
-          {envoi ? t("challenge.submitting") : t("challenge.submit")}
-        </button>
-      </div>
-      <p id="flag-aide" aria-live="polite" class={retour && retour.sorte !== "info" ? "refus" : "aide"}>
-        {#if retour?.sorte === "refus"}
-          <b>{t("challenge.refused")}</b> {retour.texte}
-        {:else if retour?.sorte === "erreur"}
-          <b>{t("error.title")}</b> {retour.texte}
-        {:else if retour?.sorte === "session"}
-          <span class="session">
-            <b>{t("challenge.session_expired")}</b>
-            <a class="btn-ligne" href="/login">{t("challenge.login_again")}</a>
-          </span>
-        {:else if formatFlag}
-          {t("challenge.format_hint", { format: formatFlag })}
-        {/if}
-      </p>
-    </form>
-  {/if}
+    {#if defi && !defi.solved && !termine && joueur}
+      <form class="flag" bind:this={formulaire} onsubmit={valider} novalidate>
+        <label class="etiquette" for="flag">{t("challenge.flag")}</label>
+        <div class="ligne-flag">
+          <input
+            id="flag"
+            class="saisie"
+            bind:this={champ}
+            bind:value={flag}
+            oninput={() => {
+              if (retour?.sorte === "refus") retour = null;
+            }}
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            maxlength="512"
+            placeholder={formatFlag ?? ""}
+            aria-invalid={retour?.sorte === "refus" ? "true" : undefined}
+            aria-describedby="flag-aide"
+          />
+          <button type="submit" class="btn-principal" disabled={envoi}>
+            {envoi ? t("challenge.submitting") : t("challenge.submit")}
+          </button>
+        </div>
+        <p id="flag-aide" aria-live="polite" class={retour && retour.sorte !== "info" ? "refus" : "aide"}>
+          {#if retour?.sorte === "refus"}
+            <b>{t("challenge.refused")}</b> {retour.texte}
+          {:else if retour?.sorte === "erreur"}
+            <b>{t("error.title")}</b> {retour.texte}
+          {:else if retour?.sorte === "session"}
+            <span class="session">
+              <b>{t("challenge.session_expired")}</b>
+              <a class="btn-ligne" href="/login">{t("challenge.login_again")}</a>
+            </span>
+          {:else if formatFlag}
+            {t("challenge.format_hint", { format: formatFlag })}
+          {/if}
+        </p>
+      </form>
+    {/if}
+  </div>
 </section>
 
 <style>
@@ -466,13 +466,18 @@
     min-height: 0;
     background: var(--pierre-sombre);
   }
+  /* Un seul bloc qui défile : le formulaire du flag suit l'énoncé, et ne se colle au bas du
+     panneau que si l'énoncé est plus long que l'écran (jamais de vide entre les deux). */
   .defilement {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: var(--e5) var(--gouttiere) var(--e7);
+    padding: var(--e5) var(--gouttiere) 0;
     scroll-padding-bottom: calc(var(--hauteur-flag) + var(--e4));
+  }
+  .defilement > :last-child:not(.flag) {
+    padding-bottom: var(--e7);
   }
   /* La barre du quartier : où l'on est, et de quoi passer au défi voisin. */
   .parcours {
@@ -675,6 +680,10 @@
   }
   .flag {
     flex: none;
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin: var(--e6) calc(-1 * var(--gouttiere)) 0;
     padding: var(--e4) var(--gouttiere) var(--e5);
     background: var(--pierre-sombre);
     border-top: 1px solid var(--pierre);
@@ -708,11 +717,6 @@
     .defilement {
       overflow: visible;
       flex: none;
-    }
-    .flag {
-      position: sticky;
-      bottom: 0;
-      z-index: 2;
     }
   }
 
