@@ -22,14 +22,19 @@ async function newPlayer(browser: Browser, team: { create?: string; join?: strin
 }
 
 async function solve(page: Page, challenge: string | RegExp, flag: string): Promise<void> {
+  // Un défi ouvert limite la liste à son quartier : on le referme pour retrouver toute la ville.
+  if (await page.locator("section.panneau").count()) {
+    await page.keyboard.press("Escape");
+    await expect(page.locator("section.panneau")).toHaveCount(0);
+  }
   await page.getByRole("link", { name: challenge }).click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.locator("section.panneau");
   await dialog.locator("#flag").fill(flag);
   await dialog.getByRole("button", { name: "Valider" }).click();
   await expect(dialog.getByRole("heading", { name: "Défi résolu" })).toBeVisible();
 }
 
-const recompenses = (page: Page) => page.getByRole("dialog").locator(".reussite");
+const recompenses = (page: Page) => page.locator("section.panneau").locator(".reussite");
 
 test("verrous, objets et défi final caché", async ({ browser }) => {
   const page = await newPlayer(browser, { create: `Explorateurs ${counter}` });
@@ -62,7 +67,7 @@ test("indices et messages", async ({ browser }) => {
   await page.goto("/challenges");
 
   await page.getByRole("link", { name: /Ave César/ }).click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.locator("section.panneau");
   await expect(dialog.locator(".indices li").first()).toContainText("gratuit");
   await dialog.getByRole("button", { name: /Voir l.indice/ }).first().click();
   await expect(dialog.locator(".indices li").first()).toContainText("empereur romain");

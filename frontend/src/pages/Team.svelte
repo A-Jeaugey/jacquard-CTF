@@ -6,7 +6,8 @@
   import FilDeSoie from "../components/ville/FilDeSoie.svelte";
   import Immeuble from "../components/ville/Immeuble.svelte";
   import { api, ApiError, errorMessage } from "../lib/api";
-  import { refreshEquipe } from "../lib/equipe.svelte";
+  import { copierTexte } from "../lib/copie";
+  import { equipe as suiviEquipe, refreshEquipe } from "../lib/equipe.svelte";
   import { formatHeure, formatPoints } from "../lib/format";
   import { live } from "../lib/live.svelte";
   import { navigate } from "../lib/router.svelte";
@@ -122,10 +123,12 @@
   }
 
   async function copier(texte: string): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(texte);
+    if (await copierTexte(texte)) {
       copie = t("team.invite_copied");
-    } catch {
+    } else {
+      // Aucune copie possible : le code est sélectionné, prêt pour Ctrl+C.
+      const zone = document.getElementById("code-invitation");
+      if (zone) getSelection()?.selectAllChildren(zone);
       copie = t("team.invite_copy_blocked");
     }
     clearTimeout(minuteurCopie);
@@ -147,24 +150,16 @@
   const ville = $derived(
     defis.length ? construireVille(session.event?.categories ?? [], defis, session.event?.difficulties ?? []) : null,
   );
-  const parQuartier = $derived.by(() => {
-    if (!equipe) return [];
-    const categories = session.event?.categories ?? [];
-    const groupes = categories
-      .map((c) => ({
-        id: c.id,
-        nom: c.name,
-        quartier: ville?.find((q) => q.categorie.id === c.id) ?? null,
-        defis: equipe?.solves.filter((s) => s.category === c.id) ?? [],
-      }));
-    // Tous les quartiers de l'événement restent affichés, même sans défi résolu ni dessin.
-    const connus = new Set(categories.map((c) => c.id));
-    const autres = equipe.solves.filter((s) => !connus.has(s.category));
-    if (autres.length) groupes.push({ id: "", nom: t("team.solves"), quartier: null, defis: autres });
-    return groupes;
-  });
-
-  const enPhrase = new Intl.ListFormat("fr", { style: "long", type: "conjunction" });
+  // La rue : les immeubles des quartiers, dans l'ordre de l'événement.
+  const rue = $derived(ville ?? []);
+  // Le journal : les défis résolus, du plus récent au plus ancien.
+  const journal = $derived(equipe ? [...equipe.solves].sort((a, b) => b.solved_at.localeCompare(a.solved_at)) : []);
+  const JOURNAL_COURT = 6;
+  let journalComplet = $state(false);
+  const journalVisible = $derived(journalComplet ? journal : journal.slice(0, JOURNAL_COURT));
+  const nomQuartier = (id: string): string => session.event?.categories.find((c) => c.id === id)?.name ?? "";
+  const totalDefis = $derived(defis.length);
+  const nombreEquipes = $derived(suiviEquipe.nombreEquipes);
 </script>
 
 <svelte:window onkeydown={clavier} />
@@ -186,17 +181,32 @@
   </div>
 {:else if equipe}
   <div class="page equipe">
-    <h1 class="titre-page" id="titre-equipe" tabindex="-1">{typo(equipe.name)}</h1>
-    <p class="bilan">
-      {#if equipe.rank}
-        {equipe.rank}<span class="sup">e</span> {t("team.rank_sentence")},
-      {/if}
-      <b class="score tnum">{formatPoints(equipe.score)}</b>.
-      {tn("team.solved_count", equipe.solves.length)}
-      {#if equipe.penalty > 0}{t("team.penalty", { points: formatPoints(equipe.penalty) })}{/if}
-    </p>
+    <header class="entete-equipe">
+      <h1 class="titre-page" id="titre-equipe" tabindex="-1">{typo(equipe.name)}</h1>
+      <dl class="chiffres">
+        <div>
+          <dt>{t("team.rank")}</dt>
+          <dd>
+            {#if equipe.rank}{equipe.rank}<span class="sup">e</span>{#if nombreEquipes}<span class="sur">{t("team.out_of", { n: nombreEquipes })}</span>{/if}{:else}—{/if}
+          </dd>
+        </div>
+        <div>
+          <dt>{t("team.score")}</dt>
+          <dd class="score tnum">{formatPoints(equipe.score)}</dd>
+        </div>
+        <div>
+          <dt>{t("team.solves")}</dt>
+          <dd class="tnum">{equipe.solves.length}{#if totalDefis}<span class="sur">{t("team.out_of", { n: totalDefis })}</span>{/if}</dd>
+        </div>
+        <div>
+          <dt>{t("team.items")}</dt>
+          <dd class="tnum">{equipe.items.length}</dd>
+        </div>
+      </dl>
+      {#if equipe.penalty > 0}<p class="penalite">{t("team.penalty", { points: formatPoints(equipe.penalty) })}</p>{/if}
+    </header>
 
-    <section class="bloc" aria-labelledby="h-resolus">
+    <section class="bloc ville-equipe" aria-labelledby="h-resolus">
       <h2 class="titre-section" id="h-resolus" tabindex="-1">{t("team.districts")}</h2>
       {#if erreurDefis}
         <div class="manque" role="alert">
@@ -204,39 +214,91 @@
           <p><Reessayer action={chargerDefis} cible="h-resolus" /></p>
         </div>
       {/if}
-      {#if !equipe.solves.length}
-        <p class="secondaire">{t("team.no_solves")}</p>
-        <p><a class="btn-ligne" href="/challenges">{t("team.go_board")}</a></p>
+      {#if rue.length}
+        <!-- La rue de l'équipe : chaque immeuble à la même échelle, ses fenêtres allumées par les
+             défis résolus ; un clic mène au quartier sur le plan. -->
+        <ul class="rue" style:grid-template-columns={rue.map((q) => `${q.gabarit.w}fr`).join(" ")}>
+          {#each rue as q (q.categorie.id)}
+            <li class="maison">
+              <a href="/challenges?quartier={encodeURIComponent(q.categorie.id)}" aria-label={t("team.district_link", { name: q.categorie.name, n: q.resolus, total: q.defis.length })}>
+                <span class="facade" style:--w={q.gabarit.w} style:--h={q.gabarit.h + 4}><Immeuble quartier={q} /></span>
+                <span class="m-nom">{q.categorie.name}</span>
+                <span class="m-avance tnum" class:complet={q.resolus === q.defis.length}>{t("board.district_progress", { n: q.resolus, total: q.defis.length })}</span>
+              </a>
+            </li>
+          {/each}
+        </ul>
       {/if}
-      {#each parQuartier as groupe (groupe.id)}
-        <div class="q-tete">
-          {#if groupe.quartier}
-            <div class="q-dessin">
-              <Immeuble quartier={groupe.quartier} />
-            </div>
-          {/if}
-          <div>
-            <h3 class="titre-bloc">{groupe.nom}</h3>
-            {#if groupe.quartier}
-              <!-- L'immeuble montre l'avancement ; on le dit aux lecteurs d'écran. -->
-              <p class="sr-only">{tn("board.done", groupe.quartier.resolus, { total: groupe.quartier.defis.length })}</p>
-            {/if}
-          </div>
+      {#if !equipe.solves.length}
+        <div class="vide">
+          <p>{t("team.no_solves_cta")}</p>
+          <a class="btn-principal" href="/challenges">{t("team.go_board")}</a>
         </div>
-        {#if groupe.defis.length}
-          <ol class="resolus">
-            {#each groupe.defis as r (r.challenge_id)}
+      {/if}
+    </section>
+
+    <div class="colonnes">
+      <section class="bloc journal" aria-labelledby="h-journal">
+        <h2 class="titre-section" id="h-journal">{t("team.log")}</h2>
+        {#if journal.length}
+          <ol class="resolus" id="journal-liste">
+            {#each journalVisible as r (r.challenge_id)}
               <li>
                 <span class="r-nom">{typo(r.challenge_name)}</span>
-                <span class="r-qui">{t("team.solved_by", { user: r.solved_by ?? "—", time: heure(r.solved_at) })}</span>
+                <span class="r-pts tnum">+{formatPoints(r.points)}</span>
+                <span class="r-qui">{[nomQuartier(r.category), t("team.solved_by", { user: r.solved_by ?? "—", time: heure(r.solved_at) })].filter(Boolean).join(" · ")}</span>
               </li>
             {/each}
           </ol>
-        {:else if equipe.solves.length}
-          <p class="secondaire vide-quartier">{t("team.district_empty")}</p>
+          {#if journal.length > JOURNAL_COURT}
+            <p class="deplier">
+              <button type="button" class="btn-texte" aria-expanded={journalComplet} aria-controls="journal-liste" onclick={() => (journalComplet = !journalComplet)}>
+                {journalComplet ? t("team.log_less") : t("team.log_all", { n: journal.length })}
+              </button>
+            </p>
+          {/if}
+        {:else}
+          <p class="secondaire">{t("team.log_empty")}</p>
         {/if}
-      {/each}
-    </section>
+      </section>
+
+      <aside class="cote" aria-label={t("team.side_label")}>
+        {#if equipe.invite_code}
+          <section class="bloc" aria-labelledby="h-invitation">
+            <h2 class="titre-bloc" id="h-invitation">{t("team.invite")}</h2>
+            <p class="aide">{t("team.invite_hint")}</p>
+            <div class="code">
+              <span class="code-valeur tnum" id="code-invitation">{equipe.invite_code}</span>
+              <button type="button" class="btn-ligne" onclick={() => copier(equipe?.invite_code ?? "")}>{t("challenge.copy")}</button>
+            </div>
+            <p class="meta" role="status">{copie ?? ""}</p>
+          </section>
+        {:else if !modeEquipes}
+          <p class="secondaire bloc">{t("team.solo")}</p>
+        {/if}
+        <section class="bloc" aria-labelledby="h-membres">
+          <h2 class="titre-bloc" id="h-membres">{t("team.members_title", { n: equipe.members.length, max: equipe.max_size })}</h2>
+          <ul class="membres">
+            {#each equipe.members as m (m.id)}<li>{m.username}</li>{/each}
+          </ul>
+        </section>
+        {#if modeEquipes && equipe.solves.length === 0}
+          <section class="bloc depart">
+            {#if confirmerDepart}
+              <p>{t("team.leave.confirm")}</p>
+              <p class="choix">
+                <button type="button" class="btn-ligne" id="confirmer-depart" disabled={envoi !== null} onclick={quitter}>{t("team.leave")}</button>
+                <button type="button" class="btn-texte" onclick={annulerDepart}>{t("action.cancel")}</button>
+              </p>
+            {:else}
+              <button type="button" class="btn-texte" id="quitter" onclick={demanderDepart}>{t("team.leave")}</button>
+            {/if}
+            {@render refus("quitter")}
+          </section>
+        {/if}
+      </aside>
+    </div>
+
     <section class="bloc" aria-labelledby="h-fils">
       <h2 class="titre-section" id="h-fils">{t("team.items")}</h2>
       {#if equipe.items.length}
@@ -268,49 +330,8 @@
         </ul>
       {:else}
         <p class="secondaire">{t("team.no_items")}</p>
-        <p><a class="btn-ligne" href="/challenges">{t("team.go_board")}</a></p>
       {/if}
     </section>
-
-    <div class="haut">
-      <div>
-        {#if equipe.invite_code}
-          <section class="bloc" aria-labelledby="h-invitation">
-            <h2 class="titre-bloc" id="h-invitation">{t("team.invite")}</h2>
-            <p class="aide">{t("team.invite_hint")}</p>
-            <div class="code">
-              <span class="code-valeur tnum">{equipe.invite_code}</span>
-              <button type="button" class="btn-ligne" onclick={() => copier(equipe?.invite_code ?? "")}>{t("challenge.copy")}</button>
-            </div>
-            <p class="meta" role="status">{copie ?? ""}</p>
-          </section>
-        {:else if !modeEquipes}
-          <p class="secondaire bloc">{t("team.solo")}</p>
-        {/if}
-      </div>
-      <div>
-        <section class="bloc" aria-labelledby="h-membres">
-          <h2 class="titre-bloc" id="h-membres">{t("team.members_title", { n: equipe.members.length, max: equipe.max_size })}</h2>
-          <p class="membres">{enPhrase.format(equipe.members.map((m) => m.username))}.</p>
-        </section>
-
-        {#if modeEquipes && equipe.solves.length === 0}
-          <section class="bloc depart">
-            {#if confirmerDepart}
-              <p>{t("team.leave.confirm")}</p>
-              <p class="choix">
-                <button type="button" class="btn-ligne" id="confirmer-depart" disabled={envoi !== null} onclick={quitter}>{t("team.leave")}</button>
-                <button type="button" class="btn-texte" onclick={annulerDepart}>{t("action.cancel")}</button>
-              </p>
-            {:else}
-              <button type="button" class="btn-texte" id="quitter" onclick={demanderDepart}>{t("team.leave")}</button>
-            {/if}
-            {@render refus("quitter")}
-          </section>
-        {/if}
-      </div>
-    </div>
-
   </div>
 {:else if modeEquipes}
   <PageAcces>
@@ -366,32 +387,219 @@
 {/if}
 
 <style>
-  .bilan {
-    margin-top: var(--e3);
-    font-size: var(--t-nom);
-    color: var(--douce);
-    max-width: 64ch;
-  }
-  .score {
-    color: var(--lumignon);
-  }
   .equipe {
-    max-width: 880px;
+    max-width: none;
   }
   .titre-page {
     overflow-wrap: anywhere;
   }
-  .haut {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: var(--e6);
+  /* En-tête : le nom, puis les chiffres de l'équipe sur une ligne, séparés par des filets. */
+  .chiffres {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: var(--e5);
+    border-top: 1px solid var(--pierre);
+    border-bottom: 1px solid var(--pierre);
+  }
+  .chiffres > div {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    gap: var(--e1);
+    padding: var(--e4) var(--e6) var(--e4) 0;
+    min-width: 9rem;
+  }
+  .chiffres > div + div {
+    padding-left: var(--e6);
+    border-left: 1px solid var(--pierre);
+  }
+  .chiffres dt {
+    font-size: var(--t-meta);
+    color: var(--douce);
+  }
+  .chiffres dd {
+    font-family: var(--display);
+    font-size: 40px;
+    line-height: 1;
+  }
+  .chiffres .sur {
+    margin-left: var(--e2);
+    font-family: var(--texte);
+    font-size: var(--t-texte);
+    color: var(--douce);
+  }
+  .chiffres .sup {
+    font-family: var(--texte);
+    font-size: 16px;
+    vertical-align: 1.1em;
+  }
+  .score {
+    color: var(--lumignon);
+  }
+  .penalite {
+    margin-top: var(--e2);
+    font-size: var(--t-meta);
+    color: var(--douce);
   }
   .bloc {
-    margin-top: var(--e6);
+    margin-top: var(--e7);
   }
   .bloc > h2 {
-    margin-bottom: var(--e3);
+    margin-bottom: var(--e4);
   }
+
+  /* La rue : les huit immeubles à la même échelle, posés sur un même quai. */
+  .rue {
+    display: grid;
+    column-gap: var(--e6);
+    grid-template-rows: auto auto auto;
+    max-width: 1280px;
+    padding-bottom: var(--e2);
+  }
+  .maison {
+    display: grid;
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+    min-width: 0;
+  }
+  .maison a {
+    display: grid;
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+    row-gap: var(--e1);
+    color: inherit;
+    text-decoration: none;
+  }
+  .facade {
+    display: block;
+    align-self: end;
+    aspect-ratio: var(--w) / var(--h);
+    border-bottom: 2px solid var(--lumen);
+    transition: transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1);
+    transform-origin: 50% 100%;
+  }
+  .facade :global(.bati) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .m-nom {
+    margin-top: var(--e2);
+    font-family: var(--display);
+    font-size: 22px;
+    line-height: 1;
+    overflow-wrap: anywhere;
+  }
+  .m-avance {
+    font-size: var(--t-meta);
+    color: var(--douce);
+  }
+  .m-avance.complet {
+    color: var(--lumignon);
+  }
+  @media (hover: hover) {
+    .maison a:hover .facade {
+      transform: translateY(-4px);
+    }
+    .maison a:hover .m-nom {
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 4px;
+    }
+  }
+  .maison a:focus-visible {
+    outline-offset: 4px;
+  }
+  .vide {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--e3) var(--e5);
+    margin-top: var(--e5);
+  }
+  .vide p {
+    max-width: 52ch;
+  }
+  .manque {
+    margin-bottom: var(--e4);
+  }
+
+  /* Le journal à gauche, l'invitation et les membres à droite. */
+  .colonnes {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    column-gap: var(--e8);
+    align-items: start;
+  }
+  .resolus {
+    border-top: 1px solid var(--pierre);
+  }
+  .deplier {
+    margin-top: var(--e2);
+  }
+  .resolus li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--e4);
+    row-gap: var(--e1);
+    padding: var(--e3) 0;
+    border-bottom: 1px solid var(--pierre);
+  }
+  .r-nom {
+    font-size: var(--t-nom);
+    overflow-wrap: anywhere;
+  }
+  .r-pts {
+    color: var(--lumignon);
+    font-weight: 700;
+  }
+  .r-qui {
+    grid-column: 1 / -1;
+    font-size: var(--t-meta);
+    color: var(--douce);
+    overflow-wrap: anywhere;
+  }
+  .cote .bloc:first-child {
+    margin-top: var(--e7);
+  }
+  .code {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e2);
+    margin-top: var(--e3);
+  }
+  .code-valeur {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--e4);
+    background: var(--eau);
+    border-radius: 2px;
+    font-size: 24px;
+    font-weight: 700;
+  }
+  .membres {
+    border-top: 1px solid var(--pierre);
+  }
+  .membres li {
+    padding: var(--e2) 0;
+    border-bottom: 1px solid var(--pierre);
+    overflow-wrap: anywhere;
+  }
+  .depart {
+    margin-top: var(--e4);
+  }
+  .depart .refus {
+    margin-top: var(--e2);
+  }
+  .choix {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--e3);
+    align-items: center;
+    margin-top: var(--e2);
+  }
+
   .fils {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
@@ -407,13 +615,6 @@
   }
   .fil-nom {
     font-weight: 700;
-  }
-  .manque {
-    margin-top: var(--e3);
-  }
-  .vide-quartier {
-    padding: var(--e2) 0 var(--e3);
-    border-top: 1px solid var(--pierre);
   }
   .motif {
     font-size: var(--t-nom);
@@ -437,79 +638,7 @@
     fill: currentColor;
     stroke: none;
   }
-  .q-tete {
-    display: flex;
-    align-items: center;
-    gap: var(--e4);
-    margin-top: var(--e6);
-    margin-bottom: var(--e3);
-  }
-  /* Une case fixe : chaque immeuble y tient par sa hauteur (la tour reste fine, les ateliers
-     larges), et les noms de quartier partent tous du même bord. */
-  .q-dessin {
-    flex: none;
-    display: flex;
-    align-items: flex-end;
-    justify-content: flex-start;
-    width: 96px;
-    height: 64px;
-  }
-  .q-dessin :global(.bati) {
-    width: auto;
-    height: 100%;
-    max-width: 100%;
-  }
-  .resolus {
-    border-top: 1px solid var(--pierre);
-  }
-  .resolus li {
-    display: grid;
-    row-gap: var(--e1);
-    padding: var(--e3) 0;
-    border-bottom: 1px solid var(--pierre);
-  }
-  .r-nom {
-    font-size: var(--t-nom);
-    overflow-wrap: anywhere;
-  }
-  .r-qui {
-    font-size: var(--t-meta);
-    color: var(--douce);
-    overflow-wrap: anywhere;
-  }
-  .code {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--e2);
-    margin-top: var(--e3);
-  }
-  .code-valeur {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 var(--e4);
-    background: var(--eau);
-    border-radius: 2px;
-    font-size: 24px;
-    font-weight: 700;
-  }
-  .membres {
-    overflow-wrap: anywhere;
-  }
-  .depart {
-    padding-top: var(--e4);
-    border-top: 1px solid var(--pierre);
-  }
-  .depart .refus {
-    margin-top: var(--e2);
-  }
-  .choix {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--e3);
-    align-items: center;
-    margin-top: var(--e2);
-  }
+
   .intro {
     margin-top: var(--e3);
     font-size: var(--t-nom);
@@ -521,10 +650,53 @@
     padding-top: var(--e5);
     border-top: 1px solid var(--pierre);
   }
-  @media (max-width: 760px) {
-    .haut {
+
+  /* Une colonne : l'invitation et les membres passent avant le journal. */
+  @media (max-width: 900px) {
+    .colonnes {
       grid-template-columns: minmax(0, 1fr);
-      gap: 0;
+    }
+    .cote {
+      order: -1;
+    }
+  }
+  /* Petit écran : la rue passe sur deux rangées de quatre, toujours à la même échelle. */
+  @media (max-width: 760px) {
+    .rue {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      grid-template-rows: none;
+      grid-auto-rows: auto auto auto;
+      column-gap: var(--e3);
+      row-gap: var(--e5);
+    }
+    .facade {
+      width: calc(var(--w) * 0.5px);
+      max-width: 100%;
+      justify-self: start;
+    }
+    .m-nom {
+      font-size: 18px;
+    }
+  }
+  @media (max-width: 640px) {
+    .chiffres > div {
+      min-width: 0;
+      flex: 1 1 40%;
+      padding: var(--e3) var(--e3) var(--e3) 0;
+    }
+    .chiffres > div + div {
+      padding-left: var(--e3);
+    }
+    .chiffres > div:nth-child(3) {
+      border-left: 0;
+      padding-left: 0;
+      border-top: 1px solid var(--pierre);
+    }
+    .chiffres > div:nth-child(4) {
+      border-top: 1px solid var(--pierre);
+    }
+    .chiffres dd {
+      font-size: 32px;
     }
   }
 </style>

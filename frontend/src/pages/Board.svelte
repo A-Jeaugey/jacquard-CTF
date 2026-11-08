@@ -1,6 +1,7 @@
 <script lang="ts">
   import Reessayer from "../components/Reessayer.svelte";
   import { tick, untrack } from "svelte";
+  import { fly } from "svelte/transition";
 
   import Immeuble from "../components/ville/Immeuble.svelte";
   import Marque from "../components/ville/Marque.svelte";
@@ -37,7 +38,6 @@
     document.getElementById("titre-plan")?.focus();
   }
   let chroniqueFermee = $state<string | null>(null);
-  let declencheur: HTMLElement | null = null;
   let ouvertParNous = false;
 
   async function charger(): Promise<void> {
@@ -119,20 +119,63 @@
     }
   });
 
-  // Panneau ouvert : le reste de la page devient inerte (fenêtre modale à toutes les largeurs).
+  // Panneau ouvert : sur bureau, il s'ajoute en colonne à droite et la carte se resserre ; sur
+  // téléphone et tablette, il devient la page. Rien n'est recouvert ni rendu inerte : l'en-tête,
+  // la carte et la liste du quartier restent utilisables.
+  const panneauActif = $derived(Boolean(ouvert && defiOuvert && !defiOuvert.locked));
   $effect(() => {
-    const actif = Boolean(defiOuvert && !defiOuvert.locked);
-    const zones = document.querySelectorAll<HTMLElement>(".barre, .plan > .tete, .plan > .ville-zone, .plan > .volet");
-    zones.forEach((zone) => (zone.inert = actif));
-    document.body.classList.toggle("panneau-ouvert", actif);
-    return () => {
-      zones.forEach((zone) => (zone.inert = false));
-      document.body.classList.remove("panneau-ouvert");
+    document.body.classList.toggle("panneau-ouvert", panneauActif);
+    if (panneauActif && !cadreBureau()) untrack(() => window.scrollTo(0, 0));
+    return () => document.body.classList.remove("panneau-ouvert");
+  });
+
+  // Un lien vers un quartier (depuis la page de l'équipe) : la liste n'affiche que ses défis.
+  $effect(() => {
+    const q = route.path === "/challenges" ? param("quartier") : null;
+    if (!q || !liste) return;
+    untrack(() => {
+      if (sections.some((s) => s.id === q)) choisi = q;
+      navigate("/challenges", true);
+    });
+  });
+
+  // Ouvrir un défi, c'est entrer dans son quartier : la liste n'affiche plus que ses défis, et
+  // l'on passe de l'un à l'autre sans revenir au plan. À la fermeture, la liste retrouve le
+  // choix d'avant (sauf si l'on a choisi un autre quartier entre-temps).
+  let choixAvant: string | null | undefined;
+  let choixAuto: string | null = null;
+  $effect(() => {
+    const d = defiOuvert;
+    const actif = panneauActif;
+    untrack(() => {
+      if (actif && d) {
+        if (choixAvant === undefined) choixAvant = choisi;
+        if (choisi !== d.category && sections.some((s) => s.id === d.category)) {
+          choisi = d.category;
+          choixAuto = d.category;
+        }
+      } else if (!actif && choixAvant !== undefined) {
+        if (choisi === choixAuto) choisi = choixAvant;
+        choixAvant = undefined;
+        choixAuto = null;
+      }
+    });
+  });
+  const voisins = $derived.by(() => {
+    const section = defiOuvert ? sections.find((s) => s.id === defiOuvert.category) : undefined;
+    const ouverts = (section?.defis ?? []).filter((d) => !d.locked);
+    const rang = defiOuvert ? ouverts.findIndex((d) => d.id === defiOuvert.id) : -1;
+    return {
+      nom: section?.nom ?? "",
+      rang: rang + 1,
+      total: ouverts.length,
+      precedent: rang > 0 ? (ouverts[rang - 1] ?? null) : null,
+      suivant: rang >= 0 ? (ouverts[rang + 1] ?? null) : null,
     };
   });
 
-  // À la fermeture (bouton, Échap ou retour du navigateur), le focus revient au déclencheur,
-  // sinon au quartier du défi sur la carte.
+  // À la fermeture (bouton, Échap ou retour du navigateur), le focus revient à la ligne du défi
+  // dans la liste, sinon à son quartier sur la carte.
   let precedent: string | null = null;
   $effect(() => {
     const courant = ouvert;
@@ -141,9 +184,8 @@
     if (ancien && !courant) {
       const categorie = parId.get(ancien)?.category;
       void tick().then(() => {
-        if (declencheur?.isConnected) declencheur.focus();
-        else boutonQuartier(categorie)?.focus();
-        declencheur = null;
+        const ligne = document.querySelector<HTMLElement>(`.volet a.defi[data-defi="${CSS.escape(ancien)}"]`);
+        (ligne ?? boutonQuartier(categorie))?.focus();
         ouvertParNous = false;
       });
     }
@@ -155,6 +197,7 @@
   }
 
   const cadreBureau = (): boolean => matchMedia("(min-width: 1100px) and (min-height: 700px)").matches;
+  const calme = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   async function choisir(categorie: string): Promise<void> {
     choisi = choisi === categorie ? null : categorie;
@@ -164,7 +207,6 @@
     if (choisi) {
       // Sur mobile, la liste est sous la carte : on y va, sinon le choix ne se voit pas.
       if (!cadreBureau()) {
-        const calme = matchMedia("(prefers-reduced-motion: reduce)").matches;
         document.getElementById(`q-${choisi}`)?.scrollIntoView({ behavior: calme ? "auto" : "smooth", block: "start" });
       } else {
         document.querySelector(".volet")?.scrollTo(0, 0);
@@ -180,9 +222,17 @@
     boutonQuartier(ancien ?? undefined)?.focus();
   }
 
-  function ouvrir(event: MouseEvent): void {
-    declencheur = event.currentTarget as HTMLElement;
-    ouvertParNous = true;
+  // Un défi déjà ouvert : passer à un autre remplace l'entrée de l'historique, si bien que
+  // « Fermer » et le retour du navigateur ramènent toujours au plan.
+  function allerA(id: string): void {
+    navigate(`/challenges?defi=${encodeURIComponent(id)}`, Boolean(ouvert));
+  }
+
+  function ouvrir(event: MouseEvent, id: string): void {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (!ouvert) ouvertParNous = true;
+    allerA(id);
   }
 
   function fermer(): void {
@@ -230,7 +280,7 @@
   <span class="d-etat"><span class="mot">{ligne.mot}</span>{typo(ligne.suite)}</span>
 {/snippet}
 
-<div class="plan">
+<div class="plan" class:avec-panneau={panneauActif}>
   <div class="tete">
     <h1 class="titre-page" id="titre-plan" tabindex="-1">{t("board.title")}</h1>
     <p class="indice">
@@ -341,7 +391,13 @@
                 {#if etat === "verrouille"}
                   <div class="defi">{@render corps(d, etat, ligne)}</div>
                 {:else}
-                  <a class="defi" href="/challenges?defi={encodeURIComponent(d.id)}" onclick={ouvrir}>{@render corps(d, etat, ligne)}</a>
+                  <a
+                    class="defi"
+                    href="/challenges?defi={encodeURIComponent(d.id)}"
+                    data-defi={d.id}
+                    aria-current={ouvert === d.id ? "true" : undefined}
+                    onclick={(event) => ouvrir(event, d.id)}>{@render corps(d, etat, ligne)}</a
+                  >
                 {/if}
               </li>
             {/each}
@@ -354,9 +410,9 @@
     </div>
   {/if}
 
-  {#if defiOuvert && !defiOuvert.locked && ouvert}
-    <div class="panneau-zone">
-      <Panneau id={ouvert} quartier={quartierOuvert} tous={defis} onFermer={fermer} onResolu={charger} />
+  {#if panneauActif && ouvert}
+    <div class="panneau-zone" in:fly={{ x: 32, duration: calme ? 0 : 280, opacity: 0 }}>
+      <Panneau id={ouvert} quartier={quartierOuvert} tous={defis} {voisins} onFermer={fermer} onAller={allerA} onResolu={charger} />
     </div>
   {/if}
 </div>
@@ -530,17 +586,16 @@
   a.defi:focus-visible {
     outline-offset: -2px;
   }
+  /* Le défi ouvert dans le panneau, repéré dans la liste de son quartier. */
+  a.defi[aria-current="true"] {
+    background: var(--pierre-sombre);
+    box-shadow: inset 3px 0 0 var(--claire);
+  }
   .credits {
     margin-top: var(--e7);
     font-size: var(--t-meta);
     color: var(--douce);
     max-width: 64ch;
-  }
-
-  /* Panneau ouvert : ce qu'il recouvre est déjà inerte ; on le cache aussi à l'œil. */
-  :global(body.panneau-ouvert) .plan > .tete,
-  :global(body.panneau-ouvert) .plan > .volet {
-    visibility: hidden;
   }
 
   /* Les crédits sont en bas de la liste : pas de second pied de page sur le plan. */
@@ -568,12 +623,30 @@
       flex: 1 1 0;
       min-height: 0;
     }
+    /* Trois colonnes : la carte, la liste, le défi ouvert. Sans défi ouvert, la dernière est
+       nulle ; à l'ouverture, elle s'élargit, la liste se resserre sur le quartier et la carte
+       se réduit, sans rien recouvrir. */
     .plan {
       height: 100%;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) clamp(460px, 44vw, 640px);
+      grid-template-columns: minmax(0, 1fr) clamp(460px, 44%, 640px) 0px;
       grid-template-rows: auto minmax(0, 1fr);
-      grid-template-areas: "ville tete" "ville volet";
+      grid-template-areas: "ville tete panneau" "ville volet panneau";
+      transition: grid-template-columns 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+    .plan.avec-panneau {
+      grid-template-columns: minmax(0, 1fr) clamp(300px, 26%, 380px) clamp(520px, 44%, 660px);
+    }
+    .plan.avec-panneau .tete,
+    .plan.avec-panneau .volet {
+      padding-inline: var(--e5);
+    }
+    .plan.avec-panneau .indice {
+      display: none;
+    }
+    /* L'immeuble du quartier est déjà en tête du panneau. */
+    .plan.avec-panneau .q-elevation {
+      display: none;
     }
     .ville-zone {
       grid-area: ville;
@@ -603,32 +676,37 @@
       overscroll-behavior: contain;
     }
     .panneau-zone {
-      grid-column: 2;
-      grid-row: 1 / 3;
+      grid-area: panneau;
       min-height: 0;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      z-index: 5;
+      border-left: 1px solid var(--pierre);
     }
     .panneau-zone :global(.panneau) {
       flex: 1;
+    }
+    .plan.avec-panneau .volet {
+      border-right: 0;
     }
   }
 
   /* ---------- Tablette et mobile ---------- */
+  /* Le panneau devient la page : l'en-tête reste au-dessus, la carte et la liste reviennent à
+     la fermeture, à la ligne du défi. */
   @media (max-width: 1099px), (max-height: 699px) {
+    .plan.avec-panneau > .tete,
+    .plan.avec-panneau > .ville-zone,
+    .plan.avec-panneau > .volet {
+      display: none;
+    }
     .panneau-zone {
-      position: fixed;
-      inset: 0;
-      z-index: 50;
+      min-height: calc(100svh - 65px);
       display: flex;
       flex-direction: column;
     }
     .panneau-zone :global(.panneau) {
       flex: 1;
-    }
-    :global(body.panneau-ouvert) {
-      overflow: hidden;
     }
     .volet {
       padding-top: var(--e5);

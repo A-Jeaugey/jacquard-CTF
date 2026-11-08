@@ -22,9 +22,13 @@ test("parcours joueur : inscription, équipe, défi, classement", async ({ page,
   await bob.getByRole("button", { name: "Rejoindre" }).click();
   await expect(bob.getByRole("heading", { name: "Les Testeurs" })).toBeVisible();
 
+  // Le coéquipier a le plan ouvert pendant que l'autre résout : il doit le voir sans recharger.
+  await bob.goto("/challenges");
+  await expect(bob.getByRole("link", { name: /Ave César/ })).toBeVisible();
+
   await page.getByRole("link", { name: "Défis", exact: true }).click();
   await page.getByRole("link", { name: /Ave César/ }).click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.locator("section.panneau");
   await expect(dialog.getByRole("heading", { name: "Ave César" })).toBeVisible();
 
   await dialog.locator("#flag").fill("DEMO{faux}");
@@ -43,8 +47,7 @@ test("parcours joueur : inscription, équipe, défi, classement", async ({ page,
   await expect(dialog).toHaveCount(0);
   await expect(page.locator('.etage[data-etat="resolu"]')).toHaveCount(1);
 
-  // Le coéquipier voit le défi résolu.
-  await bob.goto("/challenges");
+  // Le coéquipier voit le défi résolu, en temps réel.
   await expect(bob.locator('.etage[data-etat="resolu"]')).toContainText("Ave César");
 
   await page.getByRole("link", { name: "Classement", exact: true }).click();

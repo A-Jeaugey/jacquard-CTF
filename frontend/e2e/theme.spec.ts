@@ -35,7 +35,7 @@ test("la ville reflète la progression et filtre les défis", async ({ page }) =
   await page.getByRole("link", { name: /Ave César/ }).click();
   await page.locator("#flag").fill("DEMO{jules_serait_fier}");
   await page.getByRole("button", { name: "Valider" }).click();
-  await expect(page.getByRole("dialog").getByRole("heading", { name: "Défi résolu" })).toBeVisible();
+  await expect(page.locator("section.panneau").getByRole("heading", { name: "Défi résolu" })).toBeVisible();
   await page.keyboard.press("Escape");
 
   await expect(crypto).toHaveAttribute("aria-label", /Cryptographie\s*:\s*1 sur 3/);

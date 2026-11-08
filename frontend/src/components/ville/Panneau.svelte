@@ -1,8 +1,10 @@
 <script lang="ts">
   import Reessayer from "../Reessayer.svelte";
   import { tick } from "svelte";
+  import { fade } from "svelte/transition";
 
   import { api, ApiError, errorMessage } from "../../lib/api";
+  import { copierTexte } from "../../lib/copie";
   import { equipe, refreshEquipe } from "../../lib/equipe.svelte";
   import { formatHeure, formatPoints, formatSize } from "../../lib/format";
   import { session } from "../../lib/session.svelte";
@@ -17,13 +19,18 @@
     id,
     quartier,
     tous,
+    voisins,
     onFermer,
+    onAller,
     onResolu,
   }: {
     id: string;
     quartier: Quartier | null;
     tous: ChallengeSummary[];
+    /** Les défis ouverts du même quartier, pour passer de l'un à l'autre sans revenir au plan. */
+    voisins: { nom: string; rang: number; total: number; precedent: ChallengeSummary | null; suivant: ChallengeSummary | null };
     onFermer: () => void;
+    onAller: (id: string) => void;
     onResolu: () => void;
   } = $props();
 
@@ -188,73 +195,81 @@
   }
 
   async function copier(texte: string): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(texte);
+    if (await copierTexte(texte)) {
       copie = t("challenge.copied");
-    } catch {
-      const zone = document.getElementById("adresse-defi");
-      if (zone) {
-        const plage = document.createRange();
-        plage.selectNodeContents(zone);
-        const selection = getSelection();
-        selection?.removeAllRanges();
-        selection?.addRange(plage);
-      }
-      copie = t("challenge.copy_blocked");
-    }
-  }
-
-  let racine = $state<HTMLDivElement>();
-
-  function focusables(): HTMLElement[] {
-    if (!racine) return [];
-    return Array.from(
-      racine.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex='-1'])"),
-    ).filter((el) => el.offsetParent !== null);
-  }
-
-  // Écouté sur la fenêtre : Échap et Tab marchent même si le focus est sorti du panneau.
-  function clavier(event: KeyboardEvent): void {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      // Échap ferme la couche la plus interne : la confirmation d'un indice d'abord.
-      const indice = defi?.hints.find((h) => h.id === confirmation);
-      if (indice) void annulerIndice(indice);
-      else onFermer();
       return;
     }
-    if (event.key !== "Tab") return;
-    // Tab boucle dans le panneau (fenêtre modale).
-    const liste = focusables();
-    if (liste.length === 0) return;
-    const premier = liste[0] as HTMLElement;
-    const dernier = liste[liste.length - 1] as HTMLElement;
-    const actif = document.activeElement;
-    const dedans = racine?.contains(actif) ?? false;
-    if (event.shiftKey && (actif === premier || !dedans || actif === titre)) {
-      event.preventDefault();
-      dernier.focus();
-    } else if (!event.shiftKey && (actif === dernier || !dedans)) {
-      event.preventDefault();
-      premier.focus();
+    // Aucune copie possible : le texte est sélectionné, prêt pour Ctrl+C.
+    const zone = document.getElementById("adresse-defi");
+    if (zone) {
+      const plage = document.createRange();
+      plage.selectNodeContents(zone);
+      const selection = getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(plage);
     }
+    copie = t("challenge.copy_blocked");
   }
+
+  // Le panneau n'est pas une fenêtre modale : le reste de la page reste utilisable. Échap le
+  // ferme (la confirmation d'un indice d'abord), sauf pendant une saisie hors du panneau.
+  let racine = $state<HTMLElement>();
+  function clavier(event: KeyboardEvent): void {
+    if (event.key !== "Escape" || event.defaultPrevented) return;
+    const cible = event.target instanceof HTMLElement ? event.target : null;
+    const ailleurs = cible && !racine?.contains(cible) && cible.closest("input, textarea, select, [contenteditable]");
+    if (ailleurs) return;
+    event.preventDefault();
+    const indice = defi?.hints.find((h) => h.id === confirmation);
+    if (indice) void annulerIndice(indice);
+    else onFermer();
+  }
+
+  // Sur téléphone et tablette, le panneau est la page : le formulaire du flag reste collé en
+  // bas de l'écran, et le défilement vers un élément focalisé en tient compte.
+  $effect(() => {
+    const racineDoc = document.documentElement;
+    racineDoc.style.scrollPaddingBottom = `${hauteurFlag + 16}px`;
+    return () => {
+      racineDoc.style.scrollPaddingBottom = "";
+    };
+  });
+
+  const calme = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const libelleVoisin = (cle: "challenge.previous_named" | "challenge.next_named", d: ChallengeSummary | null): string =>
+    d ? t(cle, { name: d.name }) : "";
 </script>
 
 <svelte:window onkeydown={clavier} />
 
-<div
-  class="panneau"
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="titre-defi"
-  bind:this={racine}
-  style:--hauteur-flag="{hauteurFlag}px"
->
+<section class="panneau" aria-labelledby="titre-defi" bind:this={racine} style:--hauteur-flag="{hauteurFlag}px">
   <div class="defilement" bind:this={defilement}>
+    <nav class="parcours" aria-label={t("challenge.nav_label", { name: voisins.nom })}>
+      <p class="position">
+        {voisins.total > 1 ? t("challenge.position", { name: voisins.nom, n: voisins.rang, total: voisins.total }) : voisins.nom}
+      </p>
+      <div class="parcours-actions">
+        {#if voisins.total > 1}
+          <button
+            type="button"
+            class="btn-pas"
+            disabled={!voisins.precedent}
+            aria-label={libelleVoisin("challenge.previous_named", voisins.precedent) || t("challenge.previous")}
+            onclick={() => voisins.precedent && onAller(voisins.precedent.id)}
+          ><span aria-hidden="true">‹</span> {t("challenge.previous")}</button>
+          <button
+            type="button"
+            class="btn-pas"
+            disabled={!voisins.suivant}
+            aria-label={libelleVoisin("challenge.next_named", voisins.suivant) || t("challenge.next")}
+            onclick={() => voisins.suivant && onAller(voisins.suivant.id)}
+          >{t("challenge.next")} <span aria-hidden="true">›</span></button>
+        {/if}
+        <button type="button" class="btn-pas fermer" onclick={onFermer}>{t("challenge.close")}</button>
+      </div>
+    </nav>
     <div class="haut">
       <h2 class="titre" id="titre-defi" tabindex="-1" bind:this={titre}>{typo(resume?.name ?? defi?.name ?? "")}</h2>
-      <button type="button" class="btn-texte" onclick={onFermer}>{t("challenge.close")}</button>
     </div>
 
     {#if quartier && resume}
@@ -275,7 +290,7 @@
     {:else if !defi}
       <p class="secondaire">{t("loading")}</p>
     {:else}
-      <p class="faits">
+      <p class="faits" in:fade={{ duration: calme ? 0 : 180 }}>
         {defi.difficulty
           ? t("challenge.facts", { difficulty: majuscule(defi.difficulty), points: formatPoints(defi.value) })
           : t("challenge.facts_no_difficulty", { points: formatPoints(defi.value) })}
@@ -284,7 +299,7 @@
       </p>
 
       <!-- HTML produit et assaini par le serveur (jacquard/markdown.py). -->
-      <div class="prose enonce" use:typographie>{@html defi.description_html}</div>
+      <div class="prose enonce" use:typographie in:fade={{ duration: calme ? 0 : 220 }}>{@html defi.description_html}</div>
       {#if defi.tags.length}
         <p class="meta">{t("challenge.tags", { tags: defi.tags.map((tag) => tag.replace(/-/g, " ")).join(", ") })}</p>
       {/if}
@@ -374,6 +389,14 @@
             <!-- Message de l'auteur du défi, assaini côté serveur. -->
             <div class="prose message" use:typographie>{@html html}</div>
           {/each}
+          {#if voisins.suivant}
+            {@const suivant = voisins.suivant}
+            <p class="enchainer">
+              <button type="button" class="btn-principal" onclick={() => onAller(suivant.id)}>
+                {t("challenge.next_named", { name: suivant.name })} <span aria-hidden="true">›</span>
+              </button>
+            </p>
+          {/if}
         </section>
       {:else if defi.solved}
         <p class="resolu">
@@ -434,7 +457,7 @@
       </p>
     </form>
   {/if}
-</div>
+</section>
 
 <style>
   .panneau {
@@ -451,11 +474,57 @@
     padding: var(--e5) var(--gouttiere) var(--e7);
     scroll-padding-bottom: calc(var(--hauteur-flag) + var(--e4));
   }
-  .haut {
+  /* La barre du quartier : où l'on est, et de quoi passer au défi voisin. */
+  .parcours {
     display: flex;
-    align-items: flex-start;
+    flex-wrap: wrap;
+    align-items: center;
     justify-content: space-between;
-    gap: var(--e4);
+    gap: var(--e2) var(--e4);
+    margin: calc(-1 * var(--e2)) 0 var(--e4);
+    padding-bottom: var(--e2);
+    border-bottom: 1px solid var(--pierre);
+  }
+  .position {
+    color: var(--douce);
+    font-size: var(--t-meta);
+  }
+  .parcours-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--e1);
+    margin-left: auto;
+  }
+  .btn-pas {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--e1);
+    min-height: 40px;
+    padding: 0 var(--e3);
+    border: 1px solid transparent;
+    border-radius: 2px;
+    background: none;
+    color: var(--claire);
+    font-size: var(--t-meta);
+    font-weight: 700;
+  }
+  .btn-pas span {
+    font-size: 20px;
+    line-height: 1;
+  }
+  .btn-pas:not(:disabled):hover {
+    border-color: var(--pierre);
+    background: var(--nuit);
+  }
+  .btn-pas:not(:disabled):active {
+    background: var(--pierre);
+  }
+  .btn-pas:disabled {
+    color: var(--pierre);
+  }
+  .btn-pas.fermer {
+    margin-left: var(--e2);
+    border-color: var(--pierre);
   }
   .titre {
     min-width: 0;
@@ -465,9 +534,6 @@
     line-height: 1;
     padding-top: var(--e1);
     overflow-wrap: anywhere;
-  }
-  .haut .btn-texte {
-    flex: none;
   }
   .lieu {
     display: grid;
@@ -590,6 +656,9 @@
   .reussite > * + * {
     margin-top: var(--e3);
   }
+  .enchainer {
+    margin-top: var(--e5);
+  }
   .resolu {
     display: flex;
     gap: var(--e3);
@@ -633,9 +702,33 @@
     gap: var(--e2) var(--e3);
   }
 
+  /* Téléphone et tablette : le panneau est la page (l'en-tête reste au-dessus), on défile
+     avec elle et le formulaire du flag reste collé en bas de l'écran. */
+  @media (max-width: 1099px), (max-height: 699px) {
+    .defilement {
+      overflow: visible;
+      flex: none;
+    }
+    .flag {
+      position: sticky;
+      bottom: 0;
+      z-index: 2;
+    }
+  }
+
   @media (max-width: 640px) {
     .titre {
       font-size: 36px;
+    }
+    .position {
+      flex-basis: 100%;
+    }
+    .parcours-actions {
+      margin-left: 0;
+      width: 100%;
+    }
+    .btn-pas.fermer {
+      margin-left: auto;
     }
     .flag {
       padding: var(--e3) var(--gouttiere);

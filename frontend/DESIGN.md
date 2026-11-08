@@ -104,10 +104,12 @@ lui, prend toute la largeur du projecteur.
 - **Événement en direct** (premier sang, annonce) : pas de boîte ni de notification flottante
   à bordure ; une ligne de chronique sous la carte, filet de 1 px au-dessus, titre en Lumignons,
   actions en ligne. Les notifications éphémères gardent la même forme, empilées en bas.
-- **Panneau** (défi ouvert) : fond `--pierre-sombre`, titre 48 px, élévation de l'immeuble avec
-  la fenêtre du défi cadrée et une phrase d'ordre (« Deuxième des trois défis… Après « X ».
-  Ouvre ensuite « Y ». »), faits (difficulté, points, résolutions), énoncé, adresse, fichiers,
-  indices, formulaire du flag fixé en bas.
+- **Panneau** (défi ouvert) : fond `--pierre-sombre` ; en tête, la barre du quartier
+  (« Croix-Rousse, défi 2 sur 4 », Précédent, Suivant, Fermer), puis le titre 48 px,
+  l'élévation de l'immeuble avec la fenêtre du défi cadrée et une phrase d'ordre (« Deuxième
+  des trois défis… Après « X ». Ouvre ensuite « Y ». »), faits (difficulté, points,
+  résolutions), énoncé, adresse, fichiers, indices, formulaire du flag fixé en bas. Après un
+  flag correct, le défi suivant du quartier est proposé (bouton principal).
 
 ## Comportement (exigences issues des passes du juge)
 
@@ -122,10 +124,15 @@ lui, prend toute la largeur du projecteur.
 3. **Indices** : l'indice débloqué affiche son texte, le focus va sur ce texte, le score de
    l'équipe se met à jour. Un indice payant demande confirmation ; Échap annule la
    confirmation seule (la couche la plus interne).
-4. **Panneau** : se comporte comme une fenêtre modale à toutes les largeurs (le reste est
-   inerte, Tab boucle dans le panneau) ; Échap et « Fermer » le ferment ; le focus revient au
-   déclencheur, sinon au bouton du quartier sur la carte. Le retour arrière du navigateur ferme
-   le panneau avec le même retour de focus.
+4. **Panneau** : jamais modal, rien n'est recouvert ni inerte (l'en-tête, la carte et la liste
+   restent utilisables). Sur bureau (1100 × 700 et plus), il s'ajoute en troisième colonne :
+   la carte se réduit, la liste se resserre (26 %, 300 à 380 px) sur le quartier du défi, où
+   la ligne du défi ouvert est repérée (fond `--pierre-sombre`, filet `--claire` de 3 px à
+   gauche) ; la grille glisse en 320 ms, le panneau entre de 32 px, rien en mouvement réduit.
+   Sur téléphone et tablette, le panneau devient la page sous l'en-tête. Passer d'un défi à
+   l'autre (liste, Précédent, Suivant) remplace l'entrée d'historique : Échap, « Fermer » et
+   le retour du navigateur ramènent toujours au plan, la liste retrouve le choix d'avant et le
+   focus va à la ligne du défi, sinon au bouton du quartier sur la carte.
 5. **Résultats visibles** : flag correct (la fenêtre s'allume, score et rang à jour, message de
    réussite), flag faux (message avec solution), envoi en cours (bouton désactivé et libellé
    « Vérification… »).
@@ -152,7 +159,7 @@ lui, prend toute la largeur du projecteur.
   pied de l'écran, plus petit : le formulaire passe avant, la ville prend la hauteur qui
   reste (sur un écran bas, elle passe sous le formulaire). Le panorama est décoratif (aria-hidden) : l'état des
   défis est dit sur le plan et au classement.
-- **Joueur** (équipe, classement, messages) : une colonne de lecture de 880 px au plus,
+- **Joueur** (classement, messages) : une colonne de lecture de 880 px au plus,
   alignée à gauche ; l'univers passe par les mots, la couleur `--lumignon` réservée à ce qui
   est gagné et les dessins de la ville : sur le classement, chaque équipe a sa ville (la même
   silhouette pour toutes : un immeuble par quartier, qui reprend en petit la silhouette de son
@@ -164,16 +171,23 @@ lui, prend toute la largeur du projecteur.
   étages, quatre au plus, plutôt qu'en largeur ; le nombre seul à côté, sans libellé répété ;
   une phrase sous l'introduction nomme les quartiers de gauche à droite). La ville ne prend
   jamais la place du nom : le nom garde 10 rem au moins, la ville se réduit (18 rem au plus)
-  et passe sous le nom en dessous de 761 px. La page équipe commence par « Les quartiers »,
-  les huit toujours présents (leur immeuble aux fenêtres de l'équipe, calé à gauche ;
-  l'avancement écrit seulement pour les lecteurs d'écran ; puis les défis résolus : qui,
-  quand ; une phrase quand aucun ne l'est), puis les fils de soie (description, puis le motif
-  sur sa propre ligne, en disques pleins et vides dessinés à la même taille, le texte ●○
-  restant pour les lecteurs d'écran et le copier-coller), puis l'atelier (code d'invitation,
-  membres, départ). Les messages de l'histoire sont des lettres : titre,
+  et passe sous le nom en dessous de 761 px. Les messages de l'histoire sont des lettres : titre,
   texte, signature ; la voix de LUMEN y est une citation en `--lumen` avec un filet de 2 px
   `--lumen` à gauche, seule bordure de couleur du site (elle porte l'information « c'est LUMEN
   qui parle »).
+- **Équipe** : toute la largeur du cadre. Le nom, puis une bande de chiffres (rang, score,
+  défis résolus, fils) en Lumignons 40 px, séparés par des filets. Puis « Les quartiers » : la
+  rue des huit immeubles à la même échelle (colonnes proportionnelles à leur largeur, 1280 px
+  au plus), posés sur un quai `--lumen`, leurs fenêtres allumées par les défis de l'équipe,
+  le nom et l'avancement dessous (`--lumignon` quand le quartier est fini) ; chaque immeuble
+  mène à son quartier sur le plan (`/challenges?quartier=…`) et se soulève de 4 px au survol.
+  Sous 761 px, deux rangées de quatre, à la même échelle. Sans résolution : une phrase et
+  « Aller au plan ». Puis deux colonnes : le journal de l'équipe (le plus récent d'abord : défi,
+  points gagnés, quartier, qui, quand ; les six derniers, puis « Tout le journal ») et, à
+  droite, le code d'invitation, les membres et le départ (avant le journal sur une colonne).
+  Enfin les fils de soie (description, puis le motif sur sa propre ligne, en disques pleins
+  et vides dessinés à la même taille, le texte ●○ restant pour les lecteurs d'écran et le
+  copier-coller).
 - **Grand écran** (vidéoprojecteur, 1920 × 1080, lu à cinq mètres) : rien sous 24 px en
   1920 × 1080 (21 px sur un projecteur de moins de 1001 px de haut), aucune
   interaction, rien ne défile ; la ville s'allume avec la progression de toutes les équipes, à
