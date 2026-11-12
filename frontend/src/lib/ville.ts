@@ -395,6 +395,12 @@ export interface Quartier {
   resolus: number;
 }
 
+/** L'emplacement du plan qu'occupe un quartier (« croix-rousse », « gerland »…) : c'est le nom
+ * de son immeuble dans la maquette en volume (lib/maquette3d.ts). */
+export function emplacementDe(q: Quartier): string {
+  return EMPLACEMENTS.find((e) => e.x === q.x && e.y === q.y)?.categorie ?? q.categorie.id;
+}
+
 /** Le gabarit de chaque catégorie, dans l'ordre donné : celui de son emplacement sur le plan
  * (le premier libre pour une catégorie inconnue, comme dans `construireVille`), `null` pour
  * toutes au-delà de huit catégories. */
@@ -532,6 +538,20 @@ export function fil(q: Quartier): Troncon[] {
     const a1 = { x: f.x + f.w / 2, y: f.y + f.h + 3 };
     const creux = Math.max(4, Math.min(24, 2 * (sol - Math.max(a0.y, a1.y) - 2)));
     return [{ vers: d.id, etat, d: `M${a0.x} ${a0.y}Q${(a0.x + a1.x) / 2} ${Math.max(a0.y, a1.y) + creux} ${a1.x} ${a1.y}` }];
+  });
+}
+
+/** Le tracé d'un tronçon de fil (« M x y q … » ou « M x y Q … »), en points : la maquette en
+ * volume en fait un fil tendu devant la façade. */
+export function pointsDuFil(d: string, pas = 14): [number, number][] {
+  const n = (d.match(/-?\d*\.?\d+(?:e-?\d+)?/g) ?? []).map(Number);
+  const [x0, y0, a, b, c, e] = n;
+  if (n.length !== 6 || x0 === undefined || y0 === undefined || a === undefined || b === undefined || c === undefined || e === undefined) return [];
+  const relatif = d.includes("q");
+  const [cx, cy, x1, y1] = relatif ? [x0 + a, y0 + b, x0 + c, y0 + e] : [a, b, c, e];
+  return Array.from({ length: pas + 1 }, (_, i) => {
+    const k = i / pas;
+    return [(1 - k) ** 2 * x0 + 2 * (1 - k) * k * cx + k * k * x1, (1 - k) ** 2 * y0 + 2 * (1 - k) * k * cy + k * k * y1];
   });
 }
 

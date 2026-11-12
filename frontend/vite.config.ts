@@ -9,5 +9,7 @@ export default defineConfig({
       "/api": { target: process.env.JACQUARD_API ?? "http://localhost:8000", changeOrigin: false },
     },
   },
-  build: { target: "es2022", sourcemap: true },
+  // three.js (la maquette en volume) forme un fichier à part, chargé seulement par la page des
+  // défis : il dépasse le seuil d'alerte par défaut (500 ko), sans alourdir le reste du site.
+  build: { target: "es2022", sourcemap: true, chunkSizeWarningLimit: 750 },
 });

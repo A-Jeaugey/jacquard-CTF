@@ -317,6 +317,9 @@ const defaults = {
   "board.not_started_action": "Lire le prologue",
   "board.error": "Le plan n'a pas pu être chargé :",
   "board.list_label": "Défis par quartier",
+  "board.model_hint": "Fais glisser la maquette pour la tourner.",
+  "board.view_flat": "Afficher le plan à plat",
+  "board.view_model": "Revenir à la maquette",
 
   "challenge.difficulty": "Difficulté",
   "challenge.points": "Points",

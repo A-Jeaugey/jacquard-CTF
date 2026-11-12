@@ -26,7 +26,7 @@ toits et volets au trait sur `--nuit`, les portes `--eau` ; motifs `#jq-assises`
 
 **Une seule audace : le plan de nuit.** Tout le reste est calme, discipliné, lisible.
 
-## Couleurs : 6 nommées, 4 dérivées (aucune autre valeur, aucune opacité pour « éteindre »)
+## Couleurs : 6 nommées, 5 dérivées (aucune autre valeur, aucune opacité pour « éteindre »)
 
 | Jeton | Hex | Rôle |
 |---|---|---|
@@ -40,8 +40,95 @@ toits et volets au trait sur `--nuit`, les portes `--eau` ; motifs `#jq-assises`
 | `--toit` | `#221E29` | toits, silhouettes, façades des quartiers mis en retrait |
 | `--douce` | `#BCB3C2` | texte secondaire (≥ 6,9:1), bordures des commandes |
 | `--voile` | `#A6BDD1` | texte des éléments verrouillés |
+| `--table` | `#16151C` | la table sous la maquette en volume : fond de la page des défis et voiles sous le texte |
 
 Le chaud ne sert jamais d'accent d'interface : il marque seulement ce que l'équipe a gagné.
+
+## La ville en volume (défis, grand écran, accueil et pages d'accès)
+
+**État : proposition de novembre 2026, à valider par l'orga ; aucun juge ne l'a vue.** Elle
+remplace le dessin à plat sur la page des défis et le grand écran (le plan de Lyon), sur
+l'accueil et les pages d'accès (le panorama du quai). Le classement et la page de l'équipe
+gardent leurs immeubles dessinés : de petits dessins répétés, pas des scènes. Partout, le
+dessin à plat reste le repli.
+
+Après la bande-annonce en 3D, le plan de nuit devient la maquette du film : Lyon posée sur une
+table, les huit immeubles en volume entre la Saône et le Rhône, rendue en temps réel
+(three.js, `lib/maquette3d.ts`, `components/ville/Ville3D.svelte`). Sur bureau, elle occupe
+toute la fenêtre, sous l'en-tête et sous les colonnes de texte ; sur tablette et téléphone,
+c'est un bloc au-dessus de la liste. Elle reste l'unique audace de la page.
+
+- **Trois vues**, portées par ce que la page sait déjà : toute la ville, le quartier choisi
+  (la caméra s'en approche et le regarde de trois quarts, du côté où aucun voisin ne passe
+  devant), le défi ouvert (sa fenêtre est cernée ; la caméra recadre l'immeuble dans la place
+  que laisse le panneau). La caméra centre toujours son sujet dans la place libre : la page lui
+  dit ce que l'interface recouvre.
+- **Les deux lumières viennent de la scène.** Les fenêtres, les fils, les rives et la
+  couronne de la tour éclairent et rayonnent (un éclat au-dessus d'un seuil, comme dans le
+  film) ; une lueur chaude grandit devant un quartier à mesure qu'il est gagné. C'est la seule
+  exception à « aucune ombre, aucun halo » : rien de tel sur un élément d'interface.
+- **Trois voiles `--table`** rendent le texte lisible sur la scène, comme les titres du film :
+  sous l'en-tête, sous les colonnes de droite, en bas sous la légende. Ce sont les seuls
+  dégradés du site.
+- **Une fenêtre par défi, posée par le site** : la maquette (`public/ville/lyon.glb`) ne
+  contient que les volumes. Les fenêtres et le fil viennent de `lib/ville.ts`, comme sur le
+  plan à plat ; si un quartier n'a pas le nombre de défis du dessin, un pan de pierre recouvre
+  les niches et les fenêtres sont posées en applique.
+- **Fenêtre disponible** : éteinte, cernée de `--claire` (2 px à l'écran ; 3 px survolée,
+  4 px ouverte). **Fil** : chaud sur la partie gagnée, toujours visible ; `--douce` jusqu'à la
+  fenêtre ouverte et froid au-delà, seulement dans le quartier choisi.
+- **Noms des immeubles** : Lumignons 24 px (21 px sur téléphone), liseré `--eau` ; au-dessus de
+  l'immeuble pour la rangée du nord, à ses pieds pour les autres. Aucun nom sous l'interface,
+  ni pour l'immeuble choisi (son nom est le titre de la liste).
+- **Accès** : chaque immeuble garde son bouton (même libellé que sur le plan à plat), posé sur
+  lui. Les fenêtres du quartier choisi sont des raccourcis à la souris, cachés aux lecteurs
+  d'écran : la liste porte les mêmes liens. Survoler un défi dans la liste cerne sa fenêtre,
+  et inversement. Glisser fait tourner la maquette (elle revient d'elle-même au changement de
+  vue) ; sur un écran tactile, glisser de haut en bas fait défiler la page.
+- **Mouvement** : le vol de la caméra d'une vue à l'autre (1,1 s), une fenêtre qui s'allume
+  (0,45 s), un fil qui se tend à la résolution (0,7 s). En mouvement réduit, tout change d'un
+  coup. L'allumage du premier affichage est le même que sur le plan à plat.
+- **Repli** : sans WebGL 2, avec une carte graphique émulée, ou si la maquette ne se charge
+  pas, le plan à plat s'affiche avec sa mise en page d'origine. Le joueur peut aussi le
+  choisir (« Afficher le plan à plat », retenu dans le navigateur).
+- **Coût** : three.js forme un fichier à part (environ 180 ko compressés), chargé seulement
+  par les pages qui montrent la ville ; une scène ne se redessine que lorsque quelque chose
+  bouge (sauf la ronde du grand écran).
+
+### Le grand écran
+
+La même maquette, en décor : elle occupe tout l'écran derrière le texte, cadrée dans la place
+du plan à plat, et **tourne lentement** (un tour en deux minutes, trente images par seconde).
+Les fenêtres non résolues sont éteintes, pas froides, comme sur le plan à plat du grand écran.
+Les noms des immeubles sont au-dessus d'eux, à la taille de base de l'écran (24 px en 1080).
+Un voile `--table` porte la colonne du classement.
+
+### Le quai : l'accueil et les pages d'accès
+
+Le premier plan de la bande-annonce, en temps réel (`components/ville/Panorama3D.svelte`) : les
+huit immeubles de la maquette **alignés sur le quai**, face à la Saône, dans l'ordre du
+panorama à plat ; derrière, trois plans de toits en silhouette ; devant, l'eau où tout se
+reflète (les reflets s'étirent de haut en bas). La caméra regarde à l'horizontale : les
+verticales restent droites.
+
+- **Plein cadre** : sur bureau, la scène occupe toute la première vue, sous le titre et le
+  formulaire ; le haut du ciel est `--nuit`, la couleur de la page, sans raccord. Sur un
+  écran étroit, c'est un bloc sous le texte, et la rangée garde une taille lisible (ses bords
+  sont rognés), comme le panorama à plat.
+- **La ville de tous** : une fenêtre s'allume dès qu'une équipe a résolu son défi (classement
+  public). Avec la part des défis résolus, le filet du quai passe du froid à l'ambre depuis la
+  gauche, et les petites fenêtres des toits lointains s'allument.
+- **Mouvement** : l'allumage du premier affichage (le même que le panorama à plat), et un
+  léger décalage de la caméra avec la souris, qui fait glisser les toits lointains. Rien en
+  mouvement réduit. Pas d'animation continue.
+- **Décor** : caché aux lecteurs d'écran, sans aucune action.
+
+### D'où vient la maquette
+
+La maquette est produite par Blender à partir des dessins de `lib/ville.ts`, par le script
+`video/3d/exporter_web.py` du pack Traboules (dépôt privé de l'événement), qui écrit
+`public/ville/lyon.glb` et `lyon.json`. Les matières sont reprises par nom dans
+`lib/maquette3d.ts`.
 
 ## Typographie
 

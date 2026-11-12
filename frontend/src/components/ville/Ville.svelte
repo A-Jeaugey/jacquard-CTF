@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
 
+  import { creerAllumage } from "../../lib/allumage.svelte";
   import { t } from "../../lib/strings";
   import { NOMS_RIVIERES, PLAN, PONTS, RIVIERES, type Quartier } from "../../lib/ville";
   import Immeuble from "./Immeuble.svelte";
@@ -28,43 +29,15 @@
     ouvert ? (quartiers.find((q) => q.defis.some((d) => d.id === ouvert))?.categorie.id ?? choisi) : choisi,
   );
 
-  // L'allumage, seul moment orchestré : au premier affichage de la session, tout est froid,
-  // puis les fenêtres résolues s'allument une à une dans l'ordre des résolutions. Il se décide
-  // une seule fois, à l'arrivée de la progression de l'équipe : les rechargements suivants (une
-  // résolution, un coéquipier) ne le relancent pas et ne l'interrompent pas, et une équipe qui
-  // n'a encore rien résolu ne le verra pas à sa première résolution.
-  const CLE = "jq_allumage";
-  let froides = $state<Set<string> | null>(null);
-  let lance = false;
-  const minuteurs: ReturnType<typeof setTimeout>[] = [];
+  // L'allumage, seul moment orchestré (lib/allumage.svelte.ts) : au premier affichage de la
+  // session, les fenêtres résolues s'allument une à une dans l'ordre des résolutions.
+  const lumieres = creerAllumage();
   $effect(() => {
     const ordre = allumage;
-    if (lance || ordre === null) return;
-    lance = true;
-    untrack(() => {
-      let dejaVu = false;
-      try {
-        dejaVu = sessionStorage.getItem(CLE) === "1";
-        sessionStorage.setItem(CLE, "1");
-      } catch {
-        // stockage indisponible : l'allumage se rejoue, sans gravité
-      }
-      if (dejaVu || ordre.length === 0 || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      froides = new Set(ordre);
-      ordre.forEach((id, i) =>
-        minuteurs.push(
-          setTimeout(() => {
-            if (!froides) return;
-            const suite = new Set(froides);
-            suite.delete(id);
-            froides = suite;
-          }, 700 + i * 110),
-        ),
-      );
-      minuteurs.push(setTimeout(() => (froides = null), 700 + ordre.length * 110 + 260));
-    });
+    untrack(() => lumieres.lancer(ordre));
   });
-  $effect(() => () => minuteurs.forEach(clearTimeout));
+  $effect(() => () => lumieres.arreter());
+  const froides = $derived(lumieres.froides);
 
   const pct = (valeur: number, total: number): string => `${(valeur / total) * 100}%`;
 </script>
