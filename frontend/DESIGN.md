@@ -46,11 +46,15 @@ Le chaud ne sert jamais d'accent d'interface : il marque seulement ce que l'équ
 
 ## La ville en volume (défis, grand écran, accueil et pages d'accès)
 
-**État : proposition de novembre 2026, à valider par l'orga ; aucun juge ne l'a vue.** Elle
-remplace le dessin à plat sur la page des défis et le grand écran (le plan de Lyon), sur
-l'accueil et les pages d'accès (le panorama du quai). Le classement et la page de l'équipe
-gardent leurs immeubles dessinés : de petits dessins répétés, pas des scènes. Partout, le
-dessin à plat reste le repli.
+**État : en place depuis le 12 novembre 2026, sur décision de l'orga ; aucun juge ne l'a
+vue.** Elle remplace le dessin à plat sur la page des défis et le grand écran (le plan de
+Lyon), sur l'accueil et les pages d'accès (le panorama du quai). Le classement et la page de
+l'équipe gardent leurs immeubles dessinés : de petits dessins répétés, pas des scènes.
+Partout, le dessin à plat reste le repli.
+
+Limites connues : elle n'a été essayée que sur une carte graphique puissante, ni sur un
+portable modeste ni sur un téléphone ; et les tests de bout en bout tournent dans un
+navigateur sans carte graphique, donc sur le repli à plat.
 
 Après la bande-annonce en 3D, le plan de nuit devient la maquette du film : Lyon posée sur une
 table, les huit immeubles en volume entre la Saône et le Rhône, rendue en temps réel
