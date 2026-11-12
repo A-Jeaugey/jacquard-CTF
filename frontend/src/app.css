@@ -47,6 +47,8 @@
   --toit: #221e29;
   --douce: #bcb3c2;
   --voile: #a6bdd1;
+  /* La table sous la maquette en volume : le fond de la page des défis. */
+  --table: #16151c;
 
   --display: "Lumignons", "Luciole", serif;
   --texte: "Luciole", "Trebuchet MS", sans-serif;

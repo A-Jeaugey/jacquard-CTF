@@ -6,12 +6,15 @@
   import { untrack } from "svelte";
 
   import Immeuble from "../components/ville/Immeuble.svelte";
+  import Ville3D from "../components/ville/Ville3D.svelte";
   import { api, ApiError } from "../lib/api";
+  import { carteGraphique } from "../lib/carte-graphique";
   import { formatDuration, formatHeure, formatPoints, poll } from "../lib/format";
   import { live } from "../lib/live.svelte";
   import { serverNow, session } from "../lib/session.svelte";
   import { t, tn } from "../lib/strings";
   import { typo } from "../lib/typo";
+  import type { Marges } from "../lib/maquette3d";
   import type { FeedItem, Scoreboard, ScreenData } from "../lib/types";
   import { NOMS_RIVIERES, PLAN, PONTS, RIVIERES, villeEteinte, type Quartier } from "../lib/ville";
 
@@ -99,9 +102,37 @@
   function mesurer(noeud: HTMLElement): void {
     hauteurRangee = noeud.getBoundingClientRect().height;
   }
+
+  // La maquette en volume (frontend/DESIGN.md) : elle occupe tout l'écran, derrière le texte, et
+  // tourne lentement. La caméra la cadre dans la place que le plan à plat occupait. Sans carte
+  // graphique, ce plan à plat reste.
+  let volume = $state(carteGraphique());
+  let elCadre = $state<HTMLElement>();
+  let degagement = $state<Marges>({ haut: 0, droite: 0, bas: 0, gauche: 0 });
+  $effect(() => {
+    document.body.classList.toggle("ecran-volume", volume);
+    return () => document.body.classList.remove("ecran-volume");
+  });
+  $effect(() => {
+    const cadre = elCadre;
+    if (!cadre || !volume) return;
+    const mesurerCadre = (): void => {
+      if (empile) {
+        degagement = { haut: 0, droite: 0, bas: 0, gauche: 0 };
+        return;
+      }
+      const r = cadre.getBoundingClientRect();
+      degagement = { haut: r.top, droite: window.innerWidth - r.right, bas: window.innerHeight - r.bottom, gauche: r.left };
+    };
+    const observateur = new ResizeObserver(mesurerCadre);
+    observateur.observe(cadre);
+    observateur.observe(document.body);
+    mesurerCadre();
+    return () => observateur.disconnect();
+  });
 </script>
 
-<main class="ecran">
+<main class="ecran" class:en-volume={volume}>
   {#if erreur}
     <div class="panne">
       <h1 class="titre">{erreur === "introuvable" ? t("screen.not_found") : t("screen.unreachable")}</h1>
@@ -112,8 +143,11 @@
   {:else}
     <section class="ville" aria-labelledby="titre-ecran">
       <h1 class="titre" id="titre-ecran">{typo(ecran.title)}</h1>
-      <div class="cadre-carte" aria-hidden="true">
+      <div class="cadre-carte" aria-hidden="true" bind:this={elCadre}>
         {#if quartiers}
+          <div class="scene">
+          <Ville3D {quartiers} decor ronde nuit {degagement} bind:volume onChoisir={() => {}}>
+          {#snippet repli()}
           <div class="carte">
             <svg class="fond" viewBox="0 0 {PLAN.w} {PLAN.h}" preserveAspectRatio="none" focusable="false">
               {#each RIVIERES as riviere (riviere.points)}
@@ -137,6 +171,9 @@
                 <span class="nom">{q.categorie.name}</span>
               </div>
             {/each}
+          </div>
+          {/snippet}
+          </Ville3D>
           </div>
         {/if}
       </div>
@@ -271,6 +308,44 @@
     position: relative;
     width: min(100cqw, 100cqh * 600 / 650);
     aspect-ratio: 600 / 650;
+  }
+  /* La maquette en volume : en fond de tout l'écran, sous le texte ; un voile de la couleur de
+     la table porte la colonne de droite. Sans elle, l'enveloppe s'efface devant le plan à plat. */
+  .scene {
+    display: contents;
+  }
+  .ecran.en-volume .scene {
+    display: block;
+    height: 76vw;
+  }
+  .ecran.en-volume :global(.maquette .nom) {
+    font-size: var(--t-base);
+  }
+  @media (min-width: 901px) {
+    :global(body.ecran-volume) {
+      background: var(--table);
+    }
+    .ecran.en-volume .cadre-carte {
+      display: block;
+      container-type: normal;
+    }
+    .ecran.en-volume .scene {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      height: auto;
+    }
+    .ecran.en-volume::after {
+      content: "";
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 46%;
+      z-index: -1;
+      pointer-events: none;
+      background: linear-gradient(to right, transparent, color-mix(in srgb, var(--table) 92%, transparent) 38%);
+    }
   }
   .fond {
     position: absolute;

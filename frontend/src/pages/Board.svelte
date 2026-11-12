@@ -6,8 +6,9 @@
   import Immeuble from "../components/ville/Immeuble.svelte";
   import Marque from "../components/ville/Marque.svelte";
   import Panneau from "../components/ville/Panneau.svelte";
-  import Ville from "../components/ville/Ville.svelte";
+  import Ville3D from "../components/ville/Ville3D.svelte";
   import { api, errorMessage } from "../lib/api";
+  import { carteGraphique } from "../lib/carte-graphique";
   import { equipe } from "../lib/equipe.svelte";
   import { formatHeure, formatPoints, poll } from "../lib/format";
   import { live } from "../lib/live.svelte";
@@ -16,6 +17,7 @@
   import { t, tn } from "../lib/strings";
   import { typo } from "../lib/typo";
   import type { ChallengeList, ChallengeSummary, FeedItem } from "../lib/types";
+  import type { Marges } from "../lib/maquette3d";
   import { avant, construireVille, etatDe, ordonner, type Etat, type Quartier } from "../lib/ville";
 
   let liste = $state<ChallengeList | null>(null);
@@ -271,6 +273,62 @@
   }
 
   const besoinEquipe = $derived(session.me !== null && !session.me.team && session.me.user.role !== "admin");
+
+  // ---------- La maquette en volume ----------
+  // Sur bureau, elle occupe toute la fenêtre, sous l'en-tête et les colonnes de texte. La page
+  // lui dit quelle place l'interface lui prend, pour que la caméra centre son sujet dans le reste.
+  const CLE_PLAT = "jq_ville";
+  function prefereAPlat(): boolean {
+    try {
+      return localStorage.getItem(CLE_PLAT) === "plat";
+    } catch {
+      return false;
+    }
+  }
+  let aPlat = $state(prefereAPlat());
+  let volume = $state(!prefereAPlat() && carteGraphique());
+  const enVolume = $derived(volume && ville !== null);
+  function basculerPlat(): void {
+    aPlat = !aPlat;
+    try {
+      localStorage.setItem(CLE_PLAT, aPlat ? "plat" : "volume");
+    } catch {
+      // stockage indisponible : le choix vaut pour cette visite
+    }
+  }
+  $effect(() => {
+    document.body.classList.toggle("plan-volume", enVolume);
+    return () => document.body.classList.remove("plan-volume");
+  });
+
+  /** Défi survolé, dans la liste ou sur la maquette : l'autre lui répond. */
+  let survole = $state<string | null>(null);
+
+  let elTete = $state<HTMLElement>();
+  let elSousCarte = $state<HTMLElement>();
+  let degagement = $state<Marges>({ haut: 0, droite: 0, bas: 0, gauche: 0 });
+  function mesurer(): void {
+    if (!enVolume || !cadreBureau()) {
+      degagement = { haut: 0, droite: 0, bas: 0, gauche: 0 };
+      return;
+    }
+    const barre = document.querySelector(".barre")?.getBoundingClientRect().bottom ?? 0;
+    const colonne = elTete?.getBoundingClientRect().left ?? window.innerWidth;
+    const pied = elSousCarte?.getBoundingClientRect().top ?? window.innerHeight;
+    degagement = {
+      haut: Math.max(0, barre),
+      droite: Math.max(0, window.innerWidth - colonne),
+      bas: Math.max(0, window.innerHeight - pied),
+      gauche: 0,
+    };
+  }
+  $effect(() => {
+    void enVolume;
+    const observateur = new ResizeObserver(mesurer);
+    for (const element of [document.body, elTete, elSousCarte]) if (element) observateur.observe(element);
+    mesurer();
+    return () => observateur.disconnect();
+  });
 </script>
 
 {#snippet corps(d: ChallengeSummary, etat: Etat, ligne: { mot: string; suite: string })}
@@ -280,8 +338,8 @@
   <span class="d-etat"><span class="mot">{ligne.mot}</span>{typo(ligne.suite)}</span>
 {/snippet}
 
-<div class="plan" class:avec-panneau={panneauActif}>
-  <div class="tete">
+<div class="plan" class:avec-panneau={panneauActif} class:en-volume={enVolume}>
+  <div class="tete" bind:this={elTete}>
     <h1 class="titre-page" id="titre-plan" tabindex="-1">{t("board.title")}</h1>
     <p class="indice">
       {#if choisi}
@@ -289,6 +347,7 @@
         <button type="button" class="btn-texte" onclick={revoirTout}>{t("board.show_all")}</button>
       {:else if ville && defis.length > 0}
         {t("board.zone_hint")} {t("board.windows_hint")}
+        {#if enVolume}{t("board.model_hint")}{/if}
       {/if}
     </p>
     <p class="sr-only" aria-live="polite">{annonce}</p>
@@ -328,13 +387,29 @@
     {#if ville}
       <div class="ville-zone">
         <div class="carte-cadre">
-          <Ville quartiers={ville} {choisi} ouvert={defiOuvert ? ouvert : null} {allumage} onChoisir={choisir} />
+          <Ville3D
+            quartiers={ville}
+            {choisi}
+            ouvert={defiOuvert ? ouvert : null}
+            {allumage}
+            survol={survole}
+            {degagement}
+            {aPlat}
+            bind:volume
+            onChoisir={choisir}
+            onOuvrir={ouvrir}
+            onSurvol={(id) => (survole = id)}
+          />
         </div>
-        <ul class="legende" aria-label={t("board.legend.label")}>
-          <li><Marque etat="resolu" /><span>{tn("board.legend.solved", 1)}</span></li>
-          <li><Marque etat="disponible" /><span>{tn("board.legend.available", 1)}</span></li>
-          <li><Marque etat="verrouille" /><span>{tn("board.legend.locked", 1)}</span></li>
-        </ul>
+        <div class="sous-carte" bind:this={elSousCarte}>
+          <ul class="legende" aria-label={t("board.legend.label")}>
+            <li><Marque etat="resolu" /><span>{tn("board.legend.solved", 1)}</span></li>
+            <li><Marque etat="disponible" /><span>{tn("board.legend.available", 1)}</span></li>
+            <li><Marque etat="verrouille" /><span>{tn("board.legend.locked", 1)}</span></li>
+            {#if carteGraphique()}
+              <li><button type="button" class="btn-texte" onclick={basculerPlat}>{t(aPlat ? "board.view_model" : "board.view_flat")}</button></li>
+            {/if}
+          </ul>
         {#if chronique && cleChronique !== chroniqueFermee}
           <div class="chronique">
             {#if chronique.kind === "first_blood"}
@@ -356,7 +431,9 @@
             </p>
           </div>
         {/if}
+        </div>
       </div>
+      {#if enVolume}<div class="voile" aria-hidden="true"></div>{/if}
     {/if}
 
     <div class="volet" aria-label={t("board.list_label")} role="region">
@@ -395,7 +472,12 @@
                     class="defi"
                     href="/challenges?defi={encodeURIComponent(d.id)}"
                     data-defi={d.id}
+                    class:survol={survole === d.id}
                     aria-current={ouvert === d.id ? "true" : undefined}
+                    onpointerenter={() => (survole = d.id)}
+                    onpointerleave={() => (survole = null)}
+                    onfocus={() => (survole = d.id)}
+                    onblur={() => (survole = null)}
                     onclick={(event) => ouvrir(event, d.id)}>{@render corps(d, etat, ligne)}</a
                   >
                 {/if}
@@ -439,9 +521,24 @@
     display: flex;
     flex-direction: column;
   }
+  /* La maquette en volume : un bloc au-dessus de la liste (sur bureau, voir plus bas, elle
+     passe en fond de page). */
+  .plan.en-volume .carte-cadre {
+    height: clamp(340px, 104vw, 600px);
+    margin-inline: calc(-1 * var(--gouttiere));
+  }
+  .carte-cadre :global(.carte.maquette) {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+  }
+  .voile {
+    display: none;
+  }
   .legende {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: var(--e2) var(--e5);
     margin-top: var(--e3);
     color: var(--douce);
@@ -580,6 +677,10 @@
       text-decoration: underline;
     }
   }
+  /* La fenêtre du défi est survolée sur la maquette : sa ligne répond. */
+  a.defi.survol {
+    background: var(--pierre-sombre);
+  }
   a.defi:active {
     background: var(--pierre);
   }
@@ -697,6 +798,73 @@
     .plan.avec-panneau .volet {
       border-right: 0;
     }
+
+    /* La maquette en volume : elle occupe toute la fenêtre, sous l'en-tête et sous les colonnes
+       de texte, que deux voiles de la couleur de la table rendent lisibles (comme les titres
+       de la bande-annonce). La légende et la chronique se posent en bas à gauche. */
+    :global(body.plan-volume) {
+      background: var(--table);
+    }
+    :global(body.plan-volume .barre) {
+      position: relative;
+      z-index: 2;
+      border-bottom-color: transparent;
+      background: linear-gradient(to bottom, color-mix(in srgb, var(--eau) 82%, transparent), transparent);
+    }
+    .plan.en-volume .ville-zone {
+      border-right: 0;
+      justify-content: flex-end;
+    }
+    .plan.en-volume .carte-cadre {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      display: block;
+      height: auto;
+      margin: 0;
+      container-type: normal;
+    }
+    /* Un voile monte du bas de la scène : la légende et la chronique restent lisibles quand un
+       immeuble passe au premier plan. */
+    .plan.en-volume .ville-zone {
+      padding: 0;
+    }
+    .plan.en-volume .sous-carte {
+      position: relative;
+      z-index: 1;
+      padding: var(--e7) var(--gouttiere) var(--e4);
+      background: linear-gradient(to top, color-mix(in srgb, var(--table) 92%, transparent) 55%, transparent);
+      pointer-events: none;
+    }
+    .plan.en-volume .sous-carte > :global(*) {
+      max-width: 720px;
+      pointer-events: auto;
+    }
+    .plan.en-volume .tete,
+    .plan.en-volume .volet,
+    .plan.en-volume .panneau-zone {
+      position: relative;
+      z-index: 1;
+    }
+    .plan.en-volume .voile {
+      display: block;
+      position: relative;
+      z-index: 0;
+      grid-column: 2 / -1;
+      grid-row: 1 / -1;
+      margin-left: -260px;
+      pointer-events: none;
+      background: linear-gradient(
+        to right,
+        transparent,
+        color-mix(in srgb, var(--table) 90%, transparent) 240px,
+        color-mix(in srgb, var(--table) 97%, transparent)
+      );
+    }
+    /* L'immeuble du quartier est sur la maquette : pas de second dessin dans la liste. */
+    .plan.en-volume .q-elevation {
+      display: none;
+    }
   }
 
   /* ---------- Tablette et mobile ---------- */
@@ -722,7 +890,7 @@
   }
 
   @media (max-width: 640px) {
-    .carte-cadre :global(.carte) {
+    .carte-cadre :global(.carte:not(.maquette)) {
       aspect-ratio: 600 / 820;
     }
     .legende {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import Reessayer from "../components/Reessayer.svelte";
-  import Panorama from "../components/ville/Panorama.svelte";
+  import Panorama3D from "../components/ville/Panorama3D.svelte";
+  import { carteGraphique } from "../lib/carte-graphique";
   import { api, errorMessage } from "../lib/api";
   import { equipe } from "../lib/equipe.svelte";
   import { formatDateTime, formatPlage, formatPoints, poll } from "../lib/format";
@@ -52,11 +53,14 @@
   const prologue = $derived(story.data?.entries.filter((e) => e.public) ?? []);
   const phase = $derived(evenement?.phase ?? "running");
   const inscriptions = $derived(inscriptionsOuvertes());
+
+  // Le quai en volume (frontend/DESIGN.md) prend toute la scène d'ouverture, derrière le texte.
+  let volume = $state(carteGraphique());
 </script>
 
 {#if evenement}
   <div class="accueil">
-    <div class="scene">
+    <div class="scene" class:en-volume={volume}>
     <div class="intro">
       <!-- Le nom de l'événement est déjà le logotype de l'en-tête : le titre est son accroche. -->
       <h1 class="titre-page">{evenement.tagline ? typo(evenement.tagline) : evenement.name}</h1>
@@ -102,7 +106,7 @@
     </div>
 
     <div class="panorama-zone">
-      <Panorama {quartiers} />
+      <Panorama3D {quartiers} bind:volume />
     </div>
     </div>
 
@@ -190,6 +194,15 @@
     margin-top: auto;
     padding-top: var(--e5);
   }
+  /* En volume : le quai, la Saône et le ciel occupent toute la scène d'ouverture, sous le
+     texte (le haut du ciel a la couleur de la page). Sur un écran étroit, c'est un bloc sous
+     le texte. */
+  @media (max-width: 1099px) {
+    .scene.en-volume .panorama-zone {
+      height: clamp(260px, 66vw, 460px);
+      padding-top: 0;
+    }
+  }
   .suite {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -224,6 +237,21 @@
     /* L'écran moins l'en-tête, sur une ligne à partir de 1100 px (64 px et son filet). */
     .scene {
       min-height: calc(100svh - 65px);
+    }
+    .scene.en-volume {
+      position: relative;
+    }
+    .scene.en-volume .intro {
+      position: relative;
+      z-index: 1;
+    }
+    .scene.en-volume .panorama-zone {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      height: auto;
+      margin-top: 0;
     }
   }
   /* Écran large : le titre à gauche, les dates, la soirée et l'action à sa droite. */
